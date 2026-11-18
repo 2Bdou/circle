@@ -6,6 +6,7 @@
   <title>北方冬集套圈王 3D</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="assets/people/GLTFLoader.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1747,7 +1748,265 @@
       putMesh(parent, new THREE.SphereGeometry(0.032, 10, 8), gloveMat, side * 0.18, 0.09, -0.05);
     }
 
+    // 写实人体：CC0 MakeHuman 便装模型。几何人只在模型加载失败时退回。
+    let realHumans = null;
+    let humanClock = null;
+
+    function softenHumanMaterials(root) {
+      root.traverse((obj) => {
+        if (!obj.isMesh) return;
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+        obj.frustumCulled = false;
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+        mats.forEach((mat) => {
+          if (!mat) return;
+          mat.transparent = false;
+          mat.opacity = 1;
+          mat.depthWrite = true;
+          mat.alphaTest = 0.02;
+          mat.side = THREE.FrontSide;
+          if (mat.map && mat.map.isTexture) {
+            mat.map.encoding = THREE.sRGBEncoding;
+            mat.map.userData = mat.map.userData || {};
+            if (!mat.map.userData.eyesFixed && mat.name && mat.name.indexOf('body') !== -1) {
+              repaintHumanEyes(mat.map);
+            }
+          }
+        });
+      });
+    }
+
+    function repaintHumanEyes(texture) {
+      const img = texture.image;
+      texture.userData = texture.userData || {};
+      if (!img || texture.userData.eyesFixed) return;
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const px = imageData.data;
+      const w = canvas.width;
+      const h = canvas.height;
+      const seen = new Uint8Array((px.length / 4) | 0);
+      const blobs = [];
+      const isRed = (byte) => {
+        const r = px[byte];
+        const g = px[byte + 1];
+        const b = px[byte + 2];
+        return r > 165 && g < 95 && b < 110 && (r - g) > 70;
+      };
+      for (let p = 0; p < seen.length; p++) {
+        if (seen[p] || !isRed(p * 4)) continue;
+        const stack = [p];
+        seen[p] = 1;
+        let count = 0;
+        let sx = 0;
+        let sy = 0;
+        let minx = w;
+        let maxx = 0;
+        let miny = h;
+        let maxy = 0;
+        while (stack.length) {
+          const q = stack.pop();
+          const x = q % w;
+          const y = (q / w) | 0;
+          count += 1;
+          sx += x;
+          sy += y;
+          if (x < minx) minx = x;
+          if (x > maxx) maxx = x;
+          if (y < miny) miny = y;
+          if (y > maxy) maxy = y;
+          const next = [q - 1, q + 1, q - w, q + w];
+          for (let k = 0; k < next.length; k++) {
+            const n = next[k];
+            if (n < 0 || n >= seen.length || seen[n]) continue;
+            if (Math.abs((n % w) - x) > 1) continue;
+            if (!isRed(n * 4)) continue;
+            seen[n] = 1;
+            stack.push(n);
+          }
+        }
+        if (count > 40 && count < 8000) {
+          blobs.push({
+            cx: sx / count,
+            cy: sy / count,
+            rx: Math.max(3, (maxx - minx) * 0.5),
+            ry: Math.max(2, (maxy - miny) * 0.5)
+          });
+        }
+      }
+      blobs.forEach((b) => {
+        ctx.fillStyle = '#f3f0ec';
+        ctx.beginPath();
+        ctx.ellipse(b.cx, b.cy, b.rx, b.ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#6a4630';
+        ctx.beginPath();
+        ctx.ellipse(b.cx, b.cy, b.rx * 0.46, b.ry * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1a120e';
+        ctx.beginPath();
+        ctx.arc(b.cx, b.cy, Math.max(1.4, b.rx * 0.2), 0, Math.PI * 2);
+        ctx.fill();
+      });
+      texture.image = canvas;
+      texture.needsUpdate = true;
+      texture.userData.eyesFixed = true;
+    }
+
+    function mountRealHuman(gltf, anchor, yaw, scale) {
+      const model = gltf.scene;
+      softenHumanMaterials(model);
+      const holder = new THREE.Group();
+      holder.rotation.y = yaw;
+      holder.scale.setScalar(scale || 1);
+      holder.add(model);
+      anchor.add(holder);
+      const mixer = new THREE.AnimationMixer(model);
+      const clips = {};
+      gltf.animations.forEach((clip) => {
+        clips[clip.name] = mixer.clipAction(clip);
+      });
+      const rig = {
+        model,
+        mixer,
+        clips,
+        current: '',
+        handR: model.getObjectByName('hand_r'),
+        handL: model.getObjectByName('hand_l'),
+        play(name) {
+          if (!clips[name] || this.current === name) return;
+          const next = clips[name];
+          const prev = this.current ? clips[this.current] : null;
+          next.reset().fadeIn(0.18).play();
+          if (prev) prev.fadeOut(0.18);
+          this.current = name;
+        }
+      };
+      rig.play('idle');
+      return rig;
+    }
+
+    function updateRealHumans() {
+      if (!realHumans) return;
+      const dt = Math.min(0.05, humanClock.getDelta());
+      const cheer = state.crowdCheerTimer > 0;
+      const ownerClip = (state.npcAnimState === 'cheer_slap' || state.npcAnimState === 'hand_rings') ? 'wave' : 'idle';
+      realHumans.owner.play(ownerClip);
+      realHumans.owner.mixer.update(dt);
+      realHumans.auntie.play(cheer ? 'wave' : 'idle');
+      realHumans.auntie.mixer.update(dt);
+      realHumans.kid.play(cheer ? 'wave' : 'idle');
+      realHumans.kid.mixer.update(dt);
+      if (state.throwFlickTimer > 0) state.throwFlickTimer--;
+      const charging = state.isCharging || state.throwFlickTimer > 0;
+      realHumans.player.play(charging ? 'wave' : 'idle');
+      realHumans.player.mixer.update(dt);
+      if (cheer) {
+        crowdAuntieGroup.position.y = Math.abs(Math.sin(state.time * 0.35)) * 0.06;
+        crowdKidGroup.position.y = Math.abs(Math.sin(state.time * 0.42)) * 0.08;
+      } else {
+        crowdAuntieGroup.position.y = 0;
+        crowdKidGroup.position.y = Math.sin(state.time * 0.08) * 0.015;
+      }
+
+      if (realHumans.player.handR && handRingMesh) {
+        const hold = new THREE.Vector3();
+        realHumans.player.handR.getWorldPosition(hold);
+        const pull = state.isCharging ? (state.chargePower / 100) : 0;
+        const flick = state.throwFlickTimer > 0 ? (state.throwFlickTimer / 14) : 0;
+        hold.y += 0.04 - pull * 0.05 + flick * 0.08;
+        hold.z += 0.12 - pull * 0.08;
+        handRingMesh.position.copy(hold);
+        handRingMesh.rotation.set(Math.PI * 0.5, 0, 0);
+      }
+      if (fpsSpareRingMeshes.length && realHumans.player.handL) {
+        const activeSpec = RING_SPECS[state.selectedRingType] || RING_SPECS.plastic;
+        const spareCount = Math.max(0, (state.rings[state.selectedRingType] || 0) - 1);
+        const left = new THREE.Vector3();
+        realHumans.player.handL.getWorldPosition(left);
+        fpsSpareRingMeshes.forEach((mesh, idx) => {
+          mesh.visible = idx < spareCount;
+          mesh.material.color.setHex(activeSpec.hexColor);
+          mesh.scale.setScalar(activeSpec.radiusScale * 0.55);
+          mesh.position.set(left.x, left.y + 0.04 + idx * 0.035, left.z + 0.08);
+        });
+      }
+    }
+
+    function loadRealHumans(onFail) {
+      if (typeof THREE.GLTFLoader !== 'function') {
+        onFail();
+        return;
+      }
+      const loader = new THREE.GLTFLoader();
+      const modelUrl = 'assets/people/suited.glb';
+      const loaded = [];
+      let failed = false;
+      const take = () => {
+        loader.load(modelUrl, (gltf) => {
+          loaded.push(gltf);
+          if (loaded.length < 4 || failed) return;
+          humanClock = new THREE.Clock();
+          npcGroup = new THREE.Group();
+          npcGroup.position.copy(normToWorld3D(0, 1.07, 0));
+          scene.add(npcGroup);
+
+          crowdAuntieGroup = new THREE.Group();
+          crowdAuntieGroup.position.set(-1.85, 0, -10.15);
+          scene.add(crowdAuntieGroup);
+
+          crowdKidGroup = new THREE.Group();
+          crowdKidGroup.position.set(1.95, 0, -10.35);
+          scene.add(crowdKidGroup);
+
+          const playerAnchor = new THREE.Group();
+          playerAnchor.position.set(1.7, 0, 1.35);
+          scene.add(playerAnchor);
+
+          try {
+            realHumans = {
+            owner: mountRealHuman(loaded[0], npcGroup, 0, 1),
+            auntie: mountRealHuman(loaded[1], crowdAuntieGroup, 0.15, 0.96),
+            kid: mountRealHuman(loaded[2], crowdKidGroup, -0.2, 0.62),
+              player: mountRealHuman(loaded[3], playerAnchor, Math.PI, 1)
+            };
+          } catch (err) {
+            console.error(err);
+            onFail();
+          }
+
+        fpsSpareRingMeshes = [];
+        for (let i = 0; i < 4; i++) {
+          const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(0.16, 0.014, 10, 24),
+            new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.35, metalness: 0.2 })
+          );
+          ring.rotation.x = Math.PI * 0.5;
+          scene.add(ring);
+          fpsSpareRingMeshes.push(ring);
+        }
+      }, undefined, () => {
+        if (failed) return;
+        failed = true;
+        onFail();
+      });
+      };
+      take();
+      take();
+      take();
+      take();
+    }
+
     function build3DStallOwnerNpc() {
+      loadRealHumans(buildPrimitiveStallOwner);
+    }
+
+    function buildPrimitiveStallOwner() {
       npcGroup = new THREE.Group();
       const pos = normToWorld3D(0, 1.07, 0);
       npcGroup.position.copy(pos);
@@ -2086,6 +2345,11 @@
       }
 
       const t = state.time;
+      if (state.crowdCheerTimer > 0) state.crowdCheerTimer--;
+      if (realHumans) {
+        updateRealHumans();
+        return;
+      }
 
       // 1. 摊主老王 4 套骨骼姿态插值
       if (npcGroup && npcTorsoGroup && npcLeftArmPivot && npcRightArmPivot) {
@@ -2137,7 +2401,6 @@
       }
 
       // 2. 围观大妈与虎头帽小孩的动态欢呼/看热闹动画
-      if (state.crowdCheerTimer > 0) state.crowdCheerTimer--;
       const isCheering = state.crowdCheerTimer > 0;
 
       if (crowdAuntieGroup && crowdAuntieArmL && crowdAuntieArmR) {
@@ -3241,8 +3504,8 @@
         // 买圈砍价时：平滑推近至摊主老王半身特写机位
         cd.mode = 'shop_npc';
         const npcWorld = normToWorld3D(0, 1.07, 0);
-        targetPos = { x: -0.75, y: 2.45, z: npcWorld.z + 3.45 };
-        targetLook = { x: 0.25, y: 2.05, z: npcWorld.z };
+        targetPos = { x: -0.22, y: 1.62, z: npcWorld.z + 1.05 };
+        targetLook = { x: 0.02, y: 1.58, z: npcWorld.z };
         lerpFactor = 0.09;
       } else if (cd.closeupTimer > 0) {
         // 套中大奖/大白鹅时：3D 慢动作推近环绕特写演出
