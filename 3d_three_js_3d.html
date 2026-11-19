@@ -1408,11 +1408,16 @@
       const wool = new Image();
       wool.onload = () => {
         g.drawImage(wool, 0, 0, 1024, 1024);
+        g.globalCompositeOperation = 'multiply';
+        g.fillStyle = '#3a1e1a';
+        g.fillRect(0, 0, 1024, 1024);
+        g.globalCompositeOperation = 'source-over';
         paintCarpetMarks();
         tex.needsUpdate = true;
       };
       wool.src = 'assets/world/wool-red.jpg';
       const tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding;
       tex.anisotropy = 4;
       return tex;
     }
@@ -3117,7 +3122,7 @@
         map: carpetTex,
         bumpMap: carpetTex,
         bumpScale: 0.02,
-        color: 0x5c3330,
+        color: 0xffffff,
         roughness: 0.94,
         metalness: 0.0
       });
@@ -4322,7 +4327,7 @@
       const plateTex = loadPhotoMap('assets/world/wood-planks.jpg', 1.2, 1.2);
       const pedestalMat = new THREE.MeshStandardMaterial({
         map: plateTex,
-        color: pr.isMovingGoose ? 0x8a6248 : 0xc4a888,
+        color: pr.isMovingGoose ? 0xc4a888 : 0xffffff,
         roughness: 0.84,
         metalness: 0.02
       });
@@ -4341,7 +4346,7 @@
       group.add(pedestal);
       const plateTop = new THREE.Mesh(
         new THREE.CircleGeometry(0.41, 28),
-        new THREE.MeshStandardMaterial({ map: plateTex, color: 0xfff6ea, roughness: 0.78 })
+        new THREE.MeshStandardMaterial({ map: plateTex, color: 0xffffff, roughness: 0.86 })
       );
       plateTop.rotation.x = -Math.PI * 0.5;
       plateTop.position.y = 0.123;
