@@ -1332,6 +1332,38 @@
       return tex;
     }
 
+    function loadCutout(url) {
+      const tex = new THREE.Texture();
+      tex.encoding = THREE.sRGBEncoding;
+      tex.anisotropy = 8;
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const d = image.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const r = d[i];
+          const g = d[i + 1];
+          const b = d[i + 2];
+          if (r > 145 && b > 135 && g < 120 && r - g > 45 && b - g > 35) {
+            d[i + 3] = 0;
+          } else if (r > g + 28 && b > g + 28) {
+            d[i] = Math.min(r, g + 6);
+            d[i + 2] = Math.min(b, g + 6);
+          }
+        }
+        ctx.putImageData(image, 0, 0);
+        tex.image = canvas;
+        tex.needsUpdate = true;
+      };
+      img.src = url;
+      return tex;
+    }
+
     function createSnowPBRTextures() {
       return loadPhotoMap('assets/world/snow-ground.jpg', 8, 8);
     }
@@ -3047,9 +3079,10 @@
         scene.add(strawTarget);
 
         const hawMat = new THREE.MeshStandardMaterial({
-          color: 0x9b1c1c,
-          roughness: 0.28,
-          metalness: 0.04
+          map: loadPhotoMap('assets/world/hawthorn-glaze.jpg', 1, 1),
+          color: 0xffffff,
+          roughness: 0.34,
+          metalness: 0.02
         });
         [-0.48, -0.24, 0.24, 0.48].forEach((ang) => {
           const stickGroup = new THREE.Group();
@@ -3481,31 +3514,28 @@
       barkTex.wrapT = THREE.RepeatWrapping;
       barkTex.encoding = THREE.sRGBEncoding;
       const barkMat = new THREE.MeshStandardMaterial({ map: barkTex, color: 0xffffff, roughness: 0.96 });
-      const pineMat = new THREE.MeshStandardMaterial({ color: 0x14261c, roughness: 0.95 });
+      const twigTex = loadCutout('assets/world/bare-crown.jpg');
+      const needleTex = loadCutout('assets/world/pine-bough.jpg');
+      const twigMat = new THREE.MeshStandardMaterial({
+        map: twigTex,
+        alphaTest: 0.45,
+        roughness: 0.92,
+        metalness: 0,
+        side: THREE.DoubleSide,
+        color: 0xffffff
+      });
+      const needleMat = twigMat.clone();
+      needleMat.map = needleTex;
       function addBareTree(x, z, height) {
         const tree = new THREE.Group();
         tree.position.set(x, 0, z);
-        tree.rotation.z = Math.sin(x * 1.7) * 0.06;
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.16, height * 0.62, 7), barkMat);
-        trunk.position.y = height * 0.31;
-        trunk.castShadow = true;
-        tree.add(trunk);
-        for (let i = 0; i < 5; i++) {
-          const ang = i * 1.25 + x * 0.35;
-          const y = height * (0.38 + i * 0.1);
-          const len = height * (0.34 - i * 0.03);
-          const limb = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.038, len, 5), barkMat);
-          limb.position.set(Math.cos(ang) * 0.04, y, Math.sin(ang) * 0.04);
-          limb.rotation.z = Math.cos(ang) * 0.95;
-          limb.rotation.x = Math.sin(ang) * 0.55;
-          limb.castShadow = true;
-          tree.add(limb);
-          const forkAng = ang + 0.7;
-          const fork = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.016, len * 0.48, 4), barkMat);
-          fork.position.set(Math.cos(ang) * len * 0.32, y + len * 0.22, Math.sin(ang) * len * 0.32);
-          fork.rotation.z = Math.cos(forkAng) * 1.15;
-          fork.rotation.x = Math.sin(forkAng) * 0.4;
-          tree.add(fork);
+        tree.rotation.y = x * 0.4;
+        const h = height * 1.05;
+        for (let k = 0; k < 3; k++) {
+          const card = new THREE.Mesh(new THREE.PlaneGeometry(h * 0.92, h), twigMat);
+          card.position.y = h * 0.45;
+          card.rotation.y = (k * Math.PI) / 3;
+          tree.add(card);
         }
         scene.add(tree);
       }
@@ -3517,21 +3547,26 @@
         [-5.8, -11.5, 3.8],
         [6.1, -11.2, 3.2]
       ].forEach(([x, z, h]) => addBareTree(x, z, h));
-      [[-8.8, -6.4], [8.6, -6.8]].forEach(([tx, tz], idx) => {
+      [[-8.8, -6.4], [8.6, -6.8]].forEach(([tx, tz]) => {
         const tree = new THREE.Group();
         tree.position.set(tx, 0, tz);
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.14, 1.2, 7), barkMat);
-        trunk.position.y = 0.6;
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.12, 0.85, 7), barkMat);
+        trunk.position.y = 0.4;
+        trunk.castShadow = true;
         tree.add(trunk);
-        [0.9, 0.62, 0.38].forEach((r, layer) => {
-          const y = 1.15 + layer * 0.72;
-          const cone = new THREE.Mesh(new THREE.ConeGeometry(r, 0.95, 10), pineMat);
-          cone.position.set(idx ? 0.08 : -0.06, y, 0.04);
-          cone.castShadow = true;
-          tree.add(cone);
-          const cap = new THREE.Mesh(new THREE.ConeGeometry(r * 0.42, 0.16, 8), snowMoundMat);
-          cap.position.set(idx ? 0.08 : -0.06, y + 0.42, 0.04);
-          tree.add(cap);
+        [
+          { y: 0.95, n: 5, size: 1.25, lift: 0.55 },
+          { y: 1.55, n: 4, size: 1.0, lift: 0.4 },
+          { y: 2.1, n: 3, size: 0.72, lift: 0.25 }
+        ].forEach((layer, layerIdx) => {
+          for (let i = 0; i < layer.n; i++) {
+            const ang = layerIdx * 0.4 + (i / layer.n) * Math.PI * 2;
+            const card = new THREE.Mesh(new THREE.PlaneGeometry(layer.size * 1.35, layer.size), needleMat);
+            card.position.set(Math.cos(ang) * 0.08, layer.y, Math.sin(ang) * 0.08);
+            card.rotation.y = ang;
+            card.rotation.x = layer.lift;
+            tree.add(card);
+          }
         });
         scene.add(tree);
       });
@@ -3888,7 +3923,7 @@
         ];
         const base = new THREE.Mesh(
           new THREE.LatheGeometry(rolyProfile, 24),
-          new THREE.MeshStandardMaterial({ map: createPrizeGrain('#a33a32'), color: 0xffffff, roughness: 0.62 })
+          new THREE.MeshStandardMaterial({ map: loadPhotoMap('assets/world/lacquer-red.jpg', 2, 2), color: 0xffffff, roughness: 0.48, metalness: 0.02 })
         );
         base.castShadow = true;
         toyRoot.add(base);
@@ -3980,10 +4015,10 @@
         });
       } else if (id === 'lucky_cat') {
         const goldMat = new THREE.MeshStandardMaterial({
-          map: createPrizeGrain('#c6a15a'),
-          color: 0xffffff,
-          metalness: 0.38,
-          roughness: 0.48
+          map: loadPhotoMap('assets/world/ceramic-ivory.jpg', 2, 2),
+          color: 0xfff6ea,
+          metalness: 0.02,
+          roughness: 0.42
         });
         const catProfile = [
           new THREE.Vector2(0.0, 0.0),
