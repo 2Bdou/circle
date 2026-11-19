@@ -2180,6 +2180,44 @@
       });
     }
 
+    function attachLivingPortrait(model, opts) {
+      // 生成的睁眼肖像：自带光照，不走夜景 PBR，避免再被压成阴脸
+      crushMakeHumanHeadGeometry(model);
+      const loader = new THREE.TextureLoader();
+      loader.load(opts.url, (tex) => {
+        tex.encoding = THREE.sRGBEncoding;
+        tex.anisotropy = 8;
+        const h = opts.height || 0.46;
+        const aspect = opts.aspect || 1;
+        const w = h * aspect;
+        const geo = new THREE.PlaneGeometry(w, h, 8, 1);
+        const pos = geo.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          const x = pos.getX(i);
+          const nx = x / (w * 0.5);
+          pos.setZ(i, (1 - nx * nx) * (opts.curve || 0.02));
+        }
+        pos.needsUpdate = true;
+        const mat = new THREE.MeshBasicMaterial({
+          map: tex,
+          transparent: true,
+          alphaTest: 0.22,
+          side: THREE.DoubleSide,
+          depthWrite: true
+        });
+        const card = new THREE.Mesh(geo, mat);
+        card.name = 'livingPortrait';
+        card.frustumCulled = false;
+        const wrap = new THREE.Group();
+        wrap.name = 'photorealScanHead';
+        wrap.add(card);
+        const p = opts.position || { x: 0, y: 0.26, z: 0.07 };
+        wrap.position.set(p.x, p.y, p.z);
+        wrap.rotation.y = opts.yaw || 0;
+        attachPropToNeck(model, wrap);
+      });
+    }
+
     function dressHenanFarmer(model) {
       model.traverse((obj) => {
         if (!obj.isMesh || !obj.material) return;
@@ -2205,25 +2243,13 @@
           }
         });
       });
-      attachPhotorealScanHead(model, {
-        faceUrl: 'assets/people/lps/farmer_face.jpg?v=10',
-        headHeight: 0.34,
-        position: { x: 0, y: 0.175, z: 0.05 },
+      attachLivingPortrait(model, {
+        url: 'assets/people/portraits/laowang.png?v=3',
+        height: 0.42,
+        aspect: 864 / 748,
+        position: { x: 0, y: 0.22, z: 0.09 },
         yaw: 0,
-        tint: 0xf0c890,
-        morph: 'farmer',
-        scaleXYZ: { x: 1.06, y: 1.03, z: 1.05 },
-        roughness: 0.9,
-        normalStrength: 0.9,
-        onHead: (wrap, headMesh) => {
-          const towelMat = new THREE.MeshStandardMaterial({ color: 0xe8eef7, roughness: 0.9, side: THREE.DoubleSide });
-          const cap = new THREE.Mesh(new THREE.SphereGeometry(4.2, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.45), towelMat);
-          cap.position.set(0, 2.8, -1.6);
-          headMesh.add(cap);
-          const flap = new THREE.Mesh(new THREE.BoxGeometry(1.5, 3.4, 0.5), towelMat);
-          flap.position.set(3.2, 1.4, -1.8);
-          headMesh.add(flap);
-        }
+        backColor: 0xe7eef6
       });
       const scarf = new THREE.Mesh(
         new THREE.TorusGeometry(0.18, 0.05, 10, 20),
@@ -2255,31 +2281,13 @@
           }
         });
       });
-      attachPhotorealScanHead(model, {
-        faceUrl: 'assets/people/lps/auntie_face.jpg?v=10',
-        headHeight: 0.31,
-        position: { x: 0, y: 0.16, z: 0.05 },
-        yaw: 0,
-        tint: 0xffe4d4,
-        morph: 'auntie',
-        scaleXYZ: { x: 1.16, y: 0.86, z: 1.1 },
-        roughness: 0.7,
-        normalStrength: 0.35,
-        onHead: (wrap, headMesh) => {
-          const hairMat = new THREE.MeshStandardMaterial({ color: 0x14100c, roughness: 0.72, side: THREE.DoubleSide });
-          const scalp = new THREE.Mesh(new THREE.SphereGeometry(4.6, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.5), hairMat);
-          scalp.position.set(0, 2.6, -1.8);
-          headMesh.add(scalp);
-          const bun = new THREE.Mesh(new THREE.SphereGeometry(2.1, 14, 12), hairMat);
-          bun.position.set(0, 2.0, -4.2);
-          headMesh.add(bun);
-          const sideL = new THREE.Mesh(new THREE.SphereGeometry(2.2, 12, 10), hairMat);
-          sideL.scale.set(0.7, 1.45, 1.0);
-          sideL.position.set(-3.6, 0.4, -1.4);
-          const sideR = sideL.clone();
-          sideR.position.x = 3.6;
-          headMesh.add(sideL, sideR);
-        }
+      attachLivingPortrait(model, {
+        url: 'assets/people/portraits/auntie.png?v=3',
+        height: 0.4,
+        aspect: 864 / 707,
+        position: { x: 0, y: 0.2, z: 0.09 },
+        yaw: -0.42,
+        backColor: 0x1a1410
       });
     }
 
@@ -2303,33 +2311,13 @@
           }
         });
       });
-      attachPhotorealScanHead(model, {
-        faceUrl: 'assets/people/lps/kid_face.jpg?v=10',
-        headHeight: 0.4,
-        position: { x: 0, y: 0.15, z: 0.045 },
-        yaw: 0,
-        tint: 0xffd4b8,
-        morph: 'kid',
-        scaleXYZ: { x: 1.22, y: 1.1, z: 1.2 },
-        roughness: 0.68,
-        normalStrength: 0.22,
-        onHead: (wrap, headMesh) => {
-          const hatMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.7, side: THREE.DoubleSide });
-          const crown = new THREE.Mesh(new THREE.SphereGeometry(4.8, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.48), hatMat);
-          crown.position.set(0, 2.9, -1.5);
-          headMesh.add(crown);
-          const earL = new THREE.Mesh(new THREE.SphereGeometry(1.9, 12, 10), hatMat);
-          earL.position.set(-4.2, 0.2, -1.5);
-          const earR = earL.clone();
-          earR.position.x = 4.2;
-          headMesh.add(earL, earR);
-          const pom = new THREE.Mesh(
-            new THREE.SphereGeometry(1.15, 10, 8),
-            new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.9 })
-          );
-          pom.position.set(0, 5.0, -1.4);
-          headMesh.add(pom);
-        }
+      attachLivingPortrait(model, {
+        url: 'assets/people/portraits/kid.png?v=3',
+        height: 0.48,
+        aspect: 864 / 811,
+        position: { x: 0, y: 0.24, z: 0.09 },
+        yaw: 0.55,
+        backColor: 0xf59e0b
       });
     }
 
