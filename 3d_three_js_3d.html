@@ -2901,19 +2901,21 @@
       const snowGroundMat = new THREE.MeshStandardMaterial({
         map: snowTex,
         bumpMap: snowTex,
-        bumpScale: 0.05,
-        color: 0xc5d0da,
-        roughness: 0.86,
-        metalness: 0.05
+        bumpScale: 0.08,
+        color: 0x84929e,
+        roughness: 0.94,
+        metalness: 0.0
       });
-      const snowGroundGeo = new THREE.PlaneGeometry(96, 96, 48, 48);
+      const snowGroundGeo = new THREE.PlaneGeometry(96, 96, 64, 64);
       const snowPos = snowGroundGeo.attributes.position;
       for (let i = 0; i < snowPos.count; i++) {
         const x = snowPos.getX(i);
         const y = snowPos.getY(i);
-        const h = Math.sin(x * 0.31) * Math.cos(y * 0.27) * 0.07
-          + Math.sin(x * 1.3 + y * 0.8) * 0.025;
-        snowPos.setZ(i, h);
+        // 摊子脚下踩实，四周才鼓起雪包
+        const packed = Math.exp(-(x * x) / 30 - ((y - 5.1) * (y - 5.1)) / 38);
+        const h = (Math.sin(x * 0.23) * Math.cos(y * 0.19) * 0.16
+          + Math.sin(x * 0.85 + y * 0.55) * 0.05) * (1 - 0.82 * packed);
+        snowPos.setZ(i, h - packed * 0.02);
       }
       snowGroundGeo.computeVertexNormals();
       const snowGround = new THREE.Mesh(snowGroundGeo, snowGroundMat);
@@ -2927,8 +2929,9 @@
         map: snowTex,
         bumpMap: snowTex,
         bumpScale: 0.04,
-        color: 0xd5dee6,
-        roughness: 0.85
+        color: 0xb7c3cc,
+        roughness: 0.92,
+        side: THREE.DoubleSide
       });
       [
         { x: -7.5, z: -2.5, sx: 2.2, sy: 0.45, sz: 1.8 },
@@ -2970,24 +2973,31 @@
       scene.add(carpetMesh);
 
       // 近端红白警戒木桩与麻绳
-      const poleMat = new THREE.MeshStandardMaterial({ color: 0x7f2a24, roughness: 0.78, metalness: 0.04 });
       const goldCapMat = new THREE.MeshStandardMaterial({ color: 0xb08950, metalness: 0.32, roughness: 0.58 });
+      const postWood = new THREE.MeshStandardMaterial({
+        map: loadPhotoMap('assets/world/wood-planks.jpg', 1, 3),
+        color: 0xc4b49a,
+        roughness: 0.9
+      });
       [-STALL_HALF_W - 0.35, STALL_HALF_W + 0.35].forEach((px) => {
-        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.92, 16), poleMat);
-        post.position.set(px, 0.46, 0.18);
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.96, 12), postWood);
+        post.position.set(px, 0.48, 0.18);
         post.castShadow = true;
         scene.add(post);
-
-        const capBall = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 16), goldCapMat);
-        capBall.position.set(px, 0.96, 0.18);
-        scene.add(capBall);
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.05, 12), postWood);
+        cap.position.set(px, 0.98, 0.18);
+        scene.add(cap);
       });
+      const ropeCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-STALL_HALF_W - 0.35, 0.82, 0.18),
+        new THREE.Vector3(0, 0.58, 0.22),
+        new THREE.Vector3(STALL_HALF_W + 0.35, 0.82, 0.18)
+      ]);
       const ropeMesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.035, 0.035, (STALL_HALF_W + 0.35) * 2, 16),
-        new THREE.MeshStandardMaterial({ color: 0xc4b08a, roughness: 0.92 })
+        new THREE.TubeGeometry(ropeCurve, 24, 0.016, 7, false),
+        new THREE.MeshStandardMaterial({ color: 0x8d7348, roughness: 0.96 })
       );
-      ropeMesh.rotation.z = Math.PI * 0.5;
-      ropeMesh.position.set(0, 0.70, 0.18);
+      ropeMesh.castShadow = true;
       scene.add(ropeMesh);
 
       // 3. 北方民俗飞檐牌坊门头 + 竖幅春联 + 16 根高透光 3D 冰溜子 + 3D 冰糖葫芦草靶
@@ -3037,9 +3047,9 @@
         scene.add(strawTarget);
 
         const hawMat = new THREE.MeshStandardMaterial({
-          color: 0xdc2626,
-          roughness: 0.58,
-          metalness: 0.02
+          color: 0x9b1c1c,
+          roughness: 0.28,
+          metalness: 0.04
         });
         [-0.48, -0.24, 0.24, 0.48].forEach((ang) => {
           const stickGroup = new THREE.Group();
@@ -3269,7 +3279,8 @@
         bumpMap: roofTileTex,
         bumpScale: 0.12,
         roughness: 0.88,
-        color: 0xffffff
+        color: 0xffffff,
+        side: THREE.DoubleSide
       });
       const woodMat = new THREE.MeshStandardMaterial({
         map: woodTex,
@@ -3287,117 +3298,153 @@
         const hGroup = new THREE.Group();
         hGroup.position.set(cfg.x, 0, cfg.z);
         hGroup.rotation.y = cfg.ry;
+        const stoneMat = new THREE.MeshStandardMaterial({ color: 0x6a645e, roughness: 0.96 });
+        const wallBase = 0.24;
+        const wallH = cfg.h;
+        const wallTop = wallBase + wallH;
+        const t = 0.2;
+        const rise = cfg.d * 0.34;
 
-        const foundation = new THREE.Mesh(
-          new THREE.BoxGeometry(cfg.w * 1.06, 0.28, cfg.d * 1.06),
-          new THREE.MeshStandardMaterial({ color: 0x57534e, roughness: 0.95 })
-        );
-        foundation.position.y = 0.14;
-        foundation.receiveShadow = true;
-        hGroup.add(foundation);
+        function addBox(w, h, d, x, y, z, mat) {
+          const mesh = new THREE.Mesh(
+            new THREE.BoxGeometry(Math.max(w, 0.02), Math.max(h, 0.02), Math.max(d, 0.02)),
+            mat
+          );
+          mesh.position.set(x, y, z);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          hGroup.add(mesh);
+          return mesh;
+        }
 
-        const wall = new THREE.Mesh(new THREE.BoxGeometry(cfg.w, cfg.h, cfg.d), houseMat);
-        wall.position.y = cfg.h * 0.5 + 0.2;
-        wall.castShadow = true;
-        wall.receiveShadow = true;
-        hGroup.add(wall);
+        addBox(cfg.w * 1.1, 0.26, cfg.d * 1.12, 0, 0.13, 0, stoneMat);
+        addBox(cfg.w - t, wallH, t, 0, wallBase + wallH * 0.5, -cfg.d * 0.5 + t * 0.5, houseMat);
+        addBox(t, wallH, cfg.d, -cfg.w * 0.5 + t * 0.5, wallBase + wallH * 0.5, 0, houseMat);
+        addBox(t, wallH, cfg.d, cfg.w * 0.5 - t * 0.5, wallBase + wallH * 0.5, 0, houseMat);
 
-        // 侧厢短墙，增加宅院厚度
-        const wing = new THREE.Mesh(new THREE.BoxGeometry(cfg.w * 0.42, cfg.h * 0.82, cfg.d * 0.55), houseMat);
-        wing.position.set(cfg.w * 0.55, cfg.h * 0.45 + 0.2, -cfg.d * 0.05);
-        wing.castShadow = true;
-        hGroup.add(wing);
-
-        // 硬山灰瓦屋顶：主坡 + 屋脊 + 前后檐口
-        const roofW = cfg.w * 1.18;
-        const roofD = cfg.d * 1.22;
-        const slopeL = new THREE.Mesh(new THREE.BoxGeometry(roofW, 0.14, roofD * 0.6), roofMat);
-        slopeL.position.set(0, cfg.h + 0.55, -roofD * 0.18);
-        slopeL.rotation.x = 0.42;
-        slopeL.castShadow = true;
-        hGroup.add(slopeL);
-        const slopeR = slopeL.clone();
-        slopeR.position.z = roofD * 0.18;
-        slopeR.rotation.x = -0.42;
-        hGroup.add(slopeR);
-        const snowL = new THREE.Mesh(new THREE.BoxGeometry(roofW * 0.98, 0.07, roofD * 0.52), snowMoundMat);
-        snowL.position.set(0, cfg.h + 0.66, -roofD * 0.18);
-        snowL.rotation.x = 0.42;
-        hGroup.add(snowL);
-        const snowR = snowL.clone();
-        snowR.position.z = roofD * 0.18;
-        snowR.rotation.x = -0.42;
-        hGroup.add(snowR);
-        const ridge = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, roofW * 0.94, 12), roofMat);
-        ridge.rotation.z = Math.PI * 0.5;
-        ridge.position.y = cfg.h + 0.95;
-        hGroup.add(ridge);
-        const eaveFront = new THREE.Mesh(new THREE.BoxGeometry(roofW * 0.98, 0.08, 0.28), woodMat);
-        eaveFront.position.set(0, cfg.h + 0.42, cfg.d * 0.52);
-        hGroup.add(eaveFront);
-        const snowCap = new THREE.Mesh(new THREE.BoxGeometry(roofW * 0.92, 0.1, 0.4), snowMoundMat);
-        snowCap.position.y = cfg.h + 1.02;
-        hGroup.add(snowCap);
-
-        // 木门与窗棂
-        const door = new THREE.Mesh(new THREE.BoxGeometry(0.72, 1.45, 0.08), woodMat);
-        door.position.set(0, 0.92, cfg.d * 0.5 + 0.04);
-        hGroup.add(door);
-        const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.62, 0.06), woodMat);
-        doorFrame.position.set(0, 1.0, cfg.d * 0.5 + 0.02);
-        hGroup.add(doorFrame);
-
-        [-cfg.w * 0.28, cfg.w * 0.28].forEach((wx) => {
-          const frame = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.78, 0.06), woodMat);
-          frame.position.set(wx, cfg.h * 0.58 + 0.2, cfg.d * 0.5 + 0.03);
-          hGroup.add(frame);
-          const pane = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.55), windowGlowMat);
-          pane.position.set(wx, cfg.h * 0.58 + 0.2, cfg.d * 0.5 + 0.07);
-          hGroup.add(pane);
-          for (let i = -1; i <= 1; i++) {
-            const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.55, 0.04), woodMat);
-            mullion.position.set(wx + i * 0.18, cfg.h * 0.58 + 0.2, cfg.d * 0.5 + 0.06);
-            hGroup.add(mullion);
+        // 前檐拆成墙垛，门窗是凹进去的洞，不再贴在整面盒子上
+        const doorW = 0.74;
+        const winW = 0.7;
+        const pier = 0.26;
+        const sideW = (cfg.w - doorW - winW * 2 - pier * 2) / 2;
+        const cols = [sideW, winW, pier, doorW, pier, winW, sideW];
+        const kinds = ['wall', 'win', 'wall', 'door', 'wall', 'win', 'wall'];
+        const fz = cfg.d * 0.5 - t * 0.5;
+        const winBottom = 1.02;
+        const winTop = 1.74;
+        const doorTop = 1.6;
+        let cursorX = -cfg.w / 2;
+        cols.forEach((cw, i) => {
+          const cx = cursorX + cw / 2;
+          cursorX += cw;
+          if (kinds[i] === 'wall') {
+            addBox(cw, wallH, t, cx, wallBase + wallH * 0.5, fz, houseMat);
+            return;
           }
+          if (kinds[i] === 'win') {
+            addBox(cw, winBottom, t, cx, wallBase + winBottom * 0.5, fz, houseMat);
+            const above = wallH - winTop;
+            addBox(cw, above, t, cx, wallBase + winTop + above * 0.5, fz, houseMat);
+            const winH = winTop - winBottom;
+            const pane = new THREE.Mesh(new THREE.PlaneGeometry(cw - 0.12, winH - 0.1), windowGlowMat);
+            pane.position.set(cx, wallBase + (winBottom + winTop) * 0.5, fz - 0.08);
+            hGroup.add(pane);
+            addBox(cw + 0.04, 0.06, 0.07, cx, wallBase + winTop, fz + 0.05, woodMat);
+            addBox(cw + 0.04, 0.06, 0.07, cx, wallBase + winBottom, fz + 0.05, woodMat);
+            [-cw / 2, cw / 2].forEach((jx) => {
+              addBox(0.05, winH, 0.07, cx + jx, wallBase + (winBottom + winTop) * 0.5, fz + 0.05, woodMat);
+            });
+            [-0.16, 0.16].forEach((mx) => {
+              addBox(0.035, winH - 0.08, 0.04, cx + mx, wallBase + (winBottom + winTop) * 0.5, fz + 0.02, woodMat);
+            });
+            return;
+          }
+          const headH = wallH - doorTop;
+          addBox(cw, headH, t, cx, wallBase + doorTop + headH * 0.5, fz, houseMat);
+          addBox(cw - 0.1, doorTop - 0.06, 0.05, cx, wallBase + (doorTop - 0.06) * 0.5, fz - 0.1, woodMat);
+          [-cw / 2, cw / 2].forEach((jx) => {
+            addBox(0.07, doorTop, 0.1, cx + jx, wallBase + doorTop * 0.5, fz + 0.02, woodMat);
+          });
+          addBox(cw + 0.16, 0.08, 0.12, cx, wallBase + doorTop, fz + 0.04, woodMat);
         });
-        // 山墙侧窗
-        const sidePane = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.5), windowGlowMat);
-        sidePane.position.set(-cfg.w * 0.5 - 0.02, cfg.h * 0.55 + 0.2, 0);
-        sidePane.rotation.y = Math.PI * 0.5;
-        hGroup.add(sidePane);
+        addBox(doorW + 0.36, 0.08, 0.32, 0, 0.08, cfg.d * 0.5 + 0.16, stoneMat);
 
-        // 院墙矮段
-        if (cfg.yard) {
-          const yard = new THREE.Mesh(new THREE.BoxGeometry(cfg.w * 1.35, 0.95, 0.22), houseMat);
-          yard.position.set(0, 0.48, cfg.d * 0.5 + 1.15);
-          yard.castShadow = true;
-          hGroup.add(yard);
-          const gate = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.15, 0.12), woodMat);
-          gate.position.set(0, 0.58, cfg.d * 0.5 + 1.2);
-          hGroup.add(gate);
-        }
-
-        // 烟囱
-        const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.7, 0.28), houseMat);
-        chimney.position.set(cfg.w * 0.28, cfg.h + 0.95, -cfg.d * 0.1);
-        hGroup.add(chimney);
-
-        // 墙角木柱、檐下椽头、墙根积雪，把盒子墙拆成宅院
+        // 两侧山墙三角，把坡顶接到墙上
         [-1, 1].forEach((sx) => {
-          const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, cfg.h * 0.96, 0.1), woodMat);
-          post.position.set(sx * (cfg.w * 0.5 - 0.04), cfg.h * 0.48 + 0.2, cfg.d * 0.5 + 0.02);
-          hGroup.add(post);
+          const shape = new THREE.Shape();
+          const hd = cfg.d * 0.5;
+          shape.moveTo(-hd, 0);
+          shape.lineTo(hd, 0);
+          shape.lineTo(0, rise);
+          shape.closePath();
+          const gable = new THREE.Mesh(
+            new THREE.ExtrudeGeometry(shape, { depth: t, bevelEnabled: false }),
+            houseMat
+          );
+          gable.rotation.y = Math.PI * 0.5;
+          gable.position.set(sx > 0 ? cfg.w * 0.5 - t : -cfg.w * 0.5, wallTop, 0);
+          gable.castShadow = true;
+          gable.receiveShadow = true;
+          hGroup.add(gable);
         });
-        for (let i = -3; i <= 3; i++) {
-          const rafter = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.48), woodMat);
-          rafter.position.set((i / 3) * cfg.w * 0.42, cfg.h + 0.34, cfg.d * 0.62);
-          rafter.rotation.x = 0.28;
-          hGroup.add(rafter);
+
+        const hw = cfg.w * 0.5 + 0.28;
+        const hd = cfg.d * 0.5 + 0.26;
+        const y0 = wallTop + 0.02;
+        const yR = wallTop + rise;
+        function addSlope(pts, mat, lift) {
+          const order = [0, 1, 2, 0, 2, 3];
+          const positions = [];
+          const uvs = [[0, 0], [2.2, 0], [2.2, 1.4], [0, 1.4]];
+          const uvOut = [];
+          order.forEach((idx) => {
+            positions.push(pts[idx][0], pts[idx][1] + lift, pts[idx][2]);
+            uvOut.push(uvs[idx][0], uvs[idx][1]);
+          });
+          const geo = new THREE.BufferGeometry();
+          geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+          geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvOut, 2));
+          geo.computeVertexNormals();
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          hGroup.add(mesh);
         }
-        const drift = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 8), snowMoundMat);
-        drift.scale.set(cfg.w * 0.48, 0.18, 0.38);
-        drift.position.set(0.2, 0.02, cfg.d * 0.58);
+        const front = [[-hw, y0, hd], [hw, y0, hd], [hw, yR, 0], [-hw, yR, 0]];
+        const back = [[hw, y0, -hd], [-hw, y0, -hd], [-hw, yR, 0], [hw, yR, 0]];
+        addSlope(front, roofMat, 0);
+        addSlope(back, roofMat, 0);
+        const snowFront = front.map((p, i) => i < 2 ? [p[0] * 0.96, y0 + rise * 0.22, hd * 0.78] : [p[0] * 0.96, yR + 0.02, 0]);
+        const snowBack = back.map((p, i) => i < 2 ? [p[0] * 0.96, y0 + rise * 0.22, -hd * 0.78] : [p[0] * 0.96, yR + 0.02, 0]);
+        addSlope(snowFront, snowMoundMat, 0.03);
+        addSlope(snowBack, snowMoundMat, 0.03);
+        addBox(cfg.w * 0.92, 0.1, 0.16, 0, yR + 0.04, 0, roofMat);
+
+        addBox(0.32, 0.85, 0.32, cfg.w * 0.24, yR + 0.12, -cfg.d * 0.2, houseMat);
+        for (let i = -4; i <= 4; i++) {
+          const rafter = addBox(0.04, 0.045, 0.46, (i / 4) * cfg.w * 0.42, wallTop + 0.06, cfg.d * 0.5 + 0.16, woodMat);
+          rafter.rotation.x = 0.42;
+        }
+        const drift = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), snowMoundMat);
+        drift.scale.set(cfg.w * 0.4, 0.1, 0.26);
+        drift.position.set(0.15, 0.02, cfg.d * 0.5 + 0.2);
         hGroup.add(drift);
+
+        const roomD = cfg.d * 0.34;
+        const roomH = wallH * 0.68;
+        const roomZ = -cfg.d * 0.5 - roomD * 0.45;
+        addBox(cfg.w * 0.58, roomH, roomD, -cfg.w * 0.08, wallBase + roomH * 0.5, roomZ, houseMat);
+        const shed = addBox(cfg.w * 0.64, 0.08, roomD + 0.2, -cfg.w * 0.08, wallBase + roomH + 0.06, roomZ, roofMat);
+        shed.rotation.x = -0.16;
+
+        if (cfg.yard) {
+          const yardZ = cfg.d * 0.5 + 1.35;
+          addBox(cfg.w * 0.42, 1.05, 0.18, -cfg.w * 0.38, 0.52, yardZ, houseMat);
+          addBox(cfg.w * 0.42, 1.05, 0.18, cfg.w * 0.38, 0.52, yardZ, houseMat);
+          addBox(0.86, 1.25, 0.08, 0, 0.62, yardZ, woodMat);
+          addBox(cfg.w * 0.46, 0.08, 0.28, -cfg.w * 0.38, 1.08, yardZ, roofMat);
+          addBox(cfg.w * 0.46, 0.08, 0.28, cfg.w * 0.38, 1.08, yardZ, roofMat);
+        }
 
         const glow = new THREE.PointLight(0xfbbf24, 0.45, 6.5);
         glow.position.set(0, cfg.h * 0.55, cfg.d * 0.35);
@@ -3414,32 +3461,52 @@
       ].forEach(buildRealisticFarmHouse);
 
       // 河南冬夜以落叶枯枝为主，只留两棵压暗的松
-      const barkMat = new THREE.MeshStandardMaterial({ color: 0x3d3128, roughness: 0.96 });
-      const pineMat = new THREE.MeshStandardMaterial({ color: 0x1a3324, roughness: 0.95 });
+      const barkCanvas = document.createElement('canvas');
+      barkCanvas.width = 128;
+      barkCanvas.height = 256;
+      const barkG = barkCanvas.getContext('2d');
+      barkG.fillStyle = '#2a221c';
+      barkG.fillRect(0, 0, 128, 256);
+      for (let i = 0; i < 36; i++) {
+        barkG.strokeStyle = i % 2 ? 'rgba(78,60,44,0.7)' : 'rgba(10,7,5,0.65)';
+        barkG.lineWidth = 1 + (i % 3);
+        barkG.beginPath();
+        const bx = (i * 3.7) % 128;
+        barkG.moveTo(bx, 0);
+        barkG.bezierCurveTo(bx + 7, 70, bx - 6, 150, bx + 2, 256);
+        barkG.stroke();
+      }
+      const barkTex = new THREE.CanvasTexture(barkCanvas);
+      barkTex.wrapS = THREE.RepeatWrapping;
+      barkTex.wrapT = THREE.RepeatWrapping;
+      barkTex.encoding = THREE.sRGBEncoding;
+      const barkMat = new THREE.MeshStandardMaterial({ map: barkTex, color: 0xffffff, roughness: 0.96 });
+      const pineMat = new THREE.MeshStandardMaterial({ color: 0x14261c, roughness: 0.95 });
       function addBareTree(x, z, height) {
         const tree = new THREE.Group();
         tree.position.set(x, 0, z);
-        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.1, height, 6), barkMat);
-        trunk.position.y = height * 0.5;
+        tree.rotation.z = Math.sin(x * 1.7) * 0.06;
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.16, height * 0.62, 7), barkMat);
+        trunk.position.y = height * 0.31;
         trunk.castShadow = true;
         tree.add(trunk);
-        for (let i = 0; i < 8; i++) {
-          const len = 0.55 + (i % 3) * 0.22;
-          const branch = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.026, len, 4), barkMat);
-          const ang = i * 0.9 + x * 0.2;
-          const y = height * 0.42 + i * height * 0.065;
-          branch.position.set(Math.cos(ang) * 0.16, y, Math.sin(ang) * 0.16);
-          branch.rotation.z = Math.cos(ang) * 1.05;
-          branch.rotation.x = Math.sin(ang) * 0.45;
-          tree.add(branch);
-          const twig = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.012, len * 0.5, 3), barkMat);
-          twig.position.set(Math.cos(ang) * 0.38, y + 0.16, Math.sin(ang) * 0.38);
-          twig.rotation.z = Math.cos(ang) * 1.35;
-          tree.add(twig);
+        for (let i = 0; i < 5; i++) {
+          const ang = i * 1.25 + x * 0.35;
+          const y = height * (0.38 + i * 0.1);
+          const len = height * (0.34 - i * 0.03);
+          const limb = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.038, len, 5), barkMat);
+          limb.position.set(Math.cos(ang) * 0.04, y, Math.sin(ang) * 0.04);
+          limb.rotation.z = Math.cos(ang) * 0.95;
+          limb.rotation.x = Math.sin(ang) * 0.55;
+          limb.castShadow = true;
+          tree.add(limb);
+          const forkAng = ang + 0.7;
+          const fork = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.016, len * 0.48, 4), barkMat);
+          fork.position.set(Math.cos(ang) * len * 0.32, y + len * 0.22, Math.sin(ang) * len * 0.32);
+          fork.rotation.z = Math.cos(forkAng) * 1.15;
+          fork.rotation.x = Math.sin(forkAng) * 0.4;
+          tree.add(fork);
         }
-        const cap = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 4), snowMoundMat);
-        cap.position.y = height + 0.02;
-        tree.add(cap);
         scene.add(tree);
       }
       [
@@ -3457,13 +3524,14 @@
         trunk.position.y = 0.6;
         tree.add(trunk);
         [0.9, 0.62, 0.38].forEach((r, layer) => {
-          const cone = new THREE.Mesh(
-            new THREE.ConeGeometry(r, 0.95, 10),
-            pineMat
-          );
-          cone.position.set((idx ? 0.08 : -0.06), 1.15 + layer * 0.72, 0.04);
+          const y = 1.15 + layer * 0.72;
+          const cone = new THREE.Mesh(new THREE.ConeGeometry(r, 0.95, 10), pineMat);
+          cone.position.set(idx ? 0.08 : -0.06, y, 0.04);
           cone.castShadow = true;
           tree.add(cone);
+          const cap = new THREE.Mesh(new THREE.ConeGeometry(r * 0.42, 0.16, 8), snowMoundMat);
+          cap.position.set(idx ? 0.08 : -0.06, y + 0.42, 0.04);
+          tree.add(cap);
         });
         scene.add(tree);
       });
