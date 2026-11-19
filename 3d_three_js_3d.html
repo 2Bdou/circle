@@ -1375,55 +1375,36 @@
       c.height = 1024;
       const g = c.getContext('2d');
 
-      const grad = g.createLinearGradient(0, 0, 0, 1024);
-      grad.addColorStop(0, '#6a2420');
-      grad.addColorStop(0.5, '#7a2c26');
-      grad.addColorStop(1, '#5c1f1c');
-      g.fillStyle = grad;
+      function paintCarpetMarks() {
+        g.strokeStyle = 'rgba(70, 32, 24, 0.55)';
+        g.lineWidth = 10;
+        g.strokeRect(28, 28, 968, 968);
+        const rowLabels = ['1.5m 近排冻货区', '2.8m 中排铁皮区', '4.2m 远排大奖区', '5.2m 镇摊白鹅轨'];
+        [0.24, 0.48, 0.72, 0.90].forEach((rz, idx) => {
+          const y = (1 - rz) * 1024;
+          g.strokeStyle = idx === 3 ? 'rgba(196, 154, 74, 0.55)' : 'rgba(90, 48, 28, 0.28)';
+          g.lineWidth = idx === 3 ? 4 : 2;
+          g.setLineDash([18, 16]);
+          g.beginPath();
+          g.moveTo(54, y);
+          g.lineTo(970, y);
+          g.stroke();
+          g.setLineDash([]);
+          g.fillStyle = 'rgba(70, 36, 24, 0.55)';
+          g.font = 'bold 22px "Noto Sans SC", sans-serif';
+          g.fillText(rowLabels[idx], 70, y - 10);
+        });
+      }
+      g.fillStyle = '#6a2420';
       g.fillRect(0, 0, 1024, 1024);
-
-      // 经纬毛毡织物纹理
-      g.strokeStyle = 'rgba(255, 220, 180, 0.04)';
-      g.lineWidth = 2;
-      for (let i = 0; i < 1024; i += 6) {
-        g.beginPath();
-        g.moveTo(0, i);
-        g.lineTo(1024, i);
-        g.stroke();
-      }
-      for (let j = 0; j < 1024; j += 8) {
-        g.beginPath();
-        g.moveTo(j, 0);
-        g.lineTo(j, 1024);
-        g.stroke();
-      }
-
-      // 烫金双层国风回纹边框与四角祥云
-      g.strokeStyle = 'rgba(120, 78, 36, 0.55)';
-      g.lineWidth = 8;
-      g.strokeRect(24, 24, 976, 976);
-      g.strokeStyle = 'rgba(90, 52, 28, 0.35)';
-      g.lineWidth = 3;
-      g.strokeRect(46, 46, 932, 932);
-
-      // 4 排奖品距离金色刻度横线与档位文字
-      const rowLabels = ['1.5m 近排冻货区', '2.8m 中排铁皮区', '4.2m 远排大奖区', '5.2m 镇摊白鹅轨'];
-      [0.24, 0.48, 0.72, 0.90].forEach((rz, idx) => {
-        const y = (1 - rz) * 1024;
-        g.strokeStyle = idx === 3 ? 'rgba(196, 154, 74, 0.7)' : 'rgba(140, 96, 42, 0.35)';
-        g.lineWidth = idx === 3 ? 5 : 2;
-        g.setLineDash([22, 14]);
-        g.beginPath();
-        g.moveTo(54, y);
-        g.lineTo(970, y);
-        g.stroke();
-        g.setLineDash([]);
-
-        g.fillStyle = 'rgba(90, 48, 32, 0.72)';
-        g.font = 'bold 24px "Noto Sans SC", sans-serif';
-        g.fillText(rowLabels[idx], 70, y - 10);
-      });
-
+      paintCarpetMarks();
+      const wool = new Image();
+      wool.onload = () => {
+        g.drawImage(wool, 0, 0, 1024, 1024);
+        paintCarpetMarks();
+        tex.needsUpdate = true;
+      };
+      wool.src = 'assets/world/wool-red.jpg';
       const tex = new THREE.CanvasTexture(c);
       tex.anisotropy = 4;
       return tex;
@@ -2156,16 +2137,9 @@
         tex.encoding = THREE.sRGBEncoding;
         tex.anisotropy = 8;
         const h = opts.height || 0.46;
-        const aspect = opts.aspect || 1;
-        const w = h * aspect;
-        const geo = new THREE.PlaneGeometry(w, h, 8, 1);
-        const pos = geo.attributes.position;
-        for (let i = 0; i < pos.count; i++) {
-          const x = pos.getX(i);
-          const nx = x / (w * 0.5);
-          pos.setZ(i, (1 - nx * nx) * (opts.curve || 0.02));
-        }
-        pos.needsUpdate = true;
+        const radius = h * 0.5;
+        const arc = 2.3;
+        const geo = new THREE.CylinderGeometry(radius, radius * 0.9, h, 32, 1, true, -arc / 2, arc);
         const mat = new THREE.MeshStandardMaterial({
           map: tex,
           emissiveMap: tex,
@@ -2175,7 +2149,7 @@
           metalness: 0.0,
           transparent: true,
           alphaTest: 0.22,
-          side: THREE.DoubleSide,
+          side: THREE.FrontSide,
           depthWrite: true
         });
         const card = new THREE.Mesh(geo, mat);
@@ -2186,7 +2160,7 @@
         wrap.name = 'photorealScanHead';
         wrap.add(card);
         const p = opts.position || { x: 0, y: 0.26, z: 0.07 };
-        wrap.position.set(p.x, p.y, p.z);
+        wrap.position.set(p.x, p.y, p.z - radius + 0.04);
         wrap.rotation.y = opts.yaw || 0;
         attachPropToNeck(model, wrap);
       });
@@ -2219,8 +2193,7 @@
         aspect: 864 / 748,
         position: { x: 0, y: 0.1, z: 0.07 },
         yaw: 0,
-        skull: 0.13,
-        skullColor: 0xc49a7c
+        capColor: 0xe4ddd2
       });
     }
 
@@ -2249,8 +2222,7 @@
         aspect: 864 / 707,
         position: { x: 0, y: 0.14, z: 0.07 },
         yaw: -0.42,
-        skull: 0.125,
-        skullColor: 0xd0a48c
+        capColor: 0x1c1412
       });
     }
 
@@ -2279,8 +2251,7 @@
         aspect: 864 / 811,
         position: { x: 0, y: 0.12, z: 0.07 },
         yaw: 0.55,
-        skull: 0.14,
-        skullColor: 0xe0b090
+        capColor: 0xe0b034
       });
     }
 
@@ -2995,7 +2966,7 @@
         map: carpetTex,
         bumpMap: carpetTex,
         bumpScale: 0.02,
-        color: 0x8a5550,
+        color: 0xffffff,
         roughness: 0.9,
         metalness: 0.0
       });
@@ -3138,12 +3109,25 @@
       // 4 盏随北风三维摆动的 3D 大红灯笼 + 暖光点光源
       lanternPivots = [];
       lanternLights = [];
+      const lanternSilk = loadPhotoMap('assets/world/lantern-silk.jpg', 2, 1);
       const lanternBodyMat = new THREE.MeshStandardMaterial({
-        color: 0xc2413a,
-        emissive: 0xf97316,
-        emissiveIntensity: 0.38,
-        roughness: 0.58
+        map: lanternSilk,
+        color: 0xffffff,
+        emissive: 0xff7a3c,
+        emissiveMap: lanternSilk,
+        emissiveIntensity: 0.32,
+        roughness: 0.55,
+        side: THREE.DoubleSide
       });
+      const lanternGeo = new THREE.LatheGeometry([
+        new THREE.Vector2(0.1, 0),
+        new THREE.Vector2(0.26, 0.08),
+        new THREE.Vector2(0.38, 0.22),
+        new THREE.Vector2(0.4, 0.36),
+        new THREE.Vector2(0.32, 0.5),
+        new THREE.Vector2(0.16, 0.6),
+        new THREE.Vector2(0.1, 0.64)
+      ], 28);
 
       for (let i = 0; i < 4; i++) {
         const lx = -archHalfX + ((i + 0.5) / 4) * (archHalfX * 2);
@@ -3154,19 +3138,15 @@
         cord.position.y = -0.17;
         pivot.add(cord);
 
-        const lanternSphere = new THREE.Mesh(new THREE.SphereGeometry(0.39, 22, 18), lanternBodyMat);
-        lanternSphere.scale.set(1.16, 0.88, 1.16);
-        lanternSphere.position.y = -0.52;
-        pivot.add(lanternSphere);
-
-        // 灯笼金色竖向骨架条
-        for (let rib = 0; rib < 4; rib++) {
-          const ribRing = new THREE.Mesh(new THREE.TorusGeometry(0.39, 0.012, 8, 24), goldCapMat);
-          ribRing.rotation.y = (rib / 4) * Math.PI;
-          ribRing.scale.set(1.16, 0.88, 1.16);
-          ribRing.position.y = -0.52;
-          pivot.add(ribRing);
-        }
+        const lanternBody = new THREE.Mesh(lanternGeo, lanternBodyMat);
+        lanternBody.position.y = -0.86;
+        pivot.add(lanternBody);
+        [0.2, 0.4].forEach((hy) => {
+          const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.012, 8, 28), goldCapMat);
+          hoop.rotation.x = Math.PI * 0.5;
+          hoop.position.y = -0.86 + hy;
+          pivot.add(hoop);
+        });
 
         const topCap = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.08, 16), goldCapMat);
         topCap.position.y = -0.22;
