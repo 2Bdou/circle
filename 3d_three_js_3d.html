@@ -3,30 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>北方冬集套圈王 3D - Three.js 全 3D 人物与冬集场景版</title>
+  <title>北方冬集套圈王 3D</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="assets/people/GLTFLoader.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --ui-bg-glass: rgba(15, 23, 42, 0.78);
-      --ui-bg-glass-strong: rgba(12, 18, 34, 0.90);
-      --ui-bg-elevated: rgba(30, 41, 59, 0.72);
-      --ui-border-subtle: rgba(255, 255, 255, 0.12);
-      --ui-border-gold: rgba(251, 191, 36, 0.45);
-      --ui-border-gold-strong: rgba(251, 191, 36, 0.85);
-      --ui-crimson-from: #991b1b;
-      --ui-crimson-to: #dc2626;
-      --ui-gold-from: #f59e0b;
-      --ui-gold-to: #fde047;
-      --ui-text-primary: #f8fafc;
-      --ui-text-secondary: #cbd5e1;
-      --ui-text-muted: #94a3b8;
-      --ui-shadow-hud: 0 12px 32px rgba(2, 6, 23, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-      --ui-shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(251, 191, 36, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.14);
-      --ui-focus-ring: 0 0 0 3px rgba(251, 191, 36, 0.55);
+      --gh-canvas: #0d1117;
+      --gh-overlay: #161b22;
+      --gh-inset: #010409;
+      --gh-subtle: #21262d;
+      --gh-border: #30363d;
+      --gh-border-muted: #21262d;
+      --gh-fg: #e6edf3;
+      --gh-muted: #8b949e;
+      --gh-subtle-fg: #6e7681;
+      --gh-accent: #2f81f7;
+      --gh-accent-emphasis: #1f6feb;
+      --gh-success: #238636;
+      --gh-success-hover: #2ea043;
+      --gh-success-fg: #3fb950;
+      --gh-danger: #f85149;
+      --gh-danger-emphasis: #da3633;
+      --gh-attention: #d29922;
+      --gh-focus: 0 0 0 3px rgba(31, 111, 235, 0.45);
+      --gh-shadow: 0 8px 24px rgba(1, 4, 9, 0.75);
     }
     * {
       box-sizing: border-box;
@@ -36,172 +40,385 @@
     body {
       margin: 0;
       padding: 0;
-      font-family: 'Noto Sans SC', 'Inter', -apple-system, sans-serif;
-      background-color: #070b14;
-      color: var(--ui-text-primary);
+      font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background-color: var(--gh-canvas);
+      color: var(--gh-fg);
       overflow: hidden;
       -webkit-font-smoothing: antialiased;
-    }
-    .font-serif-cn {
-      font-family: 'Noto Serif SC', 'Noto Sans SC', serif;
+      font-size: 14px;
+      line-height: 1.5;
     }
     .font-num {
-      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
       font-variant-numeric: tabular-nums;
+      font-weight: 500;
     }
-    .glass-panel {
-      background: var(--ui-bg-glass);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--ui-border-subtle);
-      box-shadow: var(--ui-shadow-hud);
+    .gh-appbar,
+    .gh-dock,
+    .gh-panel,
+    .gh-modal-shell {
+      background: var(--gh-overlay);
+      border: 1px solid var(--gh-border);
+      box-shadow: none;
     }
-    .glass-panel-gold {
-      background: var(--ui-bg-glass-strong);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--ui-border-gold);
-      box-shadow: var(--ui-shadow-hud);
+    .gh-appbar {
+      background: var(--gh-canvas);
+      border-width: 0 0 1px 0;
+      border-radius: 0;
     }
-    .arcade-border {
-      border: 1px solid var(--ui-border-gold);
-      box-shadow: var(--ui-shadow-hud);
+    .gh-dock {
+      border-radius: 6px;
+      background: rgba(13, 17, 23, 0.92);
+      backdrop-filter: blur(8px);
     }
-    .lantern-glow {
-      text-shadow: 0 2px 12px rgba(239, 68, 68, 0.55), 0 0 6px rgba(251, 191, 36, 0.55);
+    .gh-panel {
+      border-radius: 6px;
+      background: var(--gh-overlay);
     }
-    /* Pro Max Tactile Buttons & Accessible Focus States */
+    .gh-modal-shell {
+      background: var(--gh-canvas);
+      border-radius: 12px;
+      box-shadow: var(--gh-shadow);
+    }
+    .gh-modal-header,
+    .gh-modal-footer,
+    .gh-modal-toolbar {
+      background: var(--gh-canvas);
+      border-color: var(--gh-border);
+    }
+    .gh-kicker {
+      display: block;
+      color: var(--gh-muted);
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.25;
+    }
+    .gh-muted { color: var(--gh-muted); }
+    .gh-title {
+      color: var(--gh-fg);
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0;
+      line-height: 1.25;
+    }
+    .gh-chip,
+    .gh-counter,
+    .gh-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 28px;
+      padding: 0 8px;
+      border-radius: 6px;
+      border: 1px solid var(--gh-border);
+      background: var(--gh-inset);
+      color: var(--gh-fg);
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1;
+    }
+    .gh-badge {
+      min-height: 20px;
+      padding: 0 7px;
+      border-radius: 2em;
+      background: var(--gh-subtle);
+      color: var(--gh-muted);
+      font-weight: 500;
+    }
+    .gh-badge.is-on {
+      background: rgba(46, 160, 67, 0.15);
+      color: var(--gh-success-fg);
+      border-color: rgba(63, 185, 80, 0.4);
+    }
+    .gh-chip.is-hot {
+      border-color: rgba(210, 153, 34, 0.55);
+      color: var(--gh-attention);
+    }
+    .gh-stat {
+      text-align: right;
+      padding: 4px 10px;
+      border: 1px solid var(--gh-border);
+      border-radius: 6px;
+      background: var(--gh-inset);
+    }
+    .gh-stat strong {
+      display: block;
+      color: var(--gh-fg);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
     .ui-btn {
       position: relative;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.375rem;
-      min-height: 36px;
+      gap: 6px;
+      min-height: 28px;
+      padding: 3px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(240, 246, 252, 0.1);
+      background: var(--gh-subtle);
+      color: var(--gh-fg);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 20px;
+      letter-spacing: 0;
+      box-shadow: none;
       cursor: pointer;
-      transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
-                  box-shadow 180ms ease,
-                  background-color 180ms ease,
-                  border-color 180ms ease;
+      transition: background-color 120ms ease, border-color 120ms ease;
     }
     .ui-btn:hover:not(:disabled) {
-      transform: translateY(-1px);
+      background: #30363d;
+      border-color: #8b949e;
     }
     .ui-btn:active:not(:disabled) {
-      transform: translateY(1px) scale(0.98);
+      background: #282e36;
+    }
+    .ui-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
     .ui-btn:focus-visible,
-    button:focus-visible {
+    button:focus-visible,
+    .bargain-pill:focus-visible {
       outline: none;
-      box-shadow: var(--ui-focus-ring);
+      box-shadow: var(--gh-focus);
     }
     .ui-btn-primary {
-      background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
-      color: #0f172a;
-      border: 1px solid rgba(254, 240, 138, 0.85);
-      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      background: var(--gh-success);
+      color: #ffffff;
+      border-color: rgba(240, 246, 252, 0.1);
     }
     .ui-btn-primary:hover:not(:disabled) {
-      background: linear-gradient(180deg, #fde047 0%, #f59e0b 100%);
-      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.50), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      background: var(--gh-success-hover);
+      border-color: rgba(240, 246, 252, 0.1);
     }
-    .ui-btn-crimson {
-      background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
-      color: #fef3c7;
-      border: 1px solid rgba(251, 191, 36, 0.65);
-      box-shadow: 0 4px 16px rgba(185, 28, 28, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    .ui-btn-crimson,
+    .ui-btn-danger {
+      background: var(--gh-subtle);
+      color: var(--gh-danger);
+      border-color: var(--gh-border);
     }
-    .ui-btn-crimson:hover:not(:disabled) {
-      background: linear-gradient(180deg, #ef4444 0%, #b91c1c 100%);
-      border-color: rgba(253, 224, 71, 0.9);
-      box-shadow: 0 6px 22px rgba(220, 38, 38, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    .ui-btn-crimson:hover:not(:disabled),
+    .ui-btn-danger:hover:not(:disabled) {
+      background: #30363d;
+      color: #ff7b72;
+      border-color: rgba(248, 81, 73, 0.4);
     }
-    .ui-btn-warm {
-      background: linear-gradient(180deg, #f97316 0%, #c2410c 100%);
-      color: #fff7ed;
-      border: 1px solid rgba(253, 186, 116, 0.7);
-      box-shadow: 0 4px 14px rgba(234, 88, 12, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    }
-    .ui-btn-warm:hover:not(:disabled) {
-      background: linear-gradient(180deg, #fb923c 0%, #ea580c 100%);
-    }
-    .ui-btn-emerald {
-      background: linear-gradient(180deg, #059669 0%, #065f46 100%);
-      color: #ecfdf5;
-      border: 1px solid rgba(110, 231, 183, 0.45);
-      box-shadow: 0 4px 14px rgba(5, 150, 105, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    }
-    .ui-btn-emerald:hover:not(:disabled) {
-      background: linear-gradient(180deg, #10b981 0%, #047857 100%);
-    }
+    .ui-btn-warm,
+    .ui-btn-emerald,
     .ui-btn-ghost {
-      background: rgba(30, 41, 59, 0.72);
-      color: #e2e8f0;
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      background: var(--gh-subtle);
+      color: var(--gh-fg);
+      border-color: var(--gh-border);
+      box-shadow: none;
     }
+    .ui-btn-warm:hover:not(:disabled),
+    .ui-btn-emerald:hover:not(:disabled),
     .ui-btn-ghost:hover:not(:disabled) {
-      background: rgba(51, 65, 85, 0.88);
-      border-color: rgba(251, 191, 36, 0.45);
+      background: #30363d;
+      border-color: #8b949e;
       color: #ffffff;
+    }
+    .ui-btn-icon {
+      width: 28px;
+      height: 28px;
+      min-height: 28px;
+      padding: 0;
+    }
+    .ui-btn-block {
+      width: 100%;
+      margin-top: 12px;
+    }
+    .ui-btn-active,
+    .ring-select-btn.ui-btn-active {
+      background: var(--gh-accent-emphasis);
+      border-color: rgba(240, 246, 252, 0.1);
+      color: #ffffff;
+    }
+    .ui-btn-active:hover:not(:disabled) {
+      background: #388bfd;
     }
     .ui-kbd {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 18px;
-      height: 18px;
+      min-width: 16px;
+      height: 16px;
       padding: 0 4px;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 10px;
-      font-weight: 700;
+      font-weight: 500;
       border-radius: 4px;
-      background: rgba(2, 6, 23, 0.45);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: inherit;
+      background: var(--gh-inset);
+      border: 1px solid var(--gh-border);
+      color: var(--gh-muted);
     }
-    .shop-card {
-      background: linear-gradient(165deg, rgba(30, 41, 59, 0.88) 0%, rgba(15, 23, 42, 0.96) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: 0 10px 26px rgba(2, 6, 23, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.09);
-      transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), border-color 200ms ease, box-shadow 200ms ease;
+    .shop-card,
+    .dex-card,
+    .bargain-pill,
+    .gh-card {
+      background: var(--gh-overlay);
+      border: 1px solid var(--gh-border);
+      border-radius: 6px;
+      box-shadow: none;
     }
-    .shop-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 16px 34px rgba(2, 6, 23, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.16);
-    }
-    .bargain-pill {
-      background: rgba(15, 23, 42, 0.72);
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      transition: all 180ms cubic-bezier(0.22, 1, 0.36, 1);
-    }
+    .shop-card:hover,
+    .gh-card:hover,
     .bargain-pill:hover {
-      transform: translateY(-2px);
-      background: rgba(30, 41, 59, 0.92);
+      border-color: #8b949e;
+      background: #1c2128;
     }
-    .shop-modal-shell {
-      background: radial-gradient(circle at top center, rgba(127, 29, 29, 0.42), rgba(15, 23, 42, 0.97) 48%);
-      box-shadow: var(--ui-shadow-modal);
+    .gh-card.is-recommended {
+      border-color: rgba(47, 129, 247, 0.65);
     }
-    .bag-modal-shell {
-      background: radial-gradient(circle at top center, rgba(6, 95, 70, 0.40), rgba(15, 23, 42, 0.97) 48%);
-      box-shadow: var(--ui-shadow-modal);
+    .gh-card.is-muted,
+    .dex-card.is-muted {
+      opacity: 0.62;
     }
-    .honor-modal-shell {
-      background: radial-gradient(circle at top center, rgba(146, 64, 14, 0.42), rgba(15, 23, 42, 0.97) 48%);
-      box-shadow: var(--ui-shadow-modal);
+    .gh-card-label {
+      display: inline-flex;
+      align-items: center;
+      height: 18px;
+      padding: 0 6px;
+      border-radius: 2em;
+      border: 1px solid rgba(47, 129, 247, 0.45);
+      background: rgba(31, 111, 235, 0.12);
+      color: #79c0ff;
+      font-size: 11px;
+      font-weight: 500;
     }
-    .dex-card {
-      background: linear-gradient(165deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.10);
-      box-shadow: 0 8px 22px rgba(2, 6, 23, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-      transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), border-color 180ms ease;
+    .gh-meter {
+      display: grid;
+      grid-template-columns: 72px 1fr 42px;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      color: var(--gh-muted);
+      font-size: 12px;
     }
-    .dex-card:hover {
-      transform: translateY(-2px);
+    .gh-bar {
+      height: 4px;
+      border-radius: 999px;
+      background: var(--gh-subtle);
+      overflow: hidden;
+    }
+    .gh-bar > i {
+      display: block;
+      height: 100%;
+      background: var(--gh-accent);
+      border-radius: inherit;
+    }
+    .gh-bar.is-warm > i { background: var(--gh-attention); }
+    .gh-bar.is-strong > i { background: var(--gh-danger); }
+    .gh-choice-kicker {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+      color: var(--gh-muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .gh-section-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--gh-muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .gh-note {
+      padding: 12px;
+      border: 1px solid var(--gh-border);
+      border-radius: 6px;
+      background: var(--gh-inset);
+    }
+    .gh-progress {
+      width: 120px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--gh-subtle);
+      overflow: hidden;
+      border: 0;
+    }
+    .gh-progress > div {
+      height: 100%;
+      background: var(--gh-success-fg);
+    }
+    .gh-seg {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0;
+      border: 1px solid var(--gh-border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--gh-inset);
+    }
+    .gh-seg .ui-btn {
+      border: 0;
+      border-radius: 0;
+      border-right: 1px solid var(--gh-border);
+      background: transparent;
+      min-height: 28px;
+    }
+    .gh-seg .ui-btn:last-child { border-right: 0; }
+    .gh-seg .ui-btn:hover:not(:disabled) { background: #30363d; }
+    .gh-seg .ui-btn-active,
+    .gh-seg .ui-btn-active:hover:not(:disabled) {
+      background: var(--gh-accent-emphasis);
+      color: #fff;
+    }
+    .power-track {
+      position: relative;
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--gh-subtle);
+      border: 1px solid var(--gh-border);
+      overflow: hidden;
+    }
+    .power-track .tick {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: #484f58;
+      z-index: 1;
+    }
+    #powerBarFill {
+      height: 100%;
+      background: var(--gh-success-fg);
+      box-shadow: none;
+    }
+    #toastBanner {
+      background: var(--gh-overlay);
+      border: 1px solid var(--gh-border);
+      color: var(--gh-fg);
+      border-radius: 6px;
+      box-shadow: var(--gh-shadow);
+      font-weight: 500;
+    }
+    #debugPanel button:not(.ui-btn) {
+      border-radius: 6px;
+      border: 1px solid var(--gh-border);
+      background: var(--gh-subtle);
+      color: var(--gh-fg);
+      font-weight: 500;
+      box-shadow: none;
+    }
+    #debugPanel .sky-mode-btn.bg-amber-600,
+    #debugPanel .cam-mode-btn.bg-amber-500 {
+      background: var(--gh-accent-emphasis) !important;
+      color: #fff !important;
+      border-color: rgba(240, 246, 252, 0.1) !important;
     }
     @media (prefers-reduced-motion: reduce) {
-      .ui-btn, .shop-card, .bargain-pill { transition: none !important; transform: none !important; }
+      .ui-btn, .shop-card, .bargain-pill, .gh-card { transition: none !important; }
     }
     canvas {
       display: block;
@@ -212,79 +429,43 @@
     }
   </style>
 </head>
-<body class="h-screen w-screen flex flex-col bg-slate-950 overflow-hidden">
+<body class="h-screen w-screen flex flex-col overflow-hidden" style="background:#0d1117;color:#e6edf3;">
 
-  <!-- 顶部北方冬集极简图标状态栏 HUD -->
-  <header class="w-full glass-panel-gold border-x-0 border-t-0 px-3 sm:px-4 py-1.5 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0">
-    <!-- 左侧：标题 + 称号胶囊 -->
-    <div class="flex items-center gap-2">
-      <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-red-600 to-amber-500 flex items-center justify-center shadow-md border border-amber-300/70 text-base">
-        🏮
-      </span>
-      <h1 class="font-serif-cn text-base sm:text-lg font-black tracking-wider text-amber-200 lantern-glow leading-none">
-        北方冬集套圈王
-      </h1>
-      <button id="btnOpenHonorModal" type="button" title="荣誉称号与生涯战绩" aria-label="查看荣誉称号与生涯战绩" class="ui-btn !min-h-[30px] px-2 py-0.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/50 text-amber-200 text-xs font-bold">
-        <span>👑</span>
-        <span id="hudPlayerTitle">🧤 赶集凑热闹</span>
+  <header class="gh-appbar w-full px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0">
+    <div class="flex items-center gap-2 min-w-0">
+      <h1 class="text-sm font-semibold leading-none" style="color:#e6edf3;">北方冬集套圈王</h1>
+      <button id="btnOpenHonorModal" type="button" title="荣誉称号与生涯战绩" aria-label="查看荣誉称号与生涯战绩" class="ui-btn">
+        <span id="hudPlayerTitle">赶集凑热闹</span>
       </button>
     </div>
 
-    <!-- 右侧：紧凑数值胶囊 + 纯图标工具栏 -->
-    <div class="flex flex-wrap items-center gap-1.5 text-xs">
-      <!-- 压岁钱胶囊 + 极简 "+" 买圈图标按钮 -->
-      <div class="flex items-center gap-1.5 bg-slate-950/80 border border-amber-400/45 rounded-xl pl-2.5 pr-1 py-1 shadow-inner" title="当前压岁钱余额">
-        <span class="text-sm leading-none">🧧</span>
-        <span id="hudWalletMoney" class="font-num font-extrabold text-amber-300 text-sm tracking-tight">¥50</span>
-        <button id="btnOpenShopTop" type="button" title="打开老王商铺买圈 (B)" aria-label="打开老王商铺买圈" class="ui-btn ui-btn-primary !min-h-[24px] w-6 h-6 rounded-lg font-black text-sm leading-none p-0">
-          +
-        </button>
+    <div class="flex flex-wrap items-center gap-1.5">
+      <div class="gh-chip" title="当前压岁钱余额">
+        <span class="gh-muted">余额</span>
+        <span id="hudWalletMoney" class="font-num">¥50</span>
+        <button id="btnOpenShopTop" type="button" title="打开老王商铺买圈 (B)" aria-label="打开老王商铺买圈" class="ui-btn ui-btn-primary ui-btn-icon" style="width:22px;height:22px;min-height:22px;">+</button>
       </div>
-
-      <!-- 连击胶囊 -->
-      <div id="hudComboContainer" class="flex items-center gap-1 bg-slate-900/80 border border-amber-400/35 rounded-xl px-2 py-1" title="连续套中倍率加成">
-        <span class="text-amber-400 font-bold">⚡</span>
-        <span id="hudComboText" class="font-num font-bold text-amber-200">0连 (x1.0)</span>
+      <div id="hudComboContainer" class="gh-chip" title="连续套中倍率加成">
+        <span id="hudComboText" class="font-num">0连 (x1.0)</span>
       </div>
-
-      <!-- 背包图鉴紧凑胶囊 -->
-      <button id="btnOpenBagTop" type="button" title="打开战利品背包与图鉴 (G)" aria-label="打开战利品背包与图鉴" class="ui-btn ui-btn-emerald !min-h-[32px] px-2.5 py-1 rounded-xl font-bold text-xs">
-        <span>🎒</span>
-        <span id="hudBagCount" class="font-num font-extrabold text-amber-200">0件</span>
-        <span id="hudDexProgress" class="font-num text-[10px] bg-slate-950/60 px-1.5 py-0.5 rounded-md text-emerald-200 border border-emerald-400/30">0/10</span>
+      <button id="btnOpenBagTop" type="button" title="打开战利品背包与图鉴 (G)" aria-label="打开战利品背包与图鉴" class="ui-btn">
+        图鉴
+        <span id="hudBagCount" class="font-num gh-muted">0件</span>
+        <span id="hudDexProgress" class="gh-badge">0/10</span>
       </button>
-
-      <!-- 北风 + 手温极简仪表 -->
-      <div class="hidden md:flex items-center gap-2 bg-slate-900/75 border border-slate-700/70 rounded-xl px-2.5 py-1" title="当前集市北风风向与玩家手部温度">
-        <div class="flex items-center gap-1">
-          <span class="text-sky-300">❄️</span>
-          <span id="hudWindText" class="font-num font-semibold text-slate-100">1.8级</span>
-          <span id="hudWindArrow" class="inline-block text-amber-300 font-bold transition-transform duration-300">➔</span>
-        </div>
-        <span class="text-slate-700">|</span>
-        <div class="flex items-center gap-1.5">
-          <span id="handTempIcon" class="text-orange-400">🔥</span>
-          <div class="w-12 h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-700">
-            <div id="handTempBar" class="h-full bg-gradient-to-r from-sky-400 via-amber-400 to-orange-500 transition-all duration-150" style="width: 100%;"></div>
-          </div>
-          <span id="handTempValue" class="font-num font-bold text-amber-300 w-8 text-right">100%</span>
-        </div>
+      <div class="gh-chip hidden md:inline-flex" title="当前集市北风风向与玩家手部温度">
+        <span id="hudWindText" class="font-num">1.8级</span>
+        <span id="hudWindArrow" class="inline-block gh-muted">➔</span>
+        <span class="gh-muted">手温</span>
+        <div class="gh-bar" style="width:48px;"><div id="handTempBar" style="height:100%;width:100%;background:#3fb950;"></div></div>
+        <span id="handTempValue" class="font-num" style="width:36px;text-align:right;">100%</span>
+        <span id="handTempIcon" class="hidden">🔥</span>
       </div>
-
-      <!-- 纯图标工具按钮组 (34x34px 触控方块，悬停显示中文说明) -->
       <div class="flex items-center gap-1">
-        <button id="btnFireFirecracker" type="button" title="放鞭炮烟花助兴 (E)" aria-label="放鞭炮烟花助兴" class="ui-btn ui-btn-crimson !min-h-[34px] w-9 h-9 rounded-xl text-base p-0">
-          🧨
-        </button>
-        <button id="btnToggleBgm" type="button" title="开启 / 关闭年集欢快小调" aria-label="切换年集背景小调" class="ui-btn ui-btn-ghost !min-h-[34px] w-9 h-9 rounded-xl text-base p-0 opacity-75">
-          🎵
-        </button>
-        <button id="btnToggleMute" type="button" title="静音 / 开启游戏音效" aria-label="切换游戏音效" class="ui-btn ui-btn-ghost !min-h-[34px] w-9 h-9 rounded-xl text-base p-0">
-          🔊
-        </button>
-        <button id="btnToggleDebug" type="button" title="3D 场景、机位与风力调试台" aria-label="打开3D场景调试台" class="ui-btn ui-btn-primary !min-h-[34px] w-9 h-9 rounded-xl text-base p-0">
-          ⚙️
-        </button>
+        <button id="btnFireFirecracker" type="button" title="放鞭炮烟花助兴 (E)" aria-label="放鞭炮烟花助兴" class="ui-btn ui-btn-icon">爆</button>
+        <button id="btnToggleBgm" type="button" title="开启 / 关闭年集欢快小调" aria-label="切换年集背景小调" class="ui-btn ui-btn-icon">乐</button>
+        <button id="btnToggleMute" type="button" title="静音 / 开启游戏音效" aria-label="切换游戏音效" class="ui-btn ui-btn-icon">声</button>
+        <button id="btnToggleDebug" type="button" title="3D 场景、机位与风力调试台" aria-label="打开3D场景调试台" class="ui-btn ui-btn-icon">调</button>
       </div>
     </div>
   </header>
@@ -297,10 +478,10 @@
     <canvas id="hudOverlayCanvas" class="absolute inset-0 w-full h-full pointer-events-none z-10"></canvas>
 
     <!-- 右上角可折叠的“3D 场景与物理引擎调试面板” -->
-    <aside id="debugPanel" class="hidden absolute top-3 right-3 w-72 sm:w-80 bg-slate-900/95 arcade-border rounded-xl p-3.5 z-30 text-xs sm:text-sm space-y-3 backdrop-blur-md">
-      <div class="flex items-center justify-between border-b border-slate-700 pb-2">
-        <span class="font-bold text-amber-300 flex items-center gap-1.5">🛠️ 3D 场景与物理调试台</span>
-        <button id="btnCloseDebug" type="button" class="text-slate-400 hover:text-white px-1.5 py-0.5 rounded">✕</button>
+    <aside id="debugPanel" class="gh-panel hidden absolute top-3 right-3 w-72 sm:w-80 p-3 z-30 text-xs space-y-3">
+      <div class="flex items-center justify-between border-b pb-2" style="border-color:#30363d;">
+        <span class="font-medium" style="color:#e6edf3;">场景调试</span>
+        <button id="btnCloseDebug" type="button" class="ui-btn ui-btn-icon" aria-label="关闭调试台">✕</button>
       </div>
 
       <!-- 时段氛围切换 -->
@@ -386,407 +567,214 @@
       </div>
     </aside>
 
-    <!-- =================================================================== -->
-    <!-- UI/UX Pro Max 重构：老王年集套圈商铺与唠嗑砍价 Bento 界面 (shopModal) -->
-    <!-- =================================================================== -->
-    <div id="shopModal" role="dialog" aria-modal="true" aria-labelledby="shopModalTitle" class="hidden absolute inset-0 bg-slate-950/75 backdrop-blur-md z-40 flex items-center justify-center p-3 sm:p-5">
-      <div class="w-full max-w-3xl shop-modal-shell rounded-3xl overflow-hidden flex flex-col max-h-[92vh] border border-amber-400/40">
-        <!-- 商铺国风匾额顶栏 -->
-        <div class="relative bg-gradient-to-r from-red-950 via-red-800 to-red-950 px-5 py-4 border-b border-amber-400/45 flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3.5">
-            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-red-600 p-0.5 shadow-lg shrink-0">
-              <div class="w-full h-full rounded-[14px] bg-slate-950/85 flex items-center justify-center text-2xl">
-                🧔
-              </div>
+    <div id="shopModal" role="dialog" aria-modal="true" aria-labelledby="shopModalTitle" class="hidden absolute inset-0 z-40 flex items-center justify-center p-3 sm:p-6" style="background:rgba(1,4,9,0.72);">
+      <div class="gh-modal-shell w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
+        <div class="gh-modal-header px-4 py-3 border-b flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <h2 id="shopModalTitle" class="gh-title">老王年集套圈铺</h2>
+              <span class="gh-badge">腊月老摊</span>
             </div>
-            <div>
+            <p class="gh-muted text-xs mt-1">先唠一句再下单。每买一捆，砍价机会刷新一次。</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="gh-stat">
+              <span class="gh-kicker">压岁钱</span>
+              <strong id="modalWalletMoney" class="font-num">¥50</strong>
+            </div>
+            <button id="btnCloseShop" type="button" aria-label="关闭商铺弹窗" class="ui-btn ui-btn-icon">✕</button>
+          </div>
+        </div>
+
+        <div class="p-4 overflow-y-auto space-y-4 text-sm">
+          <div class="gh-note">
+            <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center gap-2">
-                <h2 id="shopModalTitle" class="font-serif-cn text-lg sm:text-xl font-black text-amber-200 tracking-wider lantern-glow">
-                  老王年集套圈铺
-                </h2>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-200 border border-amber-300/40">
-                  腊月诚信老摊
-                </span>
+                <span class="font-medium" style="color:#e6edf3;">摊主老王</span>
+                <span id="shopBargainBadge" class="gh-badge">尚未砍价</span>
               </div>
-              <p class="text-xs text-amber-100/80 mt-0.5">
-                先唠嗑套近乎再下单，每买一捆刷新砍价机会
-              </p>
+              <span id="bargainChanceState" class="text-xs font-medium" style="color:#3fb950;">本轮可砍价</span>
+            </div>
+            <p id="shopNpcDialogText" class="mt-2 text-sm leading-relaxed" style="color:#e6edf3;">
+              “细塑料圈轻脆容易磕边弹飞，老藤竹圈柔韧吸震好擦边进，铜芯大圈沉甸甸落点最稳！”
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <div class="gh-section-label">
+              <span>跟老王说一句</span>
+              <span class="font-normal">买完一捆后刷新</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button id="btnBargainHaggle" type="button" class="bargain-pill p-3 text-left">
+                <div class="gh-choice-kicker"><span>实在讲价</span><span class="gh-badge">+2~4圈</span></div>
+                <div class="text-sm font-medium" style="color:#e6edf3;">“叔，买一捆饶仨圈呗！”</div>
+                <p class="gh-muted text-xs mt-1">下次下单多抓一把赠送圈。</p>
+              </button>
+              <button id="btnBargainFlatter" type="button" class="bargain-pill p-3 text-left">
+                <div class="gh-choice-kicker"><span>拜年吉利话</span><span class="gh-badge">立减 ¥2</span></div>
+                <div class="text-sm font-medium" style="color:#e6edf3;">“祝老王叔今年发大财！”</div>
+                <p class="gh-muted text-xs mt-1">全店立减 2 元，再送 1 个藤竹圈。</p>
+              </button>
+              <button id="btnBargainCold" type="button" class="bargain-pill p-3 text-left">
+                <div class="gh-choice-kicker"><span>借火暖手</span><span class="gh-badge">回温</span></div>
+                <div class="text-sm font-medium" style="color:#e6edf3;">“叔，手冻僵了借火烤烤！”</div>
+                <p class="gh-muted text-xs mt-1">手温回到 100%，并送练手塑料圈。</p>
+              </button>
             </div>
           </div>
 
-          <div class="flex items-center gap-3">
-            <!-- 压岁钱实时余额卡 -->
-            <div class="bg-slate-950/75 border border-amber-400/45 rounded-2xl px-3.5 py-1.5 text-right shadow-inner">
-              <span class="text-[10px] uppercase tracking-wider text-amber-200/70 block">当前压岁钱</span>
-              <span id="modalWalletMoney" class="font-num font-extrabold text-amber-300 text-lg leading-tight">¥50</span>
-            </div>
-            <button id="btnCloseShop" type="button" aria-label="关闭商铺弹窗" class="ui-btn ui-btn-ghost w-10 h-10 rounded-xl text-amber-200 font-bold text-base">
-              ✕
-            </button>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <article class="gh-card p-3 flex flex-col">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <h3 class="text-sm font-medium" style="color:#e6edf3;">细塑料圈</h3>
+                  <p class="gh-muted text-xs">入门 · 近排</p>
+                </div>
+                <span class="gh-counter">余 <strong id="shopCountPlastic" class="font-num">3</strong></span>
+              </div>
+              <p class="gh-muted text-xs mt-2 leading-relaxed">便宜、量大，适合第 1 排冻梨和小瓷蛙。风大或磕边时容易弹开。</p>
+              <div class="mt-2">
+                <div class="gh-meter"><span>抗风</span><div class="gh-bar"><i style="width:40%"></i></div><em class="font-num">40%</em></div>
+                <div class="gh-meter"><span>容错</span><div class="gh-bar"><i style="width:55%"></i></div><em class="font-num">1.00x</em></div>
+              </div>
+              <button id="btnBuyPlastic" type="button" class="ui-btn ui-btn-block"><span id="priceTextPlastic" class="font-num">¥10 买 15 个</span></button>
+            </article>
+
+            <article class="gh-card is-recommended p-3 flex flex-col">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-medium" style="color:#e6edf3;">韧性藤竹圈</h3>
+                    <span class="gh-card-label">推荐</span>
+                  </div>
+                  <p class="gh-muted text-xs">均衡 · 擦边</p>
+                </div>
+                <span class="gh-counter">余 <strong id="shopCountBamboo" class="font-num">0</strong></span>
+              </div>
+              <p class="gh-muted text-xs mt-2 leading-relaxed">柔韧吸震，擦着玩具内沿也能晃进底座。日常主力。</p>
+              <div class="mt-2">
+                <div class="gh-meter"><span>抗风</span><div class="gh-bar is-warm"><i style="width:78%"></i></div><em class="font-num">78%</em></div>
+                <div class="gh-meter"><span>容错</span><div class="gh-bar is-warm"><i style="width:78%"></i></div><em class="font-num">1.15x</em></div>
+              </div>
+              <button id="btnBuyBamboo" type="button" class="ui-btn ui-btn-primary ui-btn-block"><span id="priceTextBamboo" class="font-num">¥10 买 8 个</span></button>
+            </article>
+
+            <article class="gh-card p-3 flex flex-col">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <h3 class="text-sm font-medium" style="color:#e6edf3;">加重铜芯圈</h3>
+                  <p class="gh-muted text-xs">远排 · 白鹅</p>
+                </div>
+                <span class="gh-counter">余 <strong id="shopCountCopper" class="font-num">0</strong></span>
+              </div>
+              <p class="gh-muted text-xs mt-2 leading-relaxed">落点稳、反弹低，内径更大，用来打第 3 排和 5.2m 大白鹅。</p>
+              <div class="mt-2">
+                <div class="gh-meter"><span>抗风</span><div class="gh-bar is-strong"><i style="width:98%"></i></div><em class="font-num">98%</em></div>
+                <div class="gh-meter"><span>容错</span><div class="gh-bar is-strong"><i style="width:98%"></i></div><em class="font-num">1.32x</em></div>
+              </div>
+              <button id="btnBuyCopper" type="button" class="ui-btn ui-btn-block"><span id="priceTextCopper" class="font-num">¥20 买 5 个</span></button>
+            </article>
           </div>
         </div>
 
-        <!-- 商铺主体：摊主对话栏 + 3张砍价策略卡 + 3张 Bento 套圈商品卡 -->
-        <div class="p-4 sm:p-5 overflow-y-auto space-y-5 text-xs sm:text-sm">
-          <!-- 1. 摊主老王动态对白与优惠生效条 -->
-          <div class="bg-slate-900/85 border border-amber-400/30 rounded-2xl p-3.5 sm:p-4 flex items-start gap-3.5 shadow-inner">
-            <div class="w-10 h-10 rounded-xl bg-red-900/60 border border-amber-400/40 flex items-center justify-center text-xl shrink-0 mt-0.5">
-              🧣
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-2">
-                  <span class="font-bold text-amber-300">摊主老王</span>
-                  <span id="shopBargainBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-800 text-slate-300 border border-slate-600">
-                    尚未砍价
-                  </span>
-                </div>
-                <span id="bargainChanceState" class="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                  ● 本轮可砍价
-                </span>
-              </div>
-              <p id="shopNpcDialogText" class="text-slate-100 mt-1.5 leading-relaxed text-xs sm:text-[13px]">
-                “细塑料圈轻脆容易磕边弹飞，老藤竹圈柔韧吸震好擦边进，铜芯大圈沉甸甸落点最稳！”
-              </p>
-            </div>
+        <div class="gh-modal-footer px-4 py-3 border-t flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="gh-muted text-xs">钱不够？</span>
+            <button id="btnClaimNewYearPocket" type="button" class="ui-btn">领拜年红包 +¥30</button>
           </div>
-
-          <!-- 2. 东北话唠嗑砍价策略区（3列触控卡片） -->
-          <div class="space-y-2.5">
-            <div class="flex items-center justify-between px-0.5">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-amber-300/90 flex items-center gap-1.5">
-                <span>💬</span> 选一句东北嗑跟老王砍价
-              </h3>
-              <span class="text-[11px] text-slate-400">每次买圈后自动刷新</span>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <button id="btnBargainHaggle" type="button" class="bargain-pill rounded-2xl p-3 text-left cursor-pointer hover:border-amber-400/70 focus-visible:outline-none">
-                <div class="flex items-center justify-between mb-1">
-                  <span class="text-xs font-black text-amber-300">🗣️ 实在讲价</span>
-                  <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-200 font-bold">+2~4圈</span>
-                </div>
-                <div class="font-bold text-slate-100 text-xs">“叔，买一捆饶仨圈呗！”</div>
-                <p class="text-[11px] text-slate-400 mt-1 leading-snug">高概率下次下单直接多抓一把赠送圈</p>
-              </button>
-
-              <button id="btnBargainFlatter" type="button" class="bargain-pill rounded-2xl p-3 text-left cursor-pointer hover:border-rose-400/70 focus-visible:outline-none">
-                <div class="flex items-center justify-between mb-1">
-                  <span class="text-xs font-black text-rose-300">🏮 拜年吉利话</span>
-                  <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-rose-500/20 text-rose-200 font-bold">立减¥2+送竹圈</span>
-                </div>
-                <div class="font-bold text-slate-100 text-xs">“祝老王叔今年发大财！”</div>
-                <p class="text-[11px] text-slate-400 mt-1 leading-snug">全店套餐立减 2 元，再白塞 1 个藤竹圈</p>
-              </button>
-
-              <button id="btnBargainCold" type="button" class="bargain-pill rounded-2xl p-3 text-left cursor-pointer hover:border-sky-400/70 focus-visible:outline-none">
-                <div class="flex items-center justify-between mb-1">
-                  <span class="text-xs font-black text-sky-300">🔥 借火暖手</span>
-                  <span class="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-500/20 text-sky-200 font-bold">回温+送2圈</span>
-                </div>
-                <div class="font-bold text-slate-100 text-xs">“叔，手冻僵了借火烤烤！”</div>
-                <p class="text-[11px] text-slate-400 mt-1 leading-snug">手温立刻回满 100% 并获赠练手塑料圈</p>
-              </button>
-            </div>
-          </div>
-
-          <!-- 3. 三档套圈商品 Bento 展示卡（含可视化属性条与清晰主次 CTA） -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            <!-- 商品卡 1：细塑料圈 -->
-            <div class="shop-card rounded-2xl p-4 flex flex-col justify-between border-t-2 border-t-sky-400/80">
-              <div>
-                <div class="flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-2">
-                    <span class="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-400/40 flex items-center justify-center text-lg">⭕</span>
-                    <div>
-                      <div class="font-black text-sky-200 text-sm leading-tight">细塑料圈</div>
-                      <span class="text-[10px] text-sky-300/80">入门海量·近排首选</span>
-                    </div>
-                  </div>
-                  <span class="font-num text-xs px-2 py-0.5 rounded-lg bg-slate-950/90 text-sky-300 border border-sky-500/35">
-                    余 <strong id="shopCountPlastic">3</strong>
-                  </span>
-                </div>
-
-                <p class="text-[11px] text-slate-300 mt-2.5 leading-relaxed">
-                  单价最便宜，适合横扫第 1 排冻梨与小瓷蛙；材质轻脆，遇强北风或磕边易弹开。
-                </p>
-
-                <!-- 可视化双属性指标条 -->
-                <div class="mt-3 space-y-2 bg-slate-950/65 p-2.5 rounded-xl border border-slate-800/80">
-                  <div>
-                    <div class="flex justify-between text-[10px] text-slate-300 mb-1">
-                      <span>抗风 / 吸震</span><span class="font-num text-sky-300">40%</span>
-                    </div>
-                    <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                      <div class="h-full bg-gradient-to-r from-sky-500 to-cyan-300 rounded-full" style="width: 40%;"></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="flex justify-between text-[10px] text-slate-300 mb-1">
-                      <span>内径容错率</span><span class="font-num text-sky-300">1.00x</span>
-                    </div>
-                    <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                      <div class="h-full bg-gradient-to-r from-sky-500 to-cyan-300 rounded-full" style="width: 55%;"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <button id="btnBuyPlastic" type="button" class="ui-btn mt-3.5 w-full py-2.5 rounded-xl bg-gradient-to-b from-sky-400 to-cyan-600 hover:from-sky-300 hover:to-cyan-500 text-slate-950 font-black text-xs sm:text-sm shadow-lg border border-sky-200/70">
-                <span id="priceTextPlastic" class="font-num">¥10 买 15 个</span>
-              </button>
-            </div>
-
-            <!-- 商品卡 2：韧性藤竹圈（店长力荐高亮） -->
-            <div class="shop-card rounded-2xl p-4 flex flex-col justify-between border-2 border-amber-400/75 relative shadow-[0_0_24px_rgba(251,191,36,0.16)]">
-              <span class="absolute -top-2.5 right-3 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 shadow">
-                ★ 店长力荐
-              </span>
-              <div>
-                <div class="flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-2">
-                    <span class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-lg">🎍</span>
-                    <div>
-                      <div class="font-black text-amber-200 text-sm leading-tight">韧性藤竹圈</div>
-                      <span class="text-[10px] text-amber-300/80">均衡主力·擦边滑入</span>
-                    </div>
-                  </div>
-                  <span class="font-num text-xs px-2 py-0.5 rounded-lg bg-slate-950/90 text-amber-300 border border-amber-500/40">
-                    余 <strong id="shopCountBamboo">0</strong>
-                  </span>
-                </div>
-
-                <p class="text-[11px] text-slate-300 mt-2.5 leading-relaxed">
-                  北方大集主力老竹圈，柔韧吸震不易弹飞，擦着玩具内沿也能晃进底座。
-                </p>
-
-                <div class="mt-3 space-y-2 bg-slate-950/65 p-2.5 rounded-xl border border-amber-500/25">
-                  <div>
-                    <div class="flex justify-between text-[10px] text-slate-300 mb-1">
-                      <span>抗风 / 吸震</span><span class="font-num text-amber-300">78%</span>
-                    </div>
-                    <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                      <div class="h-full bg-gradient-to-r from-amber-500 to-yellow-300 rounded-full" style="width: 78%;"></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="flex justify-between text-[10px] text-slate-300 mb-1">
-                      <span>内径容错率</span><span class="font-num text-amber-300">1.15x</span>
-                    </div>
-                    <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                      <div class="h-full bg-gradient-to-r from-amber-500 to-yellow-300 rounded-full" style="width: 78%;"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <button id="btnBuyBamboo" type="button" class="ui-btn ui-btn-primary mt-3.5 w-full py-2.5 rounded-xl font-black text-xs sm:text-sm">
-                <span id="priceTextBamboo" class="font-num">¥10 买 8 个</span>
-              </button>
-            </div>
-
-            <!-- 商品卡 3：加重铜芯大圈 -->
-            <div class="shop-card rounded-2xl p-4 flex flex-col justify-between border-t-2 border-t-rose-500/80">
-              <div>
-                <div class="flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-2">
-                    <span class="w-9 h-9 rounded-xl bg-rose-500/15 border border-rose-400/45 flex items-center justify-center text-lg">🏅</span>
-                    <div>
-                      <div class="font-black text-rose-200 text-sm leading-tight">加重铜芯圈</div>
-                      <span class="text-[10px] text-rose-300/80">白鹅克星·无视狂风</span>
-                    </div>
-                  </div>
-                  <span class="font-num text-xs px-2 py-0.5 rounded-lg bg-slate-950/90 text-rose-300 border border-rose-500/40">
-                    余 <strong id="shopCountCopper">0</strong>
-                  </span>
-                </div>
-
-                <p class="text-[11px] text-slate-300 mt-2.5 leading-relaxed">
-                  红绸实心铜圈，沉甸甸极低反弹，超大内径专攻第 3 排红白机与 5.2m 大白鹅！
-                </p>
-
-                <div class="mt-3 space-y-2 bg-slate-950/65 p-2.5 rounded-xl border border-slate-800/80">
-                  <div>
-                    <div class="flex justify-between text-[10px] text-slate-300 mb-1">
-                      <span>抗风 / 吸震</span><span class="font-num text-rose-300">98%</span>
-                    </div>
-                    <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                      <div class="h-full bg-gradient-to-r from-rose-500 to-amber-400 rounded-full" style="width: 98%;"></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div class="flex justify-between text-[10px] text-slate-300 mb-1">
-                      <span>内径容错率</span><span class="font-num text-rose-300">1.32x</span>
-                    </div>
-                    <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                      <div class="h-full bg-gradient-to-r from-rose-500 to-amber-400 rounded-full" style="width: 98%;"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <button id="btnBuyCopper" type="button" class="ui-btn ui-btn-crimson mt-3.5 w-full py-2.5 rounded-xl font-black text-xs sm:text-sm">
-                <span id="priceTextCopper" class="font-num">¥20 买 5 个</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 商铺底部操作栏 -->
-        <div class="bg-slate-950/90 px-5 py-3.5 border-t border-slate-800/90 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div class="flex items-center gap-2.5 text-slate-400">
-            <span>压岁钱见底了？</span>
-            <button id="btnClaimNewYearPocket" type="button" class="ui-btn px-3 py-1.5 rounded-xl bg-red-950/90 hover:bg-red-900 text-amber-200 border border-amber-400/45 font-bold">
-              🧧 领长辈拜年红包 (+¥30)
-            </button>
-          </div>
-          <button id="btnConfirmCloseShop" type="button" class="ui-btn ui-btn-primary px-6 py-2 rounded-xl font-black text-sm">
-            拿着圈上场开套！
-          </button>
+          <button id="btnConfirmCloseShop" type="button" class="ui-btn ui-btn-primary">拿着圈上场</button>
         </div>
       </div>
     </div>
 
-    <!-- =================================================================== -->
-    <!-- UI/UX Pro Max 重构：年货战利品背包与年代图鉴 Bento 弹窗 (bagModal)  -->
-    <!-- =================================================================== -->
-    <div id="bagModal" role="dialog" aria-modal="true" aria-labelledby="bagModalTitle" class="hidden absolute inset-0 bg-slate-950/75 backdrop-blur-md z-40 flex items-center justify-center p-3 sm:p-5">
-      <div class="w-full max-w-4xl bag-modal-shell rounded-3xl overflow-hidden flex flex-col max-h-[92vh] border border-emerald-400/40">
-        <div class="bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-950 px-5 py-4 border-b border-emerald-400/40 flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3.5">
-            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-700 p-0.5 shadow-lg shrink-0">
-              <div class="w-full h-full rounded-[14px] bg-slate-950/85 flex items-center justify-center text-2xl">
-                🎒
-              </div>
+    <div id="bagModal" role="dialog" aria-modal="true" aria-labelledby="bagModalTitle" class="hidden absolute inset-0 z-40 flex items-center justify-center p-3 sm:p-6" style="background:rgba(1,4,9,0.72);">
+      <div class="gh-modal-shell w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh]">
+        <div class="gh-modal-header px-4 py-3 border-b flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <h2 id="bagModalTitle" class="gh-title">背包与图鉴</h2>
+              <span class="gh-badge">永久收藏</span>
             </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <h2 id="bagModalTitle" class="font-serif-cn text-lg sm:text-xl font-black text-amber-200 tracking-wider">
-                  年货战利品背包 & 北方冬集图鉴
-                </h2>
-                <span class="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400/15 text-emerald-200 border border-emerald-400/35">
-                  永久印章收藏
-                </span>
-              </div>
-              <p class="text-xs text-emerald-100/75 mt-0.5">
-                套中的宝贝永久点亮图鉴，多余战利品可卖回老王换压岁钱继续买圈
-              </p>
-            </div>
+            <p class="gh-muted text-xs mt-1">套中的东西会点亮图鉴。重复的可以卖回老王。</p>
           </div>
-
-          <div class="flex items-center gap-3">
-            <div class="bg-slate-950/75 border border-emerald-400/40 rounded-2xl px-3.5 py-1.5 text-right shadow-inner">
-              <span class="text-[10px] uppercase tracking-wider text-emerald-200/75 block">战利品总估值</span>
-              <span id="modalBagTotalValue" class="font-num font-extrabold text-emerald-300 text-lg leading-tight">¥0</span>
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="gh-stat">
+              <span class="gh-kicker">估值</span>
+              <strong id="modalBagTotalValue" class="font-num">¥0</strong>
             </div>
-            <button id="btnCloseBag" type="button" aria-label="关闭背包图鉴" class="ui-btn ui-btn-ghost w-10 h-10 rounded-xl text-amber-200 font-bold text-base">
-              ✕
-            </button>
+            <button id="btnCloseBag" type="button" aria-label="关闭背包图鉴" class="ui-btn ui-btn-icon">✕</button>
           </div>
         </div>
 
-        <div class="bg-slate-950/70 px-5 py-3 border-b border-slate-800/90 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div class="flex flex-wrap items-center gap-4">
-            <div class="flex items-center gap-2.5">
-              <span class="font-bold text-amber-300">📖 图鉴进度</span>
-              <div class="w-28 h-2.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
-                <div id="bagDexProgressBar" class="h-full bg-gradient-to-r from-emerald-400 to-amber-400 transition-all duration-300" style="width: 0%;"></div>
-              </div>
-              <strong id="bagDexStatusText" class="font-num text-white">0 / 10 种</strong>
-            </div>
-            <span class="text-slate-700 hidden sm:inline">|</span>
-            <span class="text-slate-300">摊位剩余：<strong id="bagStallRemainText" class="font-num text-emerald-300">13 / 13</strong></span>
+        <div class="gh-modal-toolbar px-4 py-2 border-b flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-3 text-xs">
+            <span class="gh-muted">图鉴</span>
+            <div class="gh-progress"><div id="bagDexProgressBar" style="width:0%;"></div></div>
+            <strong id="bagDexStatusText" class="font-num text-xs">0 / 10 种</strong>
+            <span class="gh-muted">摊位剩余 <strong id="bagStallRemainText" class="font-num" style="color:#e6edf3;">13 / 13</strong></span>
           </div>
-
           <div class="flex flex-wrap items-center gap-2">
-            <button id="btnRestockFromBag" type="button" class="ui-btn ui-btn-ghost px-3 py-1.5 rounded-xl text-amber-200 font-bold text-xs">
-              🔄 喊老王补满摊位新货
-            </button>
-            <button id="btnSellDuplicates" type="button" class="ui-btn ui-btn-primary px-3.5 py-1.5 rounded-xl font-black text-xs">
-              💰 一键卖出重复项 (各留1件收藏)
-            </button>
+            <button id="btnRestockFromBag" type="button" class="ui-btn">补满摊位</button>
+            <button id="btnSellDuplicates" type="button" class="ui-btn ui-btn-primary">卖出重复项</button>
           </div>
         </div>
 
-        <div id="bagGridContainer" class="p-4 sm:p-5 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs">
-        </div>
+        <div id="bagGridContainer" class="p-4 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs"></div>
 
-        <div class="bg-slate-950/90 px-5 py-3.5 border-t border-slate-800/90 flex flex-wrap items-center justify-between gap-2 text-xs">
-          <span class="text-slate-400">💡 哪怕卖掉手头库存，“已点亮”的图鉴印章与称号进度依然永久保留</span>
-          <button id="btnConfirmCloseBag" type="button" class="ui-btn ui-btn-emerald px-6 py-2 rounded-xl font-black text-sm">
-            返回集市继续套圈
-          </button>
+        <div class="gh-modal-footer px-4 py-3 border-t flex flex-wrap items-center justify-between gap-2">
+          <span class="gh-muted text-xs">卖掉库存后，已点亮的图鉴和称号仍会保留。</span>
+          <button id="btnConfirmCloseBag" type="button" class="ui-btn ui-btn-primary">返回集市</button>
         </div>
       </div>
     </div>
 
-    <!-- =================================================================== -->
-    <!-- UI/UX Pro Max 重构：北方冬集荣誉榜与生涯战绩弹窗 (honorModal)       -->
-    <!-- =================================================================== -->
-    <div id="honorModal" role="dialog" aria-modal="true" aria-labelledby="honorModalTitle" class="hidden absolute inset-0 bg-slate-950/75 backdrop-blur-md z-40 flex items-center justify-center p-3 sm:p-5">
-      <div class="w-full max-w-2xl honor-modal-shell rounded-3xl overflow-hidden flex flex-col max-h-[92vh] border border-amber-400/45">
-        <div class="bg-gradient-to-r from-amber-950 via-red-900 to-amber-950 px-5 py-4 border-b border-amber-400/45 flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3.5">
-            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-300 to-red-600 p-0.5 shadow-lg shrink-0">
-              <div class="w-full h-full rounded-[14px] bg-slate-950/85 flex items-center justify-center text-2xl">
-                👑
-              </div>
-            </div>
-            <div>
-              <h2 id="honorModalTitle" class="font-serif-cn text-lg sm:text-xl font-black text-amber-200 tracking-wider lantern-glow">
-                北方冬集荣誉榜 & 赶集生涯战绩
-              </h2>
-              <p class="text-xs text-amber-100/80 mt-0.5">
-                记录您在腊月年集套圈摊上的每一发空心绝杀与连击辉煌
-              </p>
-            </div>
+    <div id="honorModal" role="dialog" aria-modal="true" aria-labelledby="honorModalTitle" class="hidden absolute inset-0 z-40 flex items-center justify-center p-3 sm:p-6" style="background:rgba(1,4,9,0.72);">
+      <div class="gh-modal-shell w-full max-w-2xl overflow-hidden flex flex-col max-h-[92vh]">
+        <div class="gh-modal-header px-4 py-3 border-b flex items-center justify-between gap-3">
+          <div>
+            <h2 id="honorModalTitle" class="gh-title">荣誉与战绩</h2>
+            <p class="gh-muted text-xs mt-1">空心绝杀、连击和称号都记在这里。</p>
           </div>
-          <button id="btnCloseHonor" type="button" aria-label="关闭荣誉榜" class="ui-btn ui-btn-ghost w-10 h-10 rounded-xl text-amber-200 font-bold text-base">
-            ✕
-          </button>
+          <button id="btnCloseHonor" type="button" aria-label="关闭荣誉榜" class="ui-btn ui-btn-icon">✕</button>
         </div>
 
-        <div class="p-4 sm:p-5 overflow-y-auto space-y-5 text-xs sm:text-sm">
-          <div class="bg-gradient-to-r from-amber-500/15 via-red-600/15 to-amber-500/15 border border-amber-400/50 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-inner">
+        <div class="p-4 overflow-y-auto space-y-4 text-sm">
+          <div class="gh-note flex flex-wrap items-center justify-between gap-3">
             <div>
-              <span class="text-[11px] uppercase tracking-wider text-amber-200/75 block">当前集市江湖称号</span>
-              <span id="modalCurrentTitle" class="font-serif-cn text-xl sm:text-2xl font-black text-amber-300 mt-0.5 block lantern-glow">🧤 赶集凑热闹</span>
+              <span class="gh-kicker">当前称号</span>
+              <span id="modalCurrentTitle" class="text-base font-medium" style="color:#e6edf3;">赶集凑热闹</span>
             </div>
-            <button id="btnCelebrateFireworkInModal" type="button" class="ui-btn ui-btn-crimson px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm">
-              🎆 放礼花庆贺
-            </button>
+            <button id="btnCelebrateFireworkInModal" type="button" class="ui-btn">放礼花</button>
           </div>
 
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-            <div class="dex-card rounded-2xl p-3 border-t-2 border-t-sky-400/70">
-              <div class="text-slate-400 text-[11px] font-medium">累计甩圈</div>
-              <div id="statTotalThrows" class="font-num font-extrabold text-xl text-sky-300 mt-1">0</div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div class="gh-card p-3">
+              <div class="gh-kicker">累计甩圈</div>
+              <div id="statTotalThrows" class="font-num text-lg mt-1">0</div>
             </div>
-            <div class="dex-card rounded-2xl p-3 border-t-2 border-t-emerald-400/70">
-              <div class="text-slate-400 text-[11px] font-medium">累计套中</div>
-              <div id="statTotalHits" class="font-num font-extrabold text-xl text-emerald-300 mt-1">0</div>
+            <div class="gh-card p-3">
+              <div class="gh-kicker">累计套中</div>
+              <div id="statTotalHits" class="font-num text-lg mt-1">0</div>
             </div>
-            <div class="dex-card rounded-2xl p-3 border-t-2 border-t-amber-400/70">
-              <div class="text-slate-400 text-[11px] font-medium">空心绝杀</div>
-              <div id="statPerfectHits" class="font-num font-extrabold text-xl text-amber-300 mt-1">0</div>
+            <div class="gh-card p-3">
+              <div class="gh-kicker">空心绝杀</div>
+              <div id="statPerfectHits" class="font-num text-lg mt-1">0</div>
             </div>
-            <div class="dex-card rounded-2xl p-3 border-t-2 border-t-rose-400/70">
-              <div class="text-slate-400 text-[11px] font-medium">最高连中</div>
-              <div id="statMaxCombo" class="font-num font-extrabold text-xl text-rose-300 mt-1">0连</div>
+            <div class="gh-card p-3">
+              <div class="gh-kicker">最高连中</div>
+              <div id="statMaxCombo" class="font-num text-lg mt-1">0连</div>
             </div>
           </div>
 
-          <div class="space-y-2.5">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-amber-300/90 px-0.5">
-              🏆 腊月年集 5 阶荣誉晋升路
-            </h3>
-            <div id="honorTiersList" class="space-y-2.5">
-            </div>
+          <div class="space-y-2">
+            <h3 class="gh-section-label"><span>五阶称号</span></h3>
+            <div id="honorTiersList" class="space-y-2"></div>
           </div>
         </div>
 
-        <div class="bg-slate-950/90 px-5 py-3.5 border-t border-slate-800/90 flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div class="flex flex-wrap items-center gap-1.5 text-slate-400">
+        <div class="gh-modal-footer px-4 py-3 border-t flex flex-wrap items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center gap-1.5 gh-muted text-xs">
             <span class="ui-kbd">Space</span><span>蓄力</span>
             <span class="ui-kbd">1/2/3</span><span>切圈</span>
             <span class="ui-kbd">B</span><span>商铺</span>
@@ -794,71 +782,43 @@
             <span class="ui-kbd">F</span><span>烤火</span>
             <span class="ui-kbd">E</span><span>鞭炮</span>
           </div>
-          <button id="btnConfirmCloseHonor" type="button" class="ui-btn ui-btn-primary px-6 py-2 rounded-xl font-black text-sm">
-            继续称霸年集
-          </button>
+          <button id="btnConfirmCloseHonor" type="button" class="ui-btn ui-btn-primary">继续套圈</button>
         </div>
       </div>
     </div>
 
-    <!-- 底部极简悬浮毛玻璃功能坞 -->
-    <div class="absolute bottom-3.5 left-3.5 right-3.5 flex flex-wrap items-end justify-between gap-2.5 pointer-events-none z-20">
-      <!-- 左侧：极简 2 字功能键 + 图标分段圈种切换器 -->
-      <div class="flex flex-wrap items-center gap-1.5 pointer-events-auto glass-panel-gold rounded-2xl p-1.5">
-        <button id="btnWarmHands" type="button" title="凑近红泥炭火盆烤手回温 (F)" aria-label="烤手回温" class="ui-btn ui-btn-warm px-3 py-1.5 rounded-xl font-black text-xs">
-          <span>🔥</span><span>烤手</span><span class="ui-kbd">F</span>
-        </button>
-        <button id="btnTalkNpcPreview" type="button" title="找摊主老王买圈与东北话砍价 (B)" aria-label="老王商铺" class="ui-btn ui-btn-crimson px-3 py-1.5 rounded-xl font-black text-xs">
-          <span>🏪</span><span>商铺</span><span class="ui-kbd">B</span>
-        </button>
-        <button id="btnOpenBagBottom" type="button" title="查看战利品背包与年代图鉴 (G)" aria-label="背包图鉴" class="ui-btn ui-btn-emerald px-3 py-1.5 rounded-xl font-bold text-xs">
-          <span>🎒</span><span>图鉴</span><span class="ui-kbd">G</span>
-        </button>
-
-        <div class="hidden sm:block w-px h-6 bg-slate-700/80 mx-0.5"></div>
-
-        <!-- 极简图标分段式圈种切换器 -->
-        <div class="flex items-center bg-slate-950/85 border border-slate-700/80 rounded-xl p-1 gap-1" role="group" aria-label="切换套圈种类">
-          <button id="btnSelectPlastic" type="button" data-ring="plastic" title="快捷键 1：细塑料圈（轻巧量大）" aria-label="选择细塑料圈" class="ring-select-btn ui-btn !min-h-[30px] px-2 py-1 rounded-lg bg-sky-500/25 border border-sky-400 text-sky-200 font-bold text-xs">
-            <span>⭕</span>
-            <span id="hudCountPlastic" class="font-num text-sky-200">3</span>
-          </button>
-          <button id="btnSelectBamboo" type="button" data-ring="bamboo" title="快捷键 2：韧性藤竹圈（抗风柔韧）" aria-label="选择韧性藤竹圈" class="ring-select-btn ui-btn !min-h-[30px] px-2 py-1 rounded-lg bg-slate-900/70 border border-transparent text-slate-300 font-bold text-xs">
-            <span>🎍</span>
-            <span id="hudCountBamboo" class="font-num text-amber-300">0</span>
-          </button>
-          <button id="btnSelectCopper" type="button" data-ring="copper" title="快捷键 3：加重铜芯大圈（无视狂风）" aria-label="选择加重铜芯圈" class="ring-select-btn ui-btn !min-h-[30px] px-2 py-1 rounded-lg bg-slate-900/70 border border-transparent text-slate-300 font-bold text-xs">
-            <span>🏅</span>
-            <span id="hudCountCopper" class="font-num text-rose-300">0</span>
-          </button>
+    <div class="absolute bottom-3 left-3 right-3 flex flex-wrap items-end justify-between gap-2 pointer-events-none z-20">
+      <div class="gh-dock flex flex-wrap items-center gap-1.5 pointer-events-auto p-1.5">
+        <button id="btnWarmHands" type="button" title="凑近红泥炭火盆烤手回温 (F)" aria-label="烤手回温" class="ui-btn">烤手<span class="ui-kbd">F</span></button>
+        <button id="btnTalkNpcPreview" type="button" title="找摊主老王买圈与东北话砍价 (B)" aria-label="老王商铺" class="ui-btn">商铺<span class="ui-kbd">B</span></button>
+        <button id="btnOpenBagBottom" type="button" title="查看战利品背包与年代图鉴 (G)" aria-label="背包图鉴" class="ui-btn">图鉴<span class="ui-kbd">G</span></button>
+        <div class="gh-seg" role="group" aria-label="切换套圈种类">
+          <button id="btnSelectPlastic" type="button" data-ring="plastic" title="快捷键 1：细塑料圈（轻巧量大）" aria-label="选择细塑料圈" class="ring-select-btn ui-btn ui-btn-active">塑料 <span id="hudCountPlastic" class="font-num">3</span></button>
+          <button id="btnSelectBamboo" type="button" data-ring="bamboo" title="快捷键 2：韧性藤竹圈（抗风柔韧）" aria-label="选择韧性藤竹圈" class="ring-select-btn ui-btn">竹圈 <span id="hudCountBamboo" class="font-num">0</span></button>
+          <button id="btnSelectCopper" type="button" data-ring="copper" title="快捷键 3：加重铜芯大圈（无视狂风）" aria-label="选择加重铜芯圈" class="ring-select-btn ui-btn">铜圈 <span id="hudCountCopper" class="font-num">0</span></button>
         </div>
       </div>
 
-      <!-- 右侧：紧凑发光蓄力条 + 极简大号蓄力主键 -->
-      <div class="pointer-events-auto flex items-center gap-3 glass-panel-gold rounded-2xl px-3.5 py-2">
+      <div class="gh-dock pointer-events-auto flex items-center gap-3 px-3 py-2">
         <div class="w-36 sm:w-48">
-          <div class="flex items-center justify-between text-[11px] font-bold mb-1">
-            <span id="activeRingLabel" class="text-sky-300">⭕ 塑料 (3)</span>
-            <span id="powerPercentText" class="font-num text-emerald-300 font-extrabold">0% · 1.5m</span>
+          <div class="flex items-center justify-between text-xs mb-1">
+            <span id="activeRingLabel" class="gh-muted">塑料 (3)</span>
+            <span id="powerPercentText" class="font-num">0% · 1.5m</span>
           </div>
-          <div class="relative w-full h-3.5 bg-slate-950 rounded-full overflow-hidden border border-slate-600/80 shadow-inner">
-            <div class="absolute top-0 bottom-0 left-[24%] w-0.5 bg-sky-300/60 z-10" title="第1排 1.5m"></div>
-            <div class="absolute top-0 bottom-0 left-[48%] w-0.5 bg-emerald-300/60 z-10" title="第2排 2.8m"></div>
-            <div class="absolute top-0 bottom-0 left-[73%] w-0.5 bg-amber-300/70 z-10" title="第3排 4.2m"></div>
-            <div class="absolute top-0 bottom-0 left-[90%] w-0.5 bg-rose-400 z-10" title="压轴白鹅 5.2m"></div>
-            <div id="powerBarFill" class="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 shadow-[0_0_12px_rgba(251,191,36,0.75)] transition-none" style="width: 0%;"></div>
+          <div class="power-track">
+            <div class="tick" style="left:24%" title="第1排 1.5m"></div>
+            <div class="tick" style="left:48%" title="第2排 2.8m"></div>
+            <div class="tick" style="left:73%" title="第3排 4.2m"></div>
+            <div class="tick" style="left:90%" title="压轴白鹅 5.2m"></div>
+            <div id="powerBarFill" style="width:0%;"></div>
           </div>
         </div>
-
-        <button id="btnHoldCharge" type="button" title="按住蓄力，松手甩圈 (Space)" aria-label="按住蓄力投圈" class="ui-btn ui-btn-primary px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm tracking-wide">
-          <span>🎯</span><span>蓄力</span><span class="ui-kbd !bg-slate-950/25 !border-slate-950/30">Space</span>
-        </button>
+        <button id="btnHoldCharge" type="button" title="按住蓄力，松手甩圈 (Space)" aria-label="按住蓄力投圈" class="ui-btn ui-btn-primary">蓄力<span class="ui-kbd">Space</span></button>
       </div>
     </div>
 
-    <!-- 顶部居中轻提示 Toast -->
-    <div id="toastBanner" class="pointer-events-none opacity-0 transition-opacity duration-300 absolute top-14 left-1/2 -translate-x-1/2 bg-slate-900/95 border border-amber-400 text-amber-200 px-4 py-2 rounded-full text-xs sm:text-sm font-bold shadow-xl z-50">
-      🔥 暖手完毕！准星已恢复稳定！
+    <div id="toastBanner" class="pointer-events-none opacity-0 transition-opacity duration-200 absolute top-14 left-1/2 -translate-x-1/2 px-3 py-2 text-sm z-50">
+      暖手完毕，准星已恢复稳定。
     </div>
   </main>
 
@@ -1639,225 +1599,561 @@
       state.npcAnimTimer = durationFrames;
     }
 
-    // 构建精细车削曲面 + 关节骨骼绑定的 3D 摊主老王
+    // 精修 3D 人物：分层五官、布料纤维、关节与手套手指。骨骼枢轴与旧动画保持一致。
+    function createFiberMap(base, speck, count) {
+      const c = document.createElement('canvas');
+      c.width = 128;
+      c.height = 128;
+      const g = c.getContext('2d');
+      g.fillStyle = base;
+      g.fillRect(0, 0, 128, 128);
+      for (let i = 0; i < count; i++) {
+        g.strokeStyle = speck;
+        g.lineWidth = 1;
+        g.beginPath();
+        const x = Math.random() * 128;
+        const y = Math.random() * 128;
+        g.moveTo(x, y);
+        g.lineTo(x + (Math.random() - 0.5) * 6, y + 4 + Math.random() * 8);
+        g.stroke();
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    function pbrMat(color, roughness, metalness, map, bumpScale, bumpOnly) {
+      return new THREE.MeshStandardMaterial({
+        color,
+        roughness,
+        metalness,
+        map: (map && !bumpOnly) ? map : null,
+        bumpMap: map || null,
+        bumpScale: map ? (bumpScale || 0.035) : 0
+      });
+    }
+
+    function putMesh(parent, geometry, material, x, y, z) {
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(x || 0, y || 0, z || 0);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      parent.add(mesh);
+      return mesh;
+    }
+
+    function scaleMesh(mesh, x, y, z) {
+      mesh.scale.set(x, y, z);
+      return mesh;
+    }
+
+    function attachStudioHead(parent, opt) {
+      const head = new THREE.Group();
+      const skin = pbrMat(opt.skin, 0.48, 0.0, opt.poreMap, 0.012, true);
+      const hair = pbrMat(opt.hair || 0x2a1b12, 0.72, 0.02, opt.fiberMap, 0.05);
+      const white = pbrMat(0xfff8f3, 0.16, 0.0);
+      const iris = pbrMat(opt.iris || 0x3d2918, 0.2, 0.08);
+      const pupil = pbrMat(0x09090b, 0.18, 0.04);
+      const lip = pbrMat(opt.lip || 0xb56b66, 0.34, 0.03);
+      const blush = new THREE.MeshStandardMaterial({
+        color: 0xd4526a,
+        transparent: true,
+        opacity: opt.blush == null ? 0.22 : opt.blush,
+        roughness: 0.55,
+        depthWrite: false
+      });
+
+      scaleMesh(putMesh(head, new THREE.SphereGeometry(0.42, 48, 36), skin, 0, 0, 0), 0.98, 1.08, 0.94);
+      scaleMesh(putMesh(head, new THREE.SphereGeometry(0.25, 28, 20), skin, 0, -0.18, 0.04), 0.96, 0.68, 0.8);
+      [-1, 1].forEach((s) => {
+        scaleMesh(putMesh(head, new THREE.SphereGeometry(0.082, 16, 12), skin, s * 0.4, -0.01, -0.01), 0.4, 0.92, 0.55);
+      });
+      scaleMesh(putMesh(head, new THREE.SphereGeometry(0.15, 18, 12), skin, 0, 0.14, 0.25), 2.2, 0.28, 0.5);
+
+      [-1, 1].forEach((s) => {
+        const ex = s * (opt.eyeGap || 0.145);
+        scaleMesh(putMesh(head, new THREE.SphereGeometry(0.064, 20, 16), white, ex, 0.05, 0.37), 1.15, 0.86, 0.55);
+        scaleMesh(putMesh(head, new THREE.SphereGeometry(0.038, 16, 12), iris, ex, 0.048, 0.408), 1, 1, 0.65);
+        putMesh(head, new THREE.SphereGeometry(0.018, 12, 10), pupil, ex, 0.048, 0.428);
+        putMesh(head, new THREE.SphereGeometry(0.007, 8, 8), white, ex + 0.012, 0.062, 0.438);
+        const lid = putMesh(
+          head,
+          new THREE.SphereGeometry(0.055, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.4),
+          skin,
+          ex,
+          0.086,
+          0.338
+        );
+        scaleMesh(lid, 1.22, 0.55, 0.75);
+        const brow = putMesh(head, new THREE.BoxGeometry(0.11, 0.018, 0.028), hair, ex, opt.browY || 0.15, 0.385);
+        brow.rotation.z = s > 0 ? -0.22 : 0.22;
+        const cheek = putMesh(head, new THREE.SphereGeometry(0.062, 12, 10), blush, s * 0.2, -0.03, 0.32);
+        scaleMesh(cheek, 1.15, 0.7, 0.35);
+        cheek.castShadow = false;
+      });
+
+      scaleMesh(putMesh(head, new THREE.SphereGeometry(0.038, 14, 12), skin, 0, 0.03, 0.378), 0.62, 1.4, 0.72);
+      scaleMesh(putMesh(head, new THREE.SphereGeometry(0.05, 16, 14), skin, 0, -0.028, 0.43), 1.05, 0.75, 0.82);
+      [-1, 1].forEach((s) => {
+        putMesh(head, new THREE.SphereGeometry(0.015, 8, 8), skin, s * 0.024, -0.048, 0.448);
+      });
+      scaleMesh(putMesh(head, new THREE.SphereGeometry(0.048, 16, 12), lip, 0, -0.122, 0.372), 1.45, 0.32, 0.48);
+      scaleMesh(putMesh(head, new THREE.SphereGeometry(0.052, 16, 12), lip, 0, -0.156, 0.362), 1.22, 0.42, 0.46);
+
+      if (opt.beard) {
+        [-1, 1].forEach((s) => {
+          const mustache = putMesh(head, new THREE.SphereGeometry(0.05, 14, 10), hair, s * 0.05, -0.1, 0.385);
+          scaleMesh(mustache, 1.15, 0.42, 0.5);
+          mustache.rotation.z = s * 0.35;
+        });
+        scaleMesh(putMesh(head, new THREE.SphereGeometry(0.19, 22, 16), hair, 0, -0.3, 0.1), 0.82, 1.05, 0.68);
+        [-1, 1].forEach((s) => {
+          scaleMesh(putMesh(head, new THREE.SphereGeometry(0.055, 12, 10), hair, s * 0.32, -0.08, 0.06), 0.5, 1.45, 0.55);
+        });
+      }
+
+      head.scale.setScalar(opt.scale || 1);
+      parent.add(head);
+      return head;
+    }
+
+    function attachMitten(parent, cloth, fur, y, side) {
+      const palm = putMesh(parent, new THREE.SphereGeometry(0.145, 22, 16), cloth, 0, y, 0.02);
+      scaleMesh(palm, 1.08, 0.78, 1.22);
+      const thumb = putMesh(parent, new THREE.SphereGeometry(0.05, 12, 10), cloth, side * 0.12, y + 0.03, 0.04);
+      scaleMesh(thumb, 0.72, 1.15, 0.72);
+      thumb.rotation.z = side * -0.7;
+      const cuff = putMesh(parent, new THREE.TorusGeometry(0.125, 0.032, 10, 18), fur, 0, y + 0.1, 0);
+      cuff.rotation.x = Math.PI * 0.5;
+    }
+
+    function attachGloveHand(parent, gloveMat, side) {
+      const palm = putMesh(parent, new THREE.SphereGeometry(0.155, 24, 18), gloveMat, 0, 0, 0);
+      scaleMesh(palm, 1.12, 0.7, 1.32);
+      putMesh(parent, new THREE.BoxGeometry(0.2, 0.045, 0.06), gloveMat, 0, 0.045, -0.08);
+      for (let i = 0; i < 4; i++) {
+        const x = -0.075 + i * 0.05;
+        const len = (i === 1 || i === 2) ? 0.18 : 0.15;
+        const zDrop = (i === 0 || i === 3) ? 0.02 : 0.05;
+        const finger = putMesh(parent, new THREE.CylinderGeometry(0.024, 0.03, len, 12), gloveMat, x, 0.01, -0.15 - zDrop);
+        finger.rotation.x = Math.PI * 0.48;
+        const tipZ = -0.15 - zDrop - Math.cos(Math.PI * 0.02) * (len * 0.55);
+        const tipY = 0.01 - Math.sin(Math.PI * 0.48) * (len * 0.45);
+        putMesh(parent, new THREE.SphereGeometry(0.028, 10, 8), gloveMat, x, tipY, tipZ);
+      }
+      const thumb = putMesh(parent, new THREE.CylinderGeometry(0.028, 0.032, 0.13, 12), gloveMat, side * 0.13, 0.04, -0.02);
+      thumb.rotation.z = side * 0.85;
+      thumb.rotation.x = 0.35;
+      putMesh(parent, new THREE.SphereGeometry(0.032, 10, 8), gloveMat, side * 0.18, 0.09, -0.05);
+    }
+
+    // 写实人体：CC0 MakeHuman 便装模型。几何人只在模型加载失败时退回。
+    let realHumans = null;
+    let humanClock = null;
+
+    function softenHumanMaterials(root) {
+      root.traverse((obj) => {
+        if (!obj.isMesh) return;
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+        obj.frustumCulled = false;
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+        mats.forEach((mat) => {
+          if (!mat) return;
+          mat.transparent = false;
+          mat.opacity = 1;
+          mat.depthWrite = true;
+          mat.alphaTest = 0.02;
+          mat.side = THREE.FrontSide;
+          if (mat.map && mat.map.isTexture) {
+            mat.map.encoding = THREE.sRGBEncoding;
+            mat.map.userData = mat.map.userData || {};
+            if (!mat.map.userData.eyesFixed && mat.name && mat.name.indexOf('body') !== -1) {
+              repaintHumanEyes(mat.map);
+            }
+          }
+        });
+      });
+    }
+
+    function repaintHumanEyes(texture) {
+      const img = texture.image;
+      texture.userData = texture.userData || {};
+      if (!img || texture.userData.eyesFixed) return;
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const px = imageData.data;
+      const w = canvas.width;
+      const h = canvas.height;
+      const seen = new Uint8Array((px.length / 4) | 0);
+      const blobs = [];
+      const isRed = (byte) => {
+        const r = px[byte];
+        const g = px[byte + 1];
+        const b = px[byte + 2];
+        return r > 165 && g < 95 && b < 110 && (r - g) > 70;
+      };
+      for (let p = 0; p < seen.length; p++) {
+        if (seen[p] || !isRed(p * 4)) continue;
+        const stack = [p];
+        seen[p] = 1;
+        let count = 0;
+        let sx = 0;
+        let sy = 0;
+        let minx = w;
+        let maxx = 0;
+        let miny = h;
+        let maxy = 0;
+        while (stack.length) {
+          const q = stack.pop();
+          const x = q % w;
+          const y = (q / w) | 0;
+          count += 1;
+          sx += x;
+          sy += y;
+          if (x < minx) minx = x;
+          if (x > maxx) maxx = x;
+          if (y < miny) miny = y;
+          if (y > maxy) maxy = y;
+          const next = [q - 1, q + 1, q - w, q + w];
+          for (let k = 0; k < next.length; k++) {
+            const n = next[k];
+            if (n < 0 || n >= seen.length || seen[n]) continue;
+            if (Math.abs((n % w) - x) > 1) continue;
+            if (!isRed(n * 4)) continue;
+            seen[n] = 1;
+            stack.push(n);
+          }
+        }
+        if (count > 40 && count < 8000) {
+          blobs.push({
+            cx: sx / count,
+            cy: sy / count,
+            rx: Math.max(3, (maxx - minx) * 0.5),
+            ry: Math.max(2, (maxy - miny) * 0.5)
+          });
+        }
+      }
+      blobs.forEach((b) => {
+        ctx.fillStyle = '#f3f0ec';
+        ctx.beginPath();
+        ctx.ellipse(b.cx, b.cy, b.rx, b.ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#6a4630';
+        ctx.beginPath();
+        ctx.ellipse(b.cx, b.cy, b.rx * 0.46, b.ry * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1a120e';
+        ctx.beginPath();
+        ctx.arc(b.cx, b.cy, Math.max(1.4, b.rx * 0.2), 0, Math.PI * 2);
+        ctx.fill();
+      });
+      texture.image = canvas;
+      texture.needsUpdate = true;
+      texture.userData.eyesFixed = true;
+    }
+
+    function mountRealHuman(gltf, anchor, yaw, scale) {
+      const model = gltf.scene;
+      softenHumanMaterials(model);
+      const holder = new THREE.Group();
+      holder.rotation.y = yaw;
+      holder.scale.setScalar(scale || 1);
+      holder.add(model);
+      anchor.add(holder);
+      const mixer = new THREE.AnimationMixer(model);
+      const clips = {};
+      gltf.animations.forEach((clip) => {
+        clips[clip.name] = mixer.clipAction(clip);
+      });
+      const rig = {
+        model,
+        mixer,
+        clips,
+        current: '',
+        handR: model.getObjectByName('hand_r'),
+        handL: model.getObjectByName('hand_l'),
+        play(name) {
+          if (!clips[name] || this.current === name) return;
+          const next = clips[name];
+          const prev = this.current ? clips[this.current] : null;
+          next.reset().fadeIn(0.18).play();
+          if (prev) prev.fadeOut(0.18);
+          this.current = name;
+        }
+      };
+      rig.play('idle');
+      return rig;
+    }
+
+    function updateRealHumans() {
+      if (!realHumans) return;
+      const dt = Math.min(0.05, humanClock.getDelta());
+      const cheer = state.crowdCheerTimer > 0;
+      const ownerClip = (state.npcAnimState === 'cheer_slap' || state.npcAnimState === 'hand_rings') ? 'wave' : 'idle';
+      realHumans.owner.play(ownerClip);
+      realHumans.owner.mixer.update(dt);
+      realHumans.auntie.play(cheer ? 'wave' : 'idle');
+      realHumans.auntie.mixer.update(dt);
+      realHumans.kid.play(cheer ? 'wave' : 'idle');
+      realHumans.kid.mixer.update(dt);
+      if (state.throwFlickTimer > 0) state.throwFlickTimer--;
+      const charging = state.isCharging || state.throwFlickTimer > 0;
+      realHumans.player.play(charging ? 'wave' : 'idle');
+      realHumans.player.mixer.update(dt);
+      if (cheer) {
+        crowdAuntieGroup.position.y = Math.abs(Math.sin(state.time * 0.35)) * 0.06;
+        crowdKidGroup.position.y = Math.abs(Math.sin(state.time * 0.42)) * 0.08;
+      } else {
+        crowdAuntieGroup.position.y = 0;
+        crowdKidGroup.position.y = Math.sin(state.time * 0.08) * 0.015;
+      }
+
+      if (realHumans.player.handR && handRingMesh) {
+        const hold = new THREE.Vector3();
+        realHumans.player.handR.getWorldPosition(hold);
+        const pull = state.isCharging ? (state.chargePower / 100) : 0;
+        const flick = state.throwFlickTimer > 0 ? (state.throwFlickTimer / 14) : 0;
+        hold.y += 0.04 - pull * 0.05 + flick * 0.08;
+        hold.z += 0.12 - pull * 0.08;
+        handRingMesh.position.copy(hold);
+        handRingMesh.rotation.set(Math.PI * 0.5, 0, 0);
+      }
+      if (fpsSpareRingMeshes.length && realHumans.player.handL) {
+        const activeSpec = RING_SPECS[state.selectedRingType] || RING_SPECS.plastic;
+        const spareCount = Math.max(0, (state.rings[state.selectedRingType] || 0) - 1);
+        const left = new THREE.Vector3();
+        realHumans.player.handL.getWorldPosition(left);
+        fpsSpareRingMeshes.forEach((mesh, idx) => {
+          mesh.visible = idx < spareCount;
+          mesh.material.color.setHex(activeSpec.hexColor);
+          mesh.scale.setScalar(activeSpec.radiusScale * 0.55);
+          mesh.position.set(left.x, left.y + 0.04 + idx * 0.035, left.z + 0.08);
+        });
+      }
+    }
+
+    function loadRealHumans(onFail) {
+      if (typeof THREE.GLTFLoader !== 'function') {
+        onFail();
+        return;
+      }
+      const loader = new THREE.GLTFLoader();
+      const modelUrl = 'assets/people/suited.glb';
+      const loaded = [];
+      let failed = false;
+      const take = () => {
+        loader.load(modelUrl, (gltf) => {
+          loaded.push(gltf);
+          if (loaded.length < 4 || failed) return;
+          humanClock = new THREE.Clock();
+          npcGroup = new THREE.Group();
+          npcGroup.position.copy(normToWorld3D(0, 1.07, 0));
+          scene.add(npcGroup);
+
+          crowdAuntieGroup = new THREE.Group();
+          crowdAuntieGroup.position.set(-1.85, 0, -10.15);
+          scene.add(crowdAuntieGroup);
+
+          crowdKidGroup = new THREE.Group();
+          crowdKidGroup.position.set(1.95, 0, -10.35);
+          scene.add(crowdKidGroup);
+
+          const playerAnchor = new THREE.Group();
+          playerAnchor.position.set(1.7, 0, 1.35);
+          scene.add(playerAnchor);
+
+          try {
+            realHumans = {
+            owner: mountRealHuman(loaded[0], npcGroup, 0, 1),
+            auntie: mountRealHuman(loaded[1], crowdAuntieGroup, 0.15, 0.96),
+            kid: mountRealHuman(loaded[2], crowdKidGroup, -0.2, 0.62),
+              player: mountRealHuman(loaded[3], playerAnchor, Math.PI, 1)
+            };
+          } catch (err) {
+            console.error(err);
+            onFail();
+          }
+
+        fpsSpareRingMeshes = [];
+        for (let i = 0; i < 4; i++) {
+          const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(0.16, 0.014, 10, 24),
+            new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.35, metalness: 0.2 })
+          );
+          ring.rotation.x = Math.PI * 0.5;
+          scene.add(ring);
+          fpsSpareRingMeshes.push(ring);
+        }
+      }, undefined, () => {
+        if (failed) return;
+        failed = true;
+        onFail();
+      });
+      };
+      take();
+      take();
+      take();
+      take();
+    }
+
     function build3DStallOwnerNpc() {
+      loadRealHumans(buildPrimitiveStallOwner);
+    }
+
+    function buildPrimitiveStallOwner() {
       npcGroup = new THREE.Group();
       const pos = normToWorld3D(0, 1.07, 0);
       npcGroup.position.copy(pos);
 
-      const quiltedTex = createQuiltedCoatTexture('#365314', '#1e3a08');
-      const coatMat = new THREE.MeshStandardMaterial({
-        map: quiltedTex,
-        bumpMap: quiltedTex,
-        bumpScale: 0.04,
-        roughness: 0.78
-      });
-      const darkCoatMat = new THREE.MeshStandardMaterial({ color: 0x1a2e05, roughness: 0.85 });
-      const furMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.95 });
-      const hatMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.75 });
-      const skinMat = new THREE.MeshStandardMaterial({ color: 0xfed7aa, roughness: 0.55 });
-      const scarfMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.65 });
-      const bootMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 });
+      const quiltedTex = createQuiltedCoatTexture('#3f6212', '#1a2e05');
+      quiltedTex.repeat.set(2.2, 2.4);
+      const poreMap = createFiberMap('#f3d0b4', 'rgba(120,72,48,0.35)', 700);
+      const furMap = createFiberMap('#f7f3ea', 'rgba(90,80,70,0.35)', 900);
+      furMap.repeat.set(2, 2);
+      const coatMat = pbrMat(0xffffff, 0.72, 0.04, quiltedTex, 0.05);
+      const darkCloth = pbrMat(0x1c2a12, 0.78, 0.03);
+      const furMat = pbrMat(0xf4efe6, 0.9, 0.0, furMap, 0.07);
+      const hatMat = pbrMat(0x334155, 0.62, 0.06);
+      const scarfMat = pbrMat(0xb42318, 0.58, 0.04);
+      const bootMat = pbrMat(0x1e293b, 0.72, 0.08);
+      const brass = pbrMat(0xc6a15b, 0.28, 0.82);
+      const leather = pbrMat(0x3f2a22, 0.55, 0.12);
 
-      // 双腿棉裤与厚底棉靴
       [-0.28, 0.28].forEach((lx) => {
-        const boot = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.23, 0.58, 18), bootMat);
-        boot.position.set(lx, 0.29, 0);
-        boot.castShadow = true;
-        npcGroup.add(boot);
+        const thigh = putMesh(npcGroup, new THREE.CylinderGeometry(0.16, 0.18, 0.42, 20), darkCloth, lx, 0.62, 0);
+        const knee = putMesh(npcGroup, new THREE.SphereGeometry(0.11, 16, 12), darkCloth, lx, 0.4, 0.03);
+        const boot = putMesh(npcGroup, new THREE.CylinderGeometry(0.15, 0.18, 0.42, 20), bootMat, lx, 0.22, 0.02);
+        const sole = putMesh(npcGroup, new THREE.BoxGeometry(0.28, 0.06, 0.42), leather, lx, 0.04, 0.05);
+        const furTrim = putMesh(npcGroup, new THREE.TorusGeometry(0.16, 0.03, 8, 16), furMat, lx, 0.4, 0.02);
+        furTrim.rotation.x = Math.PI * 0.5;
+        thigh.castShadow = knee.castShadow = boot.castShadow = true;
       });
 
-      // 上半身骨骼根节点（支持拍腿欢呼后仰、肉疼弯腰等动作）
       npcTorsoGroup = new THREE.Group();
       npcTorsoGroup.position.set(0, 0.48, 0);
       npcGroup.add(npcTorsoGroup);
 
-      // 使用 LatheGeometry 车削出带收腰与厚重下摆褶皱的军大衣主体
       const coatProfile = [
-        new THREE.Vector2(0.76, 0.0),
-        new THREE.Vector2(0.72, 0.35),
-        new THREE.Vector2(0.60, 0.75),
-        new THREE.Vector2(0.64, 1.15),
-        new THREE.Vector2(0.56, 1.48),
-        new THREE.Vector2(0.42, 1.56)
+        new THREE.Vector2(0.8, 0.0),
+        new THREE.Vector2(0.86, 0.16),
+        new THREE.Vector2(0.7, 0.48),
+        new THREE.Vector2(0.56, 0.82),
+        new THREE.Vector2(0.68, 1.16),
+        new THREE.Vector2(0.6, 1.4),
+        new THREE.Vector2(0.42, 1.56),
+        new THREE.Vector2(0.26, 1.64)
       ];
-      const coatGeo = new THREE.LatheGeometry(coatProfile, 28);
-      const torsoMesh = new THREE.Mesh(coatGeo, coatMat);
-      torsoMesh.castShadow = true;
-      torsoMesh.receiveShadow = true;
-      npcTorsoGroup.add(torsoMesh);
+      const torsoMesh = putMesh(npcTorsoGroup, new THREE.LatheGeometry(coatProfile, 40), coatMat, 0, 0, 0);
+      [-1, 1].forEach((s) => {
+        const shoulder = putMesh(npcTorsoGroup, new THREE.SphereGeometry(0.2, 20, 14), coatMat, s * 0.48, 1.32, 0.02);
+        scaleMesh(shoulder, 1.05, 0.8, 0.9);
+        const lapel = putMesh(npcTorsoGroup, new THREE.BoxGeometry(0.16, 0.72, 0.06), furMat, s * 0.12, 1.18, 0.58);
+        lapel.rotation.z = s * -0.18;
+        lapel.rotation.x = -0.08;
+      });
+      const hem = putMesh(npcTorsoGroup, new THREE.TorusGeometry(0.74, 0.045, 8, 28), darkCloth, 0, 0.08, 0);
+      hem.rotation.x = Math.PI * 0.5;
 
-      // 军大衣黑色武装腰带与金铜皮带扣
-      const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.14, 24), bootMat);
-      belt.position.y = 0.74;
-      npcTorsoGroup.add(belt);
-      const buckle = new THREE.Mesh(
-        new THREE.BoxGeometry(0.22, 0.16, 0.08),
-        new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.75, roughness: 0.25 })
-      );
-      buckle.position.set(0, 0.74, 0.61);
-      npcTorsoGroup.add(buckle);
-
-      // 双排铜扣
-      [-0.15, 0.15].forEach((bx) => {
-        for (let by = 0.92; by <= 1.38; by += 0.22) {
-          const btn = new THREE.Mesh(new THREE.SphereGeometry(0.038, 10, 10), darkCoatMat);
-          btn.position.set(bx, by, 0.60);
-          npcTorsoGroup.add(btn);
+      const belt = putMesh(npcTorsoGroup, new THREE.CylinderGeometry(0.6, 0.6, 0.1, 32), leather, 0, 0.74, 0);
+      const buckle = putMesh(npcTorsoGroup, new THREE.BoxGeometry(0.2, 0.14, 0.05), brass, 0, 0.74, 0.6);
+      putMesh(npcTorsoGroup, new THREE.BoxGeometry(0.08, 0.08, 0.02), pbrMat(0x7f1d1d, 0.4, 0.2), 0, 0.74, 0.63);
+      [-0.14, 0.14].forEach((bx) => {
+        for (let by = 0.96; by <= 1.36; by += 0.2) {
+          putMesh(npcTorsoGroup, new THREE.SphereGeometry(0.032, 12, 10), brass, bx, by, 0.62);
         }
       });
-
-      // 厚实羊羔毛翻领 + 大红围巾
-      const furCollar = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.14, 14, 28), furMat);
-      furCollar.rotation.x = Math.PI * 0.5;
-      furCollar.position.set(0, 1.50, 0.02);
-      npcTorsoGroup.add(furCollar);
-
-      const scarfTorus = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.11, 14, 28), scarfMat);
-      scarfTorus.rotation.x = Math.PI * 0.5;
-      scarfTorus.position.set(0, 1.58, 0.05);
-      npcTorsoGroup.add(scarfTorus);
-
-      const scarfTail = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.58, 0.08), scarfMat);
-      scarfTail.position.set(0.22, 1.24, 0.58);
-      scarfTail.rotation.z = -0.12;
-      npcTorsoGroup.add(scarfTail);
-
-      // 左臂三段骨骼（左肩 Pivot -> 上臂 -> 左肘 Pivot -> 前臂+挂圈+棉手套）
-      npcLeftArmPivot = new THREE.Group();
-      npcLeftArmPivot.position.set(-0.56, 1.38, 0.08);
-      npcTorsoGroup.add(npcLeftArmPivot);
-
-      const upperArmL = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.55, 16), coatMat);
-      upperArmL.position.set(0, -0.24, 0);
-      upperArmL.castShadow = true;
-      npcLeftArmPivot.add(upperArmL);
-
-      npcLeftForearmPivot = new THREE.Group();
-      npcLeftForearmPivot.position.set(0, -0.48, 0);
-      npcLeftArmPivot.add(npcLeftForearmPivot);
-
-      const forearmL = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.15, 0.52, 16), coatMat);
-      forearmL.position.set(0, -0.22, 0);
-      forearmL.castShadow = true;
-      npcLeftForearmPivot.add(forearmL);
-
-      const cuffL = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.045, 10, 20), furMat);
-      cuffL.rotation.x = Math.PI * 0.5;
-      cuffL.position.set(0, -0.46, 0);
-      npcLeftForearmPivot.add(cuffL);
-
-      const mittL = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 14), scarfMat);
-      mittL.position.set(0, -0.54, 0);
-      npcLeftForearmPivot.add(mittL);
-
-      // 左小臂上挂着的一串 3D 五彩套圈（随左臂递圈动作一起运动！）
-      [0x38bdf8, 0xfacc15, 0xfb7185].forEach((col, idx) => {
-        const armRing = new THREE.Mesh(
-          new THREE.TorusGeometry(0.27, 0.032, 12, 26),
-          new THREE.MeshStandardMaterial({ color: col, roughness: 0.28, metalness: 0.25 })
-        );
-        armRing.position.set(0, -0.18 - idx * 0.08, 0.06);
-        armRing.rotation.x = Math.PI * 0.42;
-        npcLeftForearmPivot.add(armRing);
+      [-1, 1].forEach((s) => {
+        const pocket = putMesh(npcTorsoGroup, new THREE.BoxGeometry(0.22, 0.16, 0.04), darkCloth, s * 0.28, 0.95, 0.58);
+        pocket.rotation.x = -0.08;
       });
 
-      // 右臂三段骨骼（右肩 Pivot -> 上臂 -> 右肘 Pivot -> 前臂+棉手套）
-      npcRightArmPivot = new THREE.Group();
-      npcRightArmPivot.position.set(0.56, 1.38, 0.08);
-      npcTorsoGroup.add(npcRightArmPivot);
+      const furCollar = putMesh(npcTorsoGroup, new THREE.TorusGeometry(0.44, 0.12, 16, 32), furMat, 0, 1.5, 0.02);
+      furCollar.rotation.x = Math.PI * 0.5;
+      const scarfTorus = putMesh(npcTorsoGroup, new THREE.TorusGeometry(0.4, 0.085, 14, 28), scarfMat, 0, 1.58, 0.06);
+      scarfTorus.rotation.x = Math.PI * 0.52;
+      const scarfTail = putMesh(npcTorsoGroup, new THREE.BoxGeometry(0.16, 0.62, 0.06), scarfMat, 0.24, 1.2, 0.52);
+      scarfTail.rotation.z = -0.18;
+      putMesh(npcTorsoGroup, new THREE.BoxGeometry(0.14, 0.08, 0.07), scarfMat, 0.22, 0.9, 0.5);
 
-      const upperArmR = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.55, 16), coatMat);
-      upperArmR.position.set(0, -0.24, 0);
-      upperArmR.castShadow = true;
-      npcRightArmPivot.add(upperArmR);
+      function buildNpcArm(side) {
+        const shoulder = new THREE.Group();
+        shoulder.position.set(side * 0.56, 1.38, 0.08);
+        npcTorsoGroup.add(shoulder);
+        const upper = putMesh(shoulder, new THREE.CylinderGeometry(0.13, 0.15, 0.46, 18), coatMat, 0, -0.24, 0);
+        upper.castShadow = true;
+        putMesh(shoulder, new THREE.SphereGeometry(0.09, 14, 12), coatMat, 0, -0.46, 0);
+        const forearmPivot = new THREE.Group();
+        forearmPivot.position.set(0, -0.48, 0);
+        shoulder.add(forearmPivot);
+        putMesh(forearmPivot, new THREE.CylinderGeometry(0.12, 0.14, 0.42, 18), coatMat, 0, -0.2, 0);
+        const cuff = putMesh(forearmPivot, new THREE.TorusGeometry(0.13, 0.04, 10, 20), furMat, 0, -0.4, 0);
+        cuff.rotation.x = Math.PI * 0.5;
+        attachMitten(forearmPivot, scarfMat, furMat, -0.52, side);
+        return { shoulder, forearmPivot };
+      }
 
-      npcRightForearmPivot = new THREE.Group();
-      npcRightForearmPivot.position.set(0, -0.48, 0);
-      npcRightArmPivot.add(npcRightForearmPivot);
+      const leftArm = buildNpcArm(-1);
+      npcLeftArmPivot = leftArm.shoulder;
+      npcLeftForearmPivot = leftArm.forearmPivot;
+      [0x38bdf8, 0xeab308, 0xfb7185].forEach((col, idx) => {
+        const armRing = putMesh(
+          npcLeftForearmPivot,
+          new THREE.TorusGeometry(0.26, 0.028, 16, 40),
+          pbrMat(col, 0.22, 0.35),
+          0,
+          -0.16 - idx * 0.07,
+          0.08
+        );
+        armRing.rotation.x = Math.PI * 0.42;
+      });
 
-      const forearmR = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.15, 0.52, 16), coatMat);
-      forearmR.position.set(0, -0.22, 0);
-      forearmR.castShadow = true;
-      npcRightForearmPivot.add(forearmR);
+      const rightArm = buildNpcArm(1);
+      npcRightArmPivot = rightArm.shoulder;
+      npcRightForearmPivot = rightArm.forearmPivot;
 
-      const cuffR = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.045, 10, 20), furMat);
-      cuffR.rotation.x = Math.PI * 0.5;
-      cuffR.position.set(0, -0.46, 0);
-      npcRightForearmPivot.add(cuffR);
-
-      const mittR = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 14), scarfMat);
-      mittR.position.set(0, -0.54, 0);
-      npcRightForearmPivot.add(mittR);
-
-      // 3D 头部总成
       npcHeadGroup = new THREE.Group();
       npcHeadGroup.position.set(0, 1.92, 0.05);
       npcTorsoGroup.add(npcHeadGroup);
-
-      const headSphere = new THREE.Mesh(new THREE.SphereGeometry(0.43, 24, 24), skinMat);
-      headSphere.scale.set(0.96, 1.04, 0.96);
-      headSphere.castShadow = true;
-      npcHeadGroup.add(headSphere);
-
-      // 冻红苹果肌、大鼻子、浓眉与八字胡
-      const cheekMat = new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.48 });
-      [-0.22, 0.22].forEach((cx) => {
-        const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.095, 12, 12), cheekMat);
-        cheek.position.set(cx, -0.04, 0.35);
-        npcHeadGroup.add(cheek);
+      attachStudioHead(npcHeadGroup, {
+        skin: 0xe7b089,
+        poreMap,
+        hair: 0x140e0b,
+        fiberMap: furMap,
+        iris: 0x3a2618,
+        beard: true,
+        blush: 0.28,
+        scale: 1
       });
 
-      const nose = new THREE.Mesh(new THREE.SphereGeometry(0.082, 14, 14), skinMat);
-      nose.position.set(0, 0.01, 0.43);
-      npcHeadGroup.add(nose);
-
-      const eyeMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2 });
-      [-0.15, 0.15].forEach((ex) => {
-        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 12), eyeMat);
-        eye.position.set(ex, 0.09, 0.38);
-        npcHeadGroup.add(eye);
-
-        // 浓眉
-        const brow = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.038, 0.05), eyeMat);
-        brow.position.set(ex, 0.18, 0.39);
-        brow.rotation.z = ex > 0 ? -0.15 : 0.15;
-        npcHeadGroup.add(brow);
-
-        // 立体微翘八字胡
-        const mustache = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.22, 10), eyeMat);
-        mustache.position.set(ex * 0.72, -0.11, 0.41);
-        mustache.rotation.z = ex > 0 ? Math.PI * 0.62 : -Math.PI * 0.62;
-        npcHeadGroup.add(mustache);
-      });
-
-      // 3D 雷锋帽
-      const hatDome = new THREE.Mesh(new THREE.SphereGeometry(0.46, 24, 18, 0, Math.PI * 2, 0, Math.PI * 0.58), hatMat);
-      hatDome.position.y = 0.07;
-      hatDome.castShadow = true;
-      npcHeadGroup.add(hatDome);
-
-      const frontFur = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.28, 0.24), furMat);
-      frontFur.position.set(0, 0.27, 0.36);
-      npcHeadGroup.add(frontFur);
-
-      [-0.45, 0.45].forEach((fx) => {
-        const earFlap = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.58, 0.34), furMat);
-        earFlap.position.set(fx, -0.02, 0.06);
-        earFlap.rotation.z = fx > 0 ? -0.12 : 0.12;
-        npcHeadGroup.add(earFlap);
-      });
-
-      const redStar = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.09, 0),
-        new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xb91c1c, roughness: 0.25 })
+      const hatDome = putMesh(
+        npcHeadGroup,
+        new THREE.SphereGeometry(0.4, 32, 22, 0, Math.PI * 2, 0, Math.PI * 0.5),
+        hatMat,
+        0,
+        0.28,
+        -0.02
       );
-      redStar.position.set(0, 0.29, 0.49);
-      npcHeadGroup.add(redStar);
+      hatDome.castShadow = true;
+      const brim = putMesh(npcHeadGroup, new THREE.BoxGeometry(0.62, 0.07, 0.22), furMat, 0, 0.3, 0.22);
+      [-1, 1].forEach((s) => {
+        const flap = putMesh(npcHeadGroup, new THREE.BoxGeometry(0.14, 0.42, 0.22), hatMat, s * 0.4, 0.02, 0.0);
+        flap.rotation.z = s * -0.08;
+        const flapFur = putMesh(npcHeadGroup, new THREE.BoxGeometry(0.08, 0.36, 0.14), furMat, s * 0.4, 0.0, 0.06);
+        flapFur.rotation.z = flap.rotation.z;
+      });
+      const star = putMesh(npcHeadGroup, new THREE.OctahedronGeometry(0.07, 0), pbrMat(0xef4444, 0.3, 0.2), 0, 0.42, 0.32);
+      star.material.emissive = new THREE.Color(0x7f1d1d);
+      star.material.emissiveIntensity = 0.35;
 
       for (let i = 0; i < 4; i++) {
         const puff = new THREE.Mesh(
-          new THREE.SphereGeometry(0.12, 12, 12),
+          new THREE.SphereGeometry(0.1, 12, 12),
           new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 })
         );
         scene.add(puff);
@@ -1865,207 +2161,181 @@
       }
 
       scene.add(npcGroup);
-
-      // 同时构建摊位两侧围观村民与玩家第一人称 3D 双手
       build3DCrowdSpectators();
       build3DFpsPlayerHands();
     }
 
-    // 构建摊位旁围观的 3D 东北花棉袄大妈 + 举糖葫芦的虎头帽小孩
     function build3DCrowdSpectators() {
       const floralTex = createFloralClothTexture();
-      const floralMat = new THREE.MeshStandardMaterial({ map: floralTex, roughness: 0.75 });
-      const skinMat = new THREE.MeshStandardMaterial({ color: 0xfed7aa, roughness: 0.55 });
-      const furMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.9 });
-      const scarfMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.7 });
+      const floralMat = pbrMat(0xffffff, 0.68, 0.03, floralTex, 0.04);
+      const poreMap = createFiberMap('#f6d2b8', 'rgba(140,80,60,0.3)', 500);
+      const furMap = createFiberMap('#f8f5ef', 'rgba(80,70,60,0.3)', 600);
+      const furMat = pbrMat(0xf8fafc, 0.88, 0.0, furMap, 0.06);
+      const scarfMat = pbrMat(0xfacc15, 0.62, 0.03);
+      const scarfRed = pbrMat(0x9f1239, 0.66, 0.04);
 
-      // 1. 左侧围观：穿东北大花棉袄的赶集大妈
       crowdAuntieGroup = new THREE.Group();
       crowdAuntieGroup.position.set(-STALL_HALF_W - 1.55, 0, -4.5);
       crowdAuntieGroup.rotation.y = 0.48;
 
-      const auntieCoat = new THREE.Mesh(
-        new THREE.LatheGeometry([
-          new THREE.Vector2(0.55, 0),
-          new THREE.Vector2(0.52, 0.5),
-          new THREE.Vector2(0.45, 1.15),
-          new THREE.Vector2(0.36, 1.45)
-        ], 20),
-        floralMat
+      const auntieCoat = putMesh(crowdAuntieGroup, new THREE.LatheGeometry([
+        new THREE.Vector2(0.62, 0),
+        new THREE.Vector2(0.66, 0.28),
+        new THREE.Vector2(0.5, 0.85),
+        new THREE.Vector2(0.42, 1.25),
+        new THREE.Vector2(0.32, 1.48)
+      ], 32), floralMat, 0, 0.32, 0);
+      putMesh(crowdAuntieGroup, new THREE.TorusGeometry(0.34, 0.06, 10, 20), furMat, 0, 1.78, 0.02).rotation.x = Math.PI * 0.5;
+      const auntieHeadPivot = new THREE.Group();
+      auntieHeadPivot.position.set(0, 2.02, 0);
+      crowdAuntieGroup.add(auntieHeadPivot);
+      attachStudioHead(auntieHeadPivot, {
+        skin: 0xf0c3a2,
+        poreMap,
+        hair: 0x3f2a22,
+        iris: 0x4a3424,
+        blush: 0.34,
+        lip: 0xc46b78,
+        browY: 0.145,
+        scale: 1
+      });
+      auntieHeadPivot.scale.setScalar(0.78);
+      const headScarf = putMesh(
+        auntieHeadPivot,
+        new THREE.SphereGeometry(0.4, 28, 18, 0, Math.PI * 2, 0, Math.PI * 0.48),
+        scarfRed,
+        0,
+        0.16,
+        -0.02
       );
-      auntieCoat.position.y = 0.35;
-      auntieCoat.castShadow = true;
-      crowdAuntieGroup.add(auntieCoat);
+      const knot = putMesh(auntieHeadPivot, new THREE.SphereGeometry(0.08, 12, 10), scarfRed, 0, -0.08, -0.32);
+      scaleMesh(knot, 1.2, 0.7, 0.8);
 
-      const auntieHead = new THREE.Mesh(new THREE.SphereGeometry(0.32, 18, 18), skinMat);
-      auntieHead.position.y = 2.02;
-      auntieHead.castShadow = true;
-      crowdAuntieGroup.add(auntieHead);
-
-      const headScarf = new THREE.Mesh(
-        new THREE.SphereGeometry(0.34, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.65),
-        new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.7 })
-      );
-      headScarf.position.y = 2.04;
-      crowdAuntieGroup.add(headScarf);
-
-      crowdAuntieArmL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.13, 0.65, 12), floralMat);
-      crowdAuntieArmL.position.set(-0.42, 1.45, 0.18);
-      crowdAuntieArmL.rotation.x = 0.5;
-      crowdAuntieGroup.add(crowdAuntieArmL);
-
-      crowdAuntieArmR = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.13, 0.65, 12), floralMat);
-      crowdAuntieArmR.position.set(0.42, 1.45, 0.18);
-      crowdAuntieArmR.rotation.x = 0.5;
-      crowdAuntieGroup.add(crowdAuntieArmR);
-
+      function makeAuntieArm(x) {
+        const arm = new THREE.Group();
+        arm.position.set(x, 1.45, 0.18);
+        arm.rotation.x = 0.45;
+        putMesh(arm, new THREE.CylinderGeometry(0.1, 0.12, 0.58, 14), floralMat, 0, 0, 0);
+        putMesh(arm, new THREE.SphereGeometry(0.07, 12, 10), floralMat, 0, -0.28, 0.02);
+        crowdAuntieGroup.add(arm);
+        return arm;
+      }
+      crowdAuntieArmL = makeAuntieArm(-0.42);
+      crowdAuntieArmR = makeAuntieArm(0.42);
       scene.add(crowdAuntieGroup);
 
-      // 2. 右侧围观：戴虎头帽举着糖葫芦看热闹的小孩
       crowdKidGroup = new THREE.Group();
       crowdKidGroup.position.set(STALL_HALF_W + 1.35, 0, -5.2);
       crowdKidGroup.rotation.y = -0.52;
-
-      const kidCoatMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.7 });
-      const kidBody = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.40, 0.95, 18), kidCoatMat);
-      kidBody.position.y = 0.62;
-      kidBody.castShadow = true;
-      crowdKidGroup.add(kidBody);
-
-      const kidScarf = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.08, 10, 20), scarfMat);
+      const kidCoatMat = pbrMat(0x0369a1, 0.62, 0.04);
+      const kidBody = putMesh(crowdKidGroup, new THREE.LatheGeometry([
+        new THREE.Vector2(0.34, 0),
+        new THREE.Vector2(0.36, 0.25),
+        new THREE.Vector2(0.28, 0.7),
+        new THREE.Vector2(0.22, 0.95)
+      ], 24), kidCoatMat, 0, 0.2, 0);
+      const kidScarf = putMesh(crowdKidGroup, new THREE.TorusGeometry(0.24, 0.055, 12, 20), scarfMat, 0, 1.12, 0);
       kidScarf.rotation.x = Math.PI * 0.5;
-      kidScarf.position.y = 1.12;
-      crowdKidGroup.add(kidScarf);
-
-      const kidHead = new THREE.Mesh(new THREE.SphereGeometry(0.26, 18, 18), skinMat);
-      kidHead.position.y = 1.38;
-      kidHead.castShadow = true;
-      crowdKidGroup.add(kidHead);
-
-      // 虎头帽（红金配色+两只小虎耳）
-      const tigerHat = new THREE.Mesh(
-        new THREE.SphereGeometry(0.28, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.65),
-        new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.6 })
-      );
-      tigerHat.position.y = 1.40;
-      crowdKidGroup.add(tigerHat);
-
-      [-0.20, 0.20].forEach((tx) => {
-        const tigerEar = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.16, 10), scarfMat);
-        tigerEar.position.set(tx, 1.66, 0);
-        crowdKidGroup.add(tigerEar);
+      const kidHeadPivot = new THREE.Group();
+      kidHeadPivot.position.set(0, 1.36, 0);
+      crowdKidGroup.add(kidHeadPivot);
+      attachStudioHead(kidHeadPivot, {
+        skin: 0xf6c7a8,
+        poreMap,
+        hair: 0x1c1917,
+        iris: 0x3f2e22,
+        blush: 0.38,
+        lip: 0xd48984,
+        eyeGap: 0.15,
+        browY: 0.14,
+        scale: 1
       });
-
-      // 小孩右手举着一串冰糖葫芦
-      crowdKidArmR = new THREE.Group();
-      crowdKidArmR.position.set(0.34, 0.98, 0.1);
-      const kidArmMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.10, 0.48, 12), kidCoatMat);
-      kidArmMesh.position.y = 0.18;
-      crowdKidArmR.add(kidArmMesh);
-
-      const miniStick = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.012, 0.012, 0.65, 8),
-        new THREE.MeshStandardMaterial({ color: 0xfde047 })
+      kidHeadPivot.scale.setScalar(0.64);
+      const tigerHat = putMesh(
+        kidHeadPivot,
+        new THREE.SphereGeometry(0.4, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.48),
+        pbrMat(0xd97706, 0.55, 0.05),
+        0,
+        0.2,
+        -0.02
       );
-      miniStick.position.set(0, 0.52, 0.08);
-      crowdKidArmR.add(miniStick);
+      const tigerMark = pbrMat(0x111827, 0.6, 0.05);
+      [-1, 1].forEach((s) => {
+        const ear = putMesh(kidHeadPivot, new THREE.ConeGeometry(0.07, 0.14, 12), scarfMat, s * 0.18, 0.32, 0);
+        putMesh(kidHeadPivot, new THREE.SphereGeometry(0.028, 8, 8), pbrMat(0xfca5a5, 0.4, 0.02), s * 0.18, 0.3, 0.02);
+        const stripe = putMesh(kidHeadPivot, new THREE.BoxGeometry(0.03, 0.08, 0.02), tigerMark, s * 0.08, 0.16, 0.34);
+        stripe.rotation.z = s * 0.4;
+      });
+      putMesh(kidHeadPivot, new THREE.SphereGeometry(0.03, 8, 8), tigerMark, 0, 0.12, 0.36);
 
-      const hawMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.1 });
+      crowdKidArmR = new THREE.Group();
+      crowdKidArmR.position.set(0.32, 0.98, 0.1);
+      putMesh(crowdKidArmR, new THREE.CylinderGeometry(0.07, 0.08, 0.42, 12), kidCoatMat, 0, 0.16, 0);
+      putMesh(crowdKidArmR, new THREE.SphereGeometry(0.055, 12, 10), kidCoatMat, 0, 0.36, 0.02);
+      const miniStick = putMesh(crowdKidArmR, new THREE.CylinderGeometry(0.012, 0.012, 0.62, 8), pbrMat(0xfde047, 0.7, 0.02), 0, 0.55, 0.08);
+      const hawMat = pbrMat(0xdc2626, 0.18, 0.06);
+      const sugar = pbrMat(0xf8fafc, 0.12, 0.15);
       for (let b = 0; b < 4; b++) {
-        const berry = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 10), hawMat);
-        berry.position.set(0, 0.36 + b * 0.11, 0.08);
-        crowdKidArmR.add(berry);
+        const berry = putMesh(crowdKidArmR, new THREE.SphereGeometry(0.05, 14, 12), hawMat, 0, 0.38 + b * 0.1, 0.08);
+        const glaze = putMesh(crowdKidArmR, new THREE.SphereGeometry(0.052, 12, 10), sugar, 0, 0.385 + b * 0.1, 0.09);
+        glaze.material = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.28,
+          roughness: 0.08,
+          metalness: 0.05,
+          depthWrite: false
+        });
+        glaze.castShadow = false;
       }
-
       crowdKidGroup.add(crowdKidArmR);
       scene.add(crowdKidGroup);
     }
 
-    // 构建玩家第一人称 3D 红格子棉手套双手（左手拿一摞备用圈，右手握当前圈拉弓甩腕）
     function build3DFpsPlayerHands() {
       fpsHandsGroup = new THREE.Group();
       const plaidTex = createPlaidGloveTexture();
-      const gloveMat = new THREE.MeshStandardMaterial({
-        map: plaidTex,
-        bumpMap: plaidTex,
-        bumpScale: 0.02,
-        roughness: 0.78
-      });
-      const sleeveMat = new THREE.MeshStandardMaterial({
-        map: createQuiltedCoatTexture('#1e3a8a', '#0f172a'),
-        roughness: 0.85
-      });
-      const furCuffMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.92 });
+      const gloveMat = pbrMat(0xffffff, 0.62, 0.06, plaidTex, 0.03);
+      const sleeveMat = pbrMat(0xffffff, 0.74, 0.04, createQuiltedCoatTexture('#1e3a8a', '#0f172a'), 0.045);
+      const furMap = createFiberMap('#f8fafc', 'rgba(80,80,90,0.35)', 500);
+      const furCuffMat = pbrMat(0xf8fafc, 0.9, 0.0, furMap, 0.06);
 
-      // 1. 左手（画面左下前景：捧着一摞备用套圈）
       fpsLeftHandGroup = new THREE.Group();
       fpsLeftHandGroup.position.set(-1.15, 1.55, 2.35);
       fpsLeftHandGroup.rotation.set(0.35, 0.42, -0.25);
-
-      const sleeveL = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.75, 16), sleeveMat);
-      sleeveL.position.set(-0.15, -0.35, 0.35);
+      const sleeveL = putMesh(fpsLeftHandGroup, new THREE.CylinderGeometry(0.16, 0.2, 0.7, 20), sleeveMat, -0.15, -0.35, 0.35);
       sleeveL.rotation.x = Math.PI * 0.35;
-      fpsLeftHandGroup.add(sleeveL);
-
-      const cuffL = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.05, 10, 20), furCuffMat);
-      cuffL.position.set(-0.05, -0.10, 0.12);
+      const cuffL = putMesh(fpsLeftHandGroup, new THREE.TorusGeometry(0.16, 0.045, 12, 22), furCuffMat, -0.05, -0.1, 0.12);
       cuffL.rotation.x = Math.PI * 0.85;
-      fpsLeftHandGroup.add(cuffL);
+      attachGloveHand(fpsLeftHandGroup, gloveMat, -1);
 
-      const palmL = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 16), gloveMat);
-      palmL.scale.set(1.1, 0.82, 1.25);
-      fpsLeftHandGroup.add(palmL);
-
-      const thumbL = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.06, 0.18, 10), gloveMat);
-      thumbL.position.set(0.14, 0.06, -0.05);
-      thumbL.rotation.z = -0.65;
-      fpsLeftHandGroup.add(thumbL);
-
-      // 左手握着的 4 个叠放备用圈模型
       fpsSpareRingMeshes = [];
       for (let i = 0; i < 4; i++) {
-        const sRing = new THREE.Mesh(
-          new THREE.TorusGeometry(0.34, 0.032, 12, 28),
-          new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.3, metalness: 0.2 })
+        const sRing = putMesh(
+          fpsLeftHandGroup,
+          new THREE.TorusGeometry(0.34, 0.028, 14, 36),
+          pbrMat(0x38bdf8, 0.24, 0.32),
+          0.12,
+          0.08 + i * 0.045,
+          -0.16
         );
-        sRing.position.set(0.12, 0.08 + i * 0.045, -0.16);
         sRing.rotation.x = Math.PI * 0.42;
         sRing.rotation.y = -0.25;
-        fpsLeftHandGroup.add(sRing);
         fpsSpareRingMeshes.push(sRing);
       }
-
       fpsHandsGroup.add(fpsLeftHandGroup);
 
-      // 2. 右手（画面右下前景：握着待发套圈，随蓄力向后拉弓、松手向前甩腕）
       fpsRightHandGroup = new THREE.Group();
       fpsRightHandGroup.position.set(0.85, 1.52, 2.25);
-
-      const sleeveR = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.78, 16), sleeveMat);
-      sleeveR.position.set(0.18, -0.36, 0.38);
+      const sleeveR = putMesh(fpsRightHandGroup, new THREE.CylinderGeometry(0.16, 0.2, 0.72, 20), sleeveMat, 0.18, -0.36, 0.38);
       sleeveR.rotation.x = Math.PI * 0.35;
       sleeveR.rotation.z = 0.22;
-      fpsRightHandGroup.add(sleeveR);
-
-      const cuffR = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.05, 10, 20), furCuffMat);
-      cuffR.position.set(0.06, -0.10, 0.14);
+      const cuffR = putMesh(fpsRightHandGroup, new THREE.TorusGeometry(0.16, 0.045, 12, 22), furCuffMat, 0.06, -0.1, 0.14);
       cuffR.rotation.x = Math.PI * 0.85;
-      fpsRightHandGroup.add(cuffR);
-
-      const palmR = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 16), gloveMat);
-      palmR.scale.set(1.1, 0.82, 1.28);
-      fpsRightHandGroup.add(palmR);
-
-      const thumbR = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.06, 0.19, 10), gloveMat);
-      thumbR.position.set(-0.14, 0.06, -0.06);
-      thumbR.rotation.z = 0.65;
-      fpsRightHandGroup.add(thumbR);
-
+      attachGloveHand(fpsRightHandGroup, gloveMat, 1);
       fpsHandsGroup.add(fpsRightHandGroup);
       scene.add(fpsHandsGroup);
     }
-
-    // 实时驱动老王的 4 套骨骼动作、围观村民欢呼与玩家第一人称 3D 双手
     function updateCharactersAndHandsRig() {
       if (state.npcAnimTimer > 0) {
         state.npcAnimTimer--;
@@ -2075,6 +2345,11 @@
       }
 
       const t = state.time;
+      if (state.crowdCheerTimer > 0) state.crowdCheerTimer--;
+      if (realHumans) {
+        updateRealHumans();
+        return;
+      }
 
       // 1. 摊主老王 4 套骨骼姿态插值
       if (npcGroup && npcTorsoGroup && npcLeftArmPivot && npcRightArmPivot) {
@@ -2126,7 +2401,6 @@
       }
 
       // 2. 围观大妈与虎头帽小孩的动态欢呼/看热闹动画
-      if (state.crowdCheerTimer > 0) state.crowdCheerTimer--;
       const isCheering = state.crowdCheerTimer > 0;
 
       if (crowdAuntieGroup && crowdAuntieArmL && crowdAuntieArmR) {
@@ -3230,8 +3504,8 @@
         // 买圈砍价时：平滑推近至摊主老王半身特写机位
         cd.mode = 'shop_npc';
         const npcWorld = normToWorld3D(0, 1.07, 0);
-        targetPos = { x: -0.75, y: 2.45, z: npcWorld.z + 3.45 };
-        targetLook = { x: 0.25, y: 2.05, z: npcWorld.z };
+        targetPos = { x: -0.22, y: 1.62, z: npcWorld.z + 1.05 };
+        targetLook = { x: 0.02, y: 1.58, z: npcWorld.z };
         lerpFactor = 0.09;
       } else if (cd.closeupTimer > 0) {
         // 套中大奖/大白鹅时：3D 慢动作推近环绕特写演出
@@ -3292,8 +3566,9 @@
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.outputEncoding = THREE.sRGBEncoding;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.15;
+      renderer.toneMappingExposure = 1.12;
 
       raycaster = new THREE.Raycaster();
 
@@ -3303,8 +3578,8 @@
       dirLight = new THREE.DirectionalLight(0xf97316, 1.1);
       dirLight.position.set(6.5, 11.5, 5.5);
       dirLight.castShadow = true;
-      dirLight.shadow.mapSize.width = 1024;
-      dirLight.shadow.mapSize.height = 1024;
+      dirLight.shadow.mapSize.width = 2048;
+      dirLight.shadow.mapSize.height = 2048;
       dirLight.shadow.camera.near = 1;
       dirLight.shadow.camera.far = 32;
       dirLight.shadow.camera.left = -9;
@@ -3312,6 +3587,13 @@
       dirLight.shadow.camera.top = 9;
       dirLight.shadow.camera.bottom = -9;
       scene.add(dirLight);
+
+      const charFill = new THREE.DirectionalLight(0xfff3e0, 0.48);
+      charFill.position.set(-3.4, 4.4, 7.4);
+      scene.add(charFill);
+      const charRim = new THREE.DirectionalLight(0x9ec9ff, 0.36);
+      charRim.position.set(3.1, 5.2, -7.6);
+      scene.add(charRim);
 
       build3DMarketEnvironment();
       build3DStallOwnerNpc();
@@ -3720,13 +4002,8 @@
     function syncComboAndHonorUI() {
       const mult = getComboMultiplier(state.comboCount);
       hudComboText.textContent = `${state.comboCount}连 (x${mult.toFixed(1)})`;
-      if (state.comboCount >= 2) {
-        hudComboContainer.className = 'flex items-center gap-1 bg-gradient-to-r from-amber-600 to-red-600 border border-yellow-300 rounded-lg px-2 py-1 shadow animate-pulse';
-        hudComboText.className = 'font-mono font-black text-white';
-      } else {
-        hudComboContainer.className = 'flex items-center gap-1 bg-amber-950/90 border border-amber-400/50 rounded-lg px-2 py-1 shadow';
-        hudComboText.className = 'font-mono font-black text-amber-200';
-      }
+      hudComboContainer.className = state.comboCount >= 2 ? 'gh-chip is-hot' : 'gh-chip';
+      hudComboText.className = 'font-num';
 
       let highestTitle = HONOR_TIERS[0].title;
       HONOR_TIERS.forEach((tier) => {
@@ -3752,23 +4029,17 @@
         const achieved = tier.check(state);
         const row = document.createElement('div');
         row.className = achieved
-          ? 'dex-card rounded-2xl p-3 flex items-center justify-between gap-3 border-l-4 border-l-amber-400'
-          : 'dex-card rounded-2xl p-3 flex items-center justify-between gap-3 opacity-60 border-l-4 border-l-slate-700';
+          ? 'gh-card p-3 flex items-center justify-between gap-3'
+          : 'gh-card is-muted p-3 flex items-center justify-between gap-3';
         row.innerHTML = `
-          <div class="flex items-center gap-3">
-            <span class="font-num text-xs font-extrabold w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-              achieved ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40' : 'bg-slate-800 text-slate-500'
-            }">0${idx + 1}</span>
-            <div>
-              <div class="font-bold text-sm ${achieved ? 'text-amber-200' : 'text-slate-400'}">${tier.title}</div>
-              <div class="text-[11px] text-slate-400 mt-0.5">${tier.desc}</div>
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="gh-badge font-num">0${idx + 1}</span>
+            <div class="min-w-0">
+              <div class="text-sm font-medium" style="color:#e6edf3;">${tier.title}</div>
+              <div class="gh-muted text-xs mt-0.5">${tier.desc}</div>
             </div>
           </div>
-          <span class="px-2.5 py-1 rounded-full text-[11px] font-black shrink-0 ${
-            achieved ? 'bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 shadow' : 'bg-slate-800/90 text-slate-500 border border-slate-700'
-          }">
-            ${achieved ? '✓ 已达成' : '待解锁'}
-          </span>
+          <span class="gh-badge ${achieved ? 'is-on' : ''}">${achieved ? '已达成' : '未达成'}</span>
         `;
         honorTiersList.appendChild(row);
       });
@@ -3812,43 +4083,24 @@
 
         const card = document.createElement('div');
         card.className = unlocked
-          ? 'dex-card rounded-2xl p-3.5 flex flex-col justify-between border-t-2 border-t-emerald-400/80'
-          : 'dex-card rounded-2xl p-3.5 flex flex-col justify-between opacity-65';
+          ? 'gh-card p-3 flex flex-col justify-between'
+          : 'gh-card is-muted p-3 flex flex-col justify-between';
 
         card.innerHTML = `
           <div>
             <div class="flex items-start justify-between gap-2">
-              <div class="flex items-center gap-2.5">
-                <span class="w-10 h-10 rounded-xl ${unlocked ? 'bg-emerald-500/15 border border-emerald-400/40' : 'bg-slate-900 border border-slate-700'} flex items-center justify-center text-xl shrink-0">
-                  ${unlocked ? item.emoji : '🔒'}
-                </span>
-                <div>
-                  <div class="font-black text-sm ${unlocked ? 'text-amber-200' : 'text-slate-400'} leading-tight">
-                    ${item.name}
-                  </div>
-                  <span class="inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                    unlocked ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/35' : 'bg-slate-800/80 text-slate-400 border border-slate-700'
-                  }">
-                    ${unlocked ? `✓ 已点亮 · 第${item.row}排` : `未解锁 · 第${item.row}排`}
-                  </span>
-                </div>
+              <div class="min-w-0">
+                <div class="text-sm font-medium" style="color:#e6edf3;">${unlocked ? item.name : '未解锁'}</div>
+                <span class="gh-badge ${unlocked ? 'is-on' : ''}">${unlocked ? `已点亮 · 第${item.row}排` : `第${item.row}排`}</span>
               </div>
-              <span class="font-num font-bold text-xs px-2 py-0.5 rounded-lg bg-slate-950/90 text-amber-300 border border-slate-700">
-                x${count}
-              </span>
+              <span class="gh-counter font-num">x${count}</span>
             </div>
-            <p class="text-[11px] text-slate-300 mt-2.5 leading-relaxed">
-              ${item.desc}
-            </p>
+            <p class="gh-muted text-xs mt-2 leading-relaxed">${item.desc}</p>
           </div>
-          <div class="mt-3 pt-2.5 border-t border-slate-800/90 flex items-center justify-between gap-2">
-            <span class="text-[11px] text-slate-400">回收 <strong class="text-amber-300 font-num">¥${item.sellValue}</strong></span>
-            <button type="button" data-sell-id="${id}" class="sell-single-btn ui-btn !min-h-[30px] px-3 py-1 rounded-lg font-bold text-xs ${
-              count > 0
-                ? 'ui-btn-primary'
-                : 'bg-slate-800/80 text-slate-500 border border-slate-700/60 cursor-not-allowed'
-            }" ${count > 0 ? '' : 'disabled'}>
-              ${count > 0 ? `💰 卖给老王 (+¥${item.sellValue})` : '暂无库存'}
+          <div class="mt-3 pt-2 flex items-center justify-between gap-2" style="border-top:1px solid #21262d;">
+            <span class="gh-muted text-xs">回收 <strong class="font-num" style="color:#e6edf3;">¥${item.sellValue}</strong></span>
+            <button type="button" data-sell-id="${id}" class="sell-single-btn ui-btn ${count > 0 ? 'ui-btn-primary' : ''}" ${count > 0 ? '' : 'disabled'}>
+              ${count > 0 ? `卖出 +¥${item.sellValue}` : '暂无'}
             </button>
           </div>
         `;
@@ -4059,38 +4311,31 @@
         const parts = [];
         if (d > 0) parts.push(`立减¥${d}`);
         if (bonus > 0) parts.push(`加送${bonus}圈`);
-        shopBargainBadge.textContent = `🎉 砍价生效：${parts.join(' + ')}`;
-        shopBargainBadge.className = 'px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500 text-slate-950 border border-amber-200';
+        shopBargainBadge.textContent = `已生效 ${parts.join(' · ')}`;
+        shopBargainBadge.className = 'gh-badge is-on';
       } else {
-        shopBargainBadge.textContent = state.canBargainThisRound ? '可唠嗑砍价' : '本轮已唠嗑';
-        shopBargainBadge.className = 'px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-800 text-slate-300 border border-slate-600';
+        shopBargainBadge.textContent = state.canBargainThisRound ? '可砍价' : '本轮已用';
+        shopBargainBadge.className = 'gh-badge';
       }
 
+      bargainChanceState.className = 'text-xs font-medium';
       if (state.canBargainThisRound) {
-        bargainChanceState.textContent = '● 本轮可砍价';
-        bargainChanceState.className = 'text-xs font-bold text-emerald-400';
+        bargainChanceState.textContent = '本轮可砍价';
+        bargainChanceState.style.color = '#3fb950';
       } else {
-        bargainChanceState.textContent = '○ 买一捆圈后刷新唠嗑';
-        bargainChanceState.className = 'text-xs font-bold text-slate-400';
+        bargainChanceState.textContent = '买一捆后刷新';
+        bargainChanceState.style.color = '#8b949e';
       }
 
-      const ringButtons = [
-        { el: btnSelectPlastic, type: 'plastic', activeCls: 'bg-sky-500/30 border-sky-400 text-sky-200' },
-        { el: btnSelectBamboo, type: 'bamboo', activeCls: 'bg-amber-500/30 border-amber-400 text-amber-200' },
-        { el: btnSelectCopper, type: 'copper', activeCls: 'bg-rose-500/30 border-rose-400 text-rose-200' }
-      ];
-      ringButtons.forEach((item) => {
-        if (state.selectedRingType === item.type) {
-          item.el.className = `ring-select-btn ui-btn !min-h-[30px] px-2 py-1 rounded-lg border font-bold text-xs shadow ${item.activeCls}`;
-        } else {
-          item.el.className = 'ring-select-btn ui-btn !min-h-[30px] px-2 py-1 rounded-lg bg-slate-900/70 border border-transparent text-slate-300 font-bold text-xs hover:bg-slate-800';
-        }
+      [btnSelectPlastic, btnSelectBamboo, btnSelectCopper].forEach((el) => {
+        const type = el.getAttribute('data-ring');
+        el.className = 'ring-select-btn ui-btn' + (state.selectedRingType === type ? ' ui-btn-active' : '');
       });
 
       const curSpec = RING_SPECS[state.selectedRingType];
       const curCount = state.rings[state.selectedRingType];
       activeRingLabel.textContent = `${curSpec.shortName} (${curCount})`;
-      activeRingLabel.style.color = curSpec.strokeColor;
+      activeRingLabel.style.color = '#8b949e';
       saveProgress();
     }
 
@@ -5108,9 +5353,8 @@
     btnToggleBgm.addEventListener('click', () => {
       ensureAudio();
       state.bgmEnabled = !state.bgmEnabled;
-      btnToggleBgm.textContent = state.bgmEnabled ? '🎶' : '🎵';
-      btnToggleBgm.classList.toggle('opacity-75', !state.bgmEnabled);
-      btnToggleBgm.classList.toggle('border-amber-400', state.bgmEnabled);
+      btnToggleBgm.textContent = '乐';
+      btnToggleBgm.classList.toggle('ui-btn-active', state.bgmEnabled);
       if (state.bgmEnabled) {
         showToast('🏮 已开启北方年集五声欢快小调！');
       }
@@ -5177,8 +5421,8 @@
 
     btnToggleMute.addEventListener('click', () => {
       state.muted = !state.muted;
-      btnToggleMute.textContent = state.muted ? '🔇' : '🔊';
-      btnToggleMute.classList.toggle('opacity-50', state.muted);
+      btnToggleMute.textContent = state.muted ? '静' : '声';
+      btnToggleMute.classList.toggle('ui-btn-active', !state.muted);
     });
 
     btnToggleDebug.addEventListener('click', () => {
@@ -5193,9 +5437,9 @@
         state.skyMode = btn.getAttribute('data-sky');
         apply3DSkyAndLighting();
         document.querySelectorAll('.sky-mode-btn').forEach((b) => {
-          b.className = 'sky-mode-btn px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-medium';
+          b.className = 'sky-mode-btn ui-btn';
         });
-        btn.className = 'sky-mode-btn px-2 py-1.5 rounded bg-amber-600 text-slate-950 border border-amber-300 font-bold';
+        btn.className = 'sky-mode-btn ui-btn ui-btn-active';
       });
     });
 
@@ -5204,9 +5448,9 @@
         const preset = btn.getAttribute('data-cam');
         applyCameraPreset(preset);
         document.querySelectorAll('.cam-mode-btn').forEach((b) => {
-          b.className = 'cam-mode-btn px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-600 text-xs';
+          b.className = 'cam-mode-btn ui-btn';
         });
-        btn.className = 'cam-mode-btn px-2 py-1 rounded bg-amber-500 text-slate-950 font-bold border border-amber-300 text-xs';
+        btn.className = 'cam-mode-btn ui-btn ui-btn-active';
       });
     });
 
