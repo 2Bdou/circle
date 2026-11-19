@@ -1274,7 +1274,7 @@
     }
 
     let scene, camera, renderer, raycaster, skyDome;
-    let hemiLight, dirLight, brazierLight, lanternLights = [];
+    let hemiLight, dirLight, brazierLight, charFillLight, lanternLights = [], stallLamps = [];
     let npcGroup, npcHeadGroup, npcBreathPuffs = [];
     let brazierGroup, brazierFlames = [];
     let lanternPivots = [];
@@ -3156,7 +3156,7 @@
       canvasG.fillStyle = '#cbb892';
       canvasG.fillRect(0, 0, 256, 256);
       for (let i = 0; i < 256; i += 4) {
-        canvasG.strokeStyle = i % 8 === 0 ? 'rgba(92, 68, 40, 0.38)' : 'rgba(255, 246, 224, 0.16)';
+        canvasG.strokeStyle = i % 8 === 0 ? 'rgba(72, 48, 24, 0.72)' : 'rgba(255, 236, 200, 0.28)';
         canvasG.beginPath();
         canvasG.moveTo(0, i);
         canvasG.lineTo(256, i);
@@ -3172,7 +3172,9 @@
       canvasTex.encoding = THREE.sRGBEncoding;
       const canvasMat = new THREE.MeshStandardMaterial({
         map: canvasTex,
-        color: 0xffffff,
+        bumpMap: canvasTex,
+        bumpScale: 0.18,
+        color: 0xfff3df,
         roughness: 0.94,
         side: THREE.DoubleSide
       });
@@ -3219,6 +3221,13 @@
         post.position.set(pole[0], pole[2] * 0.5, pole[1]);
         post.castShadow = true;
         scene.add(post);
+      });
+      stallLamps = [];
+      [[-2.4, 2.05, -2.6], [2.4, 2.05, -2.6], [0, 2.15, -6.2]].forEach((p) => {
+        const lamp = new THREE.PointLight(0xffb15a, 6, 9, 2);
+        lamp.position.set(p[0], p[1], p[2]);
+        scene.add(lamp);
+        stallLamps.push(lamp);
       });
 
       // 3. 北方民俗飞檐牌坊门头 + 竖幅春联 + 16 根高透光 3D 冰溜子 + 3D 冰糖葫芦草靶
@@ -4632,6 +4641,8 @@
         dirLight.intensity = 1.15;
         renderer.toneMappingExposure = 1.0;
         lanternLights.forEach((l) => { l.intensity = 0.55; });
+        stallLamps.forEach((l) => { l.intensity = 2; });
+        if (charFillLight) charFillLight.intensity = 0.28;
       } else if (state.skyMode === 'dusk') {
         // 暖色放在天球赤道上方，才会出现在屋脊后面，而不是被地面裁掉
         // 镜头几乎平视，看得见的天只在纹理中部。深蓝占满上半，暖色只留在地平线。
@@ -4647,11 +4658,13 @@
         scene.fog = new THREE.FogExp2(0x5c6a78, 0.011);
         hemiLight.color.setHex(0xd5e2f2);
         hemiLight.groundColor.setHex(0x3a3228);
-        hemiLight.intensity = 0.38;
+        hemiLight.intensity = 0.22;
         dirLight.color.setHex(0xffe0b8);
-        dirLight.intensity = 0.42;
-        renderer.toneMappingExposure = 0.86;
-        lanternLights.forEach((l) => { l.intensity = 1.15; });
+        dirLight.intensity = 0.26;
+        renderer.toneMappingExposure = 0.8;
+        lanternLights.forEach((l) => { l.intensity = 1.35; });
+        stallLamps.forEach((l) => { l.intensity = 6; });
+        if (charFillLight) charFillLight.intensity = 0.08;
       } else {
         applySkyDome(['#070d18', '#152033', '#2c3a52', '#4a4038', '#241c18', '#100e0c'], true);
         scene.fog = new THREE.FogExp2(0x2a3344, 0.013);
@@ -4660,8 +4673,10 @@
         hemiLight.intensity = 0.32;
         dirLight.color.setHex(0xd5e2f4);
         dirLight.intensity = 0.34;
-        renderer.toneMappingExposure = 0.8;
-        lanternLights.forEach((l) => { l.intensity = 1.25; });
+        renderer.toneMappingExposure = 0.74;
+        lanternLights.forEach((l) => { l.intensity = 1.45; });
+        stallLamps.forEach((l) => { l.intensity = 7; });
+        if (charFillLight) charFillLight.intensity = 0.06;
       }
     }
 
@@ -4825,9 +4840,9 @@
       dirLight.shadow.camera.bottom = -9;
       scene.add(dirLight);
 
-      const charFill = new THREE.DirectionalLight(0xfff1de, 0.28);
-      charFill.position.set(-2.2, 3.8, 6.2);
-      scene.add(charFill);
+      charFillLight = new THREE.DirectionalLight(0xfff1de, 0.28);
+      charFillLight.position.set(-2.2, 3.8, 6.2);
+      scene.add(charFillLight);
       const charRim = new THREE.DirectionalLight(0xb7d4ff, 0.16);
       charRim.position.set(3.1, 5.2, -7.6);
       scene.add(charRim);
