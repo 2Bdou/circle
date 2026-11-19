@@ -3111,8 +3111,8 @@
         map: carpetTex,
         bumpMap: carpetTex,
         bumpScale: 0.02,
-        color: 0xffffff,
-        roughness: 0.9,
+        color: 0x8a4844,
+        roughness: 0.94,
         metalness: 0.0
       });
       const carpetMesh = new THREE.Mesh(new THREE.BoxGeometry(STALL_HALF_W * 2, 0.08, STALL_DEPTH), carpetMat);
@@ -3568,15 +3568,23 @@
             [-0.16, 0.16].forEach((mx) => {
               addBox(0.035, winH - 0.08, 0.04, cx + mx, wallBase + (winBottom + winTop) * 0.5, fz + 0.02, woodMat);
             });
+            addBox(cw - 0.12, 0.04, 0.04, cx, wallBase + (winBottom + winTop) * 0.5, fz + 0.03, woodMat);
             return;
           }
           const headH = wallH - doorTop;
           addBox(cw, headH, t, cx, wallBase + doorTop + headH * 0.5, fz, houseMat);
-          addBox(cw - 0.1, doorTop - 0.06, 0.05, cx, wallBase + (doorTop - 0.06) * 0.5, fz - 0.1, woodMat);
+          const doorH = doorTop - 0.06;
+          const doorY = wallBase + doorH * 0.5;
+          addBox(cw - 0.1, doorH, 0.05, cx, doorY, fz - 0.1, woodMat);
           [-cw / 2, cw / 2].forEach((jx) => {
             addBox(0.07, doorTop, 0.1, cx + jx, wallBase + doorTop * 0.5, fz + 0.02, woodMat);
           });
           addBox(cw + 0.16, 0.08, 0.12, cx, wallBase + doorTop, fz + 0.04, woodMat);
+          addBox(0.04, doorH - 0.08, 0.03, cx, doorY, fz - 0.06, woodMat);
+          addBox(cw - 0.22, 0.045, 0.03, cx, doorY, fz - 0.06, woodMat);
+          [[-1, 1], [1, 1], [-1, -1], [1, -1]].forEach((cell) => {
+            addBox(cw * 0.3, doorH * 0.36, 0.025, cx + cell[0] * cw * 0.18, doorY + cell[1] * doorH * 0.2, fz - 0.055, woodMat);
+          });
         });
         addBox(doorW + 0.36, 0.08, 0.32, 0, 0.08, cfg.d * 0.5 + 0.16, stoneMat);
 
@@ -3625,6 +3633,19 @@
         const back = [[hw, y0, -hd], [-hw, y0, -hd], [-hw, yR, 0], [hw, yR, 0]];
         addSlope(front, roofMat, 0);
         addSlope(back, roofMat, 0);
+        const soffitMat = new THREE.MeshStandardMaterial({
+          map: woodTex,
+          color: 0x3a2c22,
+          roughness: 0.92,
+          side: THREE.DoubleSide
+        });
+        function thicken(pts) {
+          return pts.map((p, i) => [p[0] * 0.985, p[1] - (i < 2 ? 0.16 : 0.045), p[2] * 0.985]);
+        }
+        addSlope(thicken(front), soffitMat, 0);
+        addSlope(thicken(back), soffitMat, 0);
+        addBox(hw * 2, 0.1, 0.1, 0, y0 - 0.02, hd + 0.02, soffitMat);
+        addBox(hw * 2, 0.1, 0.1, 0, y0 - 0.02, -hd - 0.02, soffitMat);
         const snowFront = front.map((p, i) => i < 2 ? [p[0] * 0.96, y0 + rise * 0.22, hd * 0.78] : [p[0] * 0.96, yR + 0.02, 0]);
         const snowBack = back.map((p, i) => i < 2 ? [p[0] * 0.96, y0 + rise * 0.22, -hd * 0.78] : [p[0] * 0.96, yR + 0.02, 0]);
         addSlope(snowFront, snowMoundMat, 0.03);
@@ -3661,14 +3682,25 @@
         glow.position.set(0, cfg.h * 0.55, cfg.d * 0.35);
         hGroup.add(glow);
 
+        if (cfg.woodpile) {
+          for (let i = 0; i < 6; i++) {
+            const log = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.085, 0.72, 8), woodMat);
+            log.rotation.z = Math.PI * 0.5;
+            log.rotation.y = (i % 3) * 0.15;
+            log.position.set(cfg.w * 0.5 + 0.55, 0.1 + (i % 3) * 0.13, 0.2 + Math.floor(i / 3) * 0.16);
+            log.castShadow = true;
+            hGroup.add(log);
+          }
+        }
+
         scene.add(hGroup);
       }
 
       [
-        { x: -9.4, z: -13.6, w: 4.6, h: 2.75, d: 3.4, ry: 0.2, yard: true },
-        { x: -4.6, z: -15.8, w: 3.8, h: 2.45, d: 3.0, ry: 0.06, yard: false },
-        { x: 5.0, z: -15.5, w: 4.1, h: 2.6, d: 3.1, ry: -0.1, yard: true },
-        { x: 9.8, z: -13.2, w: 3.9, h: 2.5, d: 2.9, ry: -0.26, yard: false }
+        { x: -9.4, z: -13.6, w: 4.6, h: 2.75, d: 3.4, ry: 0.2, yard: true, woodpile: true },
+        { x: -4.6, z: -15.8, w: 3.8, h: 2.45, d: 3.0, ry: 0.06, yard: false, woodpile: false },
+        { x: 5.0, z: -15.5, w: 4.1, h: 2.6, d: 3.1, ry: -0.1, yard: true, woodpile: true },
+        { x: 9.8, z: -13.2, w: 3.9, h: 2.5, d: 2.9, ry: -0.26, yard: false, woodpile: false }
       ].forEach(buildRealisticFarmHouse);
 
       // 河南冬夜以落叶枯枝为主，只留两棵压暗的松
