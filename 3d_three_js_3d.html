@@ -1273,7 +1273,7 @@
       return new THREE.Vector3(wx, wy, wz);
     }
 
-    let scene, camera, renderer, raycaster;
+    let scene, camera, renderer, raycaster, skyDome;
     let hemiLight, dirLight, brazierLight, lanternLights = [];
     let npcGroup, npcHeadGroup, npcBreathPuffs = [];
     let brazierGroup, brazierFlames = [];
@@ -2251,6 +2251,14 @@
         const band = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.23, len + 0.05, 14), coatMat);
         band.position.y = len * 0.35;
         mid.add(band);
+      }
+      const headBone = model.getObjectByName('head');
+      if (neck && headBone) {
+        const len = Math.max(0.08, headBone.position.length());
+        const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.074, len * 0.9, 12), coatMat);
+        collar.position.y = len * 0.32;
+        collar.castShadow = true;
+        neck.add(collar);
       }
     }
 
@@ -4398,6 +4406,7 @@
     function apply3DSkyAndLighting() {
       if (!scene || !hemiLight || !dirLight) return;
       if (state.skyMode === 'morning') {
+        if (skyDome) skyDome.visible = false;
         scene.background = new THREE.Color(0x7dd3fc);
         scene.fog = new THREE.FogExp2(0xcbd5e1, 0.022);
         hemiLight.color.setHex(0xffffff);
@@ -4408,7 +4417,17 @@
         renderer.toneMappingExposure = 1.0;
         lanternLights.forEach((l) => { l.intensity = 0.55; });
       } else if (state.skyMode === 'dusk') {
-        scene.background = createGradientSkyTexture(['#121c30', '#24344e', '#6a5344', '#d7a67a', '#6d6258'], true);
+        // 暖色放在天球赤道上方，才会出现在屋脊后面，而不是被地面裁掉
+        // 镜头几乎平视，看得见的天只在纹理中部。深蓝占满上半，暖色只留在地平线。
+        applySkyDome([
+          [0.0, '#070d18'],
+          [0.3, '#101a30'],
+          [0.42, '#1a3050'],
+          [0.48, '#31445f'],
+          [0.52, '#c4895a'],
+          [0.58, '#5c6a78'],
+          [1.0, '#141210']
+        ], true);
         scene.fog = new THREE.FogExp2(0x5c6a78, 0.011);
         hemiLight.color.setHex(0xd5e2f2);
         hemiLight.groundColor.setHex(0x3a3228);
@@ -4418,7 +4437,7 @@
         renderer.toneMappingExposure = 0.86;
         lanternLights.forEach((l) => { l.intensity = 1.15; });
       } else {
-        scene.background = createGradientSkyTexture(['#070d18', '#152033', '#2c3a52', '#4a4038'], true);
+        applySkyDome(['#070d18', '#152033', '#2c3a52', '#4a4038', '#241c18', '#100e0c'], true);
         scene.fog = new THREE.FogExp2(0x2a3344, 0.013);
         hemiLight.color.setHex(0xb7c6dc);
         hemiLight.groundColor.setHex(0x241c16);
@@ -4430,25 +4449,44 @@
       }
     }
 
+    function applySkyDome(stops, clouds) {
+      if (!skyDome) {
+        skyDome = new THREE.Mesh(
+          new THREE.SphereGeometry(90, 48, 32),
+          new THREE.MeshBasicMaterial({ side: THREE.BackSide, depthWrite: false, fog: false })
+        );
+        skyDome.frustumCulled = false;
+        skyDome.name = 'skyDome';
+        scene.add(skyDome);
+      }
+      if (skyDome.material.map) skyDome.material.map.dispose();
+      skyDome.material.map = createGradientSkyTexture(stops, clouds);
+      skyDome.material.needsUpdate = true;
+      skyDome.visible = true;
+      scene.background = null;
+    }
+
     function createGradientSkyTexture(stops, clouds) {
-      if (scene.background && scene.background.isTexture) scene.background.dispose();
       const c = document.createElement('canvas');
       c.width = 512;
       c.height = 512;
       const g = c.getContext('2d');
       const grad = g.createLinearGradient(0, 0, 0, 512);
-      stops.forEach((hex, i) => grad.addColorStop(i / (stops.length - 1), hex));
+      stops.forEach((stop, i) => {
+        if (Array.isArray(stop)) grad.addColorStop(stop[0], stop[1]);
+        else grad.addColorStop(i / (stops.length - 1), stop);
+      });
       g.fillStyle = grad;
       g.fillRect(0, 0, 512, 512);
       if (clouds) {
         for (let i = 0; i < 16; i++) {
           g.fillStyle = `rgba(255, 214, 176, ${0.04 + (i % 4) * 0.02})`;
           g.beginPath();
-          g.ellipse((i * 83) % 512, 210 + (i % 5) * 14, 80 + (i % 3) * 28, 7 + (i % 3) * 2, 0, 0, Math.PI * 2);
+          g.ellipse((i * 83) % 512, 230 + (i % 4) * 8, 70 + (i % 3) * 24, 6 + (i % 3) * 2, 0, 0, Math.PI * 2);
           g.fill();
         }
-        g.fillStyle = 'rgba(255,255,255,0.7)';
-        for (let i = 0; i < 48; i++) g.fillRect((i * 97) % 512, (i * 41) % 200, 1, 1);
+        g.fillStyle = 'rgba(255,255,255,0.75)';
+        for (let i = 0; i < 80; i++) g.fillRect((i * 97) % 512, 140 + (i * 13) % 100, 1, 1);
       }
       const tex = new THREE.CanvasTexture(c);
       tex.encoding = THREE.sRGBEncoding;
