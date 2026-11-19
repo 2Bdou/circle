@@ -3121,7 +3121,7 @@
         map: carpetTex,
         bumpMap: carpetTex,
         bumpScale: 0.02,
-        color: 0x8a4844,
+        color: 0x73403c,
         roughness: 0.94,
         metalness: 0.0
       });
@@ -3600,12 +3600,37 @@
         roughness: 0.82,
         color: 0xffffff
       });
+      const paperCanvas = document.createElement('canvas');
+      paperCanvas.width = 160;
+      paperCanvas.height = 200;
+      const paperG = paperCanvas.getContext('2d');
+      paperG.fillStyle = '#5c3d24';
+      paperG.fillRect(0, 0, 160, 200);
+      for (let i = 0; i < 220; i++) {
+        const px = (i * 47) % 160;
+        const py = (i * 29) % 200;
+        paperG.fillStyle = 'rgba(90, 60, 32, 0.35)';
+        paperG.fillRect(px, py, 7, 2);
+      }
+      const lamp = paperG.createRadialGradient(86, 108, 4, 80, 96, 108);
+      lamp.addColorStop(0, '#fff1c8');
+      lamp.addColorStop(0.28, '#f0b15a');
+      lamp.addColorStop(0.62, '#a56a32');
+      lamp.addColorStop(1, 'rgba(92, 61, 36, 0)');
+      paperG.fillStyle = lamp;
+      paperG.fillRect(0, 0, 160, 200);
+      const windowPaper = new THREE.CanvasTexture(paperCanvas);
+      windowPaper.encoding = THREE.sRGBEncoding;
+      windowPaper.wrapS = THREE.RepeatWrapping;
+      windowPaper.wrapT = THREE.RepeatWrapping;
       const windowGlowMat = new THREE.MeshStandardMaterial({
-        color: 0xfde68a,
-        emissive: 0xf59e0b,
-        emissiveIntensity: 0.42,
-        roughness: 0.4
+        map: windowPaper,
+        color: 0xffffff,
+        emissive: 0xffc48a,
+        emissiveIntensity: 0.08,
+        roughness: 0.86
       });
+      const windowCavityMat = new THREE.MeshStandardMaterial({ color: 0x1c140e, roughness: 1 });
 
       function buildRealisticFarmHouse(cfg) {
         const hGroup = new THREE.Group();
@@ -3659,8 +3684,17 @@
             const above = wallH - winTop;
             addBox(cw, above, t, cx, wallBase + winTop + above * 0.5, fz, houseMat);
             const winH = winTop - winBottom;
-            const pane = new THREE.Mesh(new THREE.PlaneGeometry(cw - 0.12, winH - 0.1), windowGlowMat);
-            pane.position.set(cx, wallBase + (winBottom + winTop) * 0.5, fz - 0.08);
+            const winY = wallBase + (winBottom + winTop) * 0.5;
+            const cavity = new THREE.Mesh(new THREE.PlaneGeometry(cw - 0.08, winH - 0.04), windowCavityMat);
+            cavity.position.set(cx, winY, fz - 0.16);
+            hGroup.add(cavity);
+            const paper = windowPaper.clone();
+            paper.offset.set(Math.abs(cx * 1.7) % 1, Math.abs(cfg.x * 0.13) % 1);
+            paper.needsUpdate = true;
+            const paneMat = windowGlowMat.clone();
+            paneMat.map = paper;
+            const pane = new THREE.Mesh(new THREE.PlaneGeometry(cw - 0.12, winH - 0.1), paneMat);
+            pane.position.set(cx, winY, fz - 0.07);
             hGroup.add(pane);
             addBox(cw + 0.04, 0.06, 0.07, cx, wallBase + winTop, fz + 0.05, woodMat);
             addBox(cw + 0.04, 0.06, 0.07, cx, wallBase + winBottom, fz + 0.05, woodMat);
