@@ -4230,7 +4230,7 @@
         g.fillRect(0, 0, 256, 256);
         g.fillStyle = '#1a120e';
         g.beginPath();
-        g.ellipse(128, 46, 90, 36, 0, Math.PI, 0);
+        g.ellipse(128, 18, 78, 22, 0, 0, Math.PI * 2);
         g.fill();
         g.fillStyle = '#2a211c';
         g.beginPath();
@@ -4504,50 +4504,59 @@
         }
       } else if (id === 'roly_poly') {
         // 车削葫芦形大红福娃不倒翁 + 虎耳小帽
+        const rolyMat = new THREE.MeshStandardMaterial({
+          map: loadPhotoMap('assets/world/lacquer-red.jpg', 2, 2),
+          color: 0xffffff,
+          roughness: 0.48,
+          metalness: 0.02
+        });
         const rolyProfile = [
           new THREE.Vector2(0.0, 0.0),
-          new THREE.Vector2(0.24, 0.05),
-          new THREE.Vector2(0.30, 0.22),
-          new THREE.Vector2(0.24, 0.39),
-          new THREE.Vector2(0.15, 0.45),
-          new THREE.Vector2(0.0, 0.46)
+          new THREE.Vector2(0.2, 0.03),
+          new THREE.Vector2(0.32, 0.14),
+          new THREE.Vector2(0.28, 0.28),
+          new THREE.Vector2(0.16, 0.36),
+          new THREE.Vector2(0.0, 0.38)
         ];
-        const base = new THREE.Mesh(
-          new THREE.LatheGeometry(rolyProfile, 24),
-          new THREE.MeshStandardMaterial({ map: loadPhotoMap('assets/world/lacquer-red.jpg', 2, 2), color: 0xffffff, roughness: 0.48, metalness: 0.02 })
-        );
+        const base = new THREE.Mesh(new THREE.LatheGeometry(rolyProfile, 24), rolyMat);
         base.castShadow = true;
         toyRoot.add(base);
 
         const goldBelt = new THREE.Mesh(
-          new THREE.TorusGeometry(0.3, 0.028, 10, 24),
+          new THREE.TorusGeometry(0.29, 0.02, 8, 24),
           new THREE.MeshStandardMaterial({ color: 0xc4a15a, metalness: 0.28, roughness: 0.5 })
         );
         goldBelt.rotation.x = Math.PI * 0.5;
-        goldBelt.position.y = 0.2;
+        goldBelt.position.y = 0.18;
         toyRoot.add(goldBelt);
 
-        const head = new THREE.Mesh(
-          new THREE.SphereGeometry(0.18, 20, 20),
-          new THREE.MeshStandardMaterial({ color: 0xf3c7a2, roughness: 0.55 })
-        );
-        head.position.y = 0.44;
+        const skinPaint = document.createElement('canvas');
+        skinPaint.width = 8;
+        skinPaint.height = 8;
+        const skinG = skinPaint.getContext('2d');
+        skinG.fillStyle = '#f3c7a2';
+        skinG.fillRect(0, 0, 8, 8);
+        const skinMap = new THREE.CanvasTexture(skinPaint);
+        skinMap.encoding = THREE.sRGBEncoding;
+        const skinMat = new THREE.MeshBasicMaterial({ map: skinMap });
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 20, 16), skinMat);
+        head.position.set(0, 0.5, 0.02);
         toyRoot.add(head);
         const face = new THREE.Mesh(
-          new THREE.CircleGeometry(0.14, 22),
-          new THREE.MeshStandardMaterial({ map: paintDollFace('roly'), roughness: 0.62, metalness: 0 })
+          new THREE.CircleGeometry(0.11, 22),
+          new THREE.MeshBasicMaterial({ map: paintDollFace('roly') })
         );
-        face.position.set(0, 0.5, 0.22);
+        face.position.set(0, 0.5, 0.175);
         toyRoot.add(face);
 
-        // 两个冲天红髻小抓鬏
-        [-0.14, 0.14].forEach((bx) => {
-          const bun = new THREE.Mesh(
-            new THREE.SphereGeometry(0.06, 12, 12),
-            new THREE.MeshStandardMaterial({ color: 0x1a120e, roughness: 0.7 })
-          );
-          bun.position.set(bx, 0.6, -0.02);
-          toyRoot.add(bun);
+        const cap = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), rolyMat);
+        cap.scale.set(1.05, 0.55, 1);
+        cap.position.set(0, 0.6, -0.01);
+        toyRoot.add(cap);
+        [-0.07, 0.07].forEach((bx) => {
+          const ear = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.07, 8), rolyMat);
+          ear.position.set(bx, 0.68, 0);
+          toyRoot.add(ear);
         });
       } else if (id === 'enamel_mug') {
         // 印有“牡丹红双喜”环绕贴图的陶瓷釉面搪瓷大茶缸
