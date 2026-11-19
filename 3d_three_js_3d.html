@@ -4164,7 +4164,9 @@
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       g.fillText('SUPER 99合一', 128, 64);
-      return new THREE.CanvasTexture(c);
+      const stickerMap = new THREE.CanvasTexture(c);
+      stickerMap.encoding = THREE.sRGBEncoding;
+      return stickerMap;
     }
 
     // 为每种年货玩具创建精细的 3D 曲面模型组
@@ -4603,44 +4605,48 @@
         );
         toyRoot.add(handle);
       } else if (id === 'rattle_drum') {
-        const stick = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.036, 0.032, 0.44, 12),
-          new THREE.MeshStandardMaterial({
-            map: loadPhotoMap('assets/world/wood-planks.jpg', 1, 2),
-            color: 0xc4a574,
-            roughness: 0.82
-          })
-        );
-        stick.position.y = 0.22;
+        const wood = new THREE.MeshStandardMaterial({
+          map: loadPhotoMap('assets/world/wood-planks.jpg', 1, 2),
+          color: 0xffffff,
+          roughness: 0.84
+        });
+        const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.034, 0.42, 12), wood);
+        stick.position.y = 0.2;
         toyRoot.add(stick);
 
         const faceTex = createRattleDrumFaceTexture();
-        const drumMat = [
-          new THREE.MeshStandardMaterial({
-            map: loadPhotoMap('assets/world/lacquer-red.jpg', 2, 1),
-            color: 0xffffff,
-            roughness: 0.46
-          }),
-          new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.62 }),
-          new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.62 })
-        ];
-        const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.14, 24), drumMat);
+        const hoopMat = new THREE.MeshStandardMaterial({
+          map: loadPhotoMap('assets/world/lacquer-red.jpg', 2, 1),
+          color: 0xffffff,
+          roughness: 0.4
+        });
+        const drum = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.21, 0.21, 0.16, 28),
+          [
+            hoopMat,
+            new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.74 }),
+            new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.74 })
+          ]
+        );
         drum.rotation.x = Math.PI * 0.5;
-        drum.position.y = 0.53;
+        drum.position.y = 0.52;
         drum.castShadow = true;
         toyRoot.add(drum);
-
-        // 两侧拨浪小弹珠
-        [-0.28, 0.28].forEach((bx) => {
-          const bead = new THREE.Mesh(
-            new THREE.SphereGeometry(0.045, 10, 10),
-            new THREE.MeshStandardMaterial({
-              map: loadPhotoMap('assets/world/wood-planks.jpg', 1, 1),
-              color: 0xd4b483,
-              roughness: 0.72
-            })
+        [-0.082, 0.082].forEach((z) => {
+          const rim = new THREE.Mesh(new THREE.TorusGeometry(0.21, 0.016, 8, 28), wood);
+          rim.position.set(0, 0.52, z);
+          toyRoot.add(rim);
+        });
+        [-1, 1].forEach((side) => {
+          const cord = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.004, 0.004, 0.18, 6),
+            new THREE.MeshStandardMaterial({ color: 0x2a2118, roughness: 0.8 })
           );
-          bead.position.set(bx, 0.45, 0);
+          cord.position.set(side * 0.2, 0.4, 0);
+          cord.rotation.z = side * 0.5;
+          toyRoot.add(cord);
+          const bead = new THREE.Mesh(new THREE.SphereGeometry(0.038, 12, 10), wood);
+          bead.position.set(side * 0.25, 0.31, 0.02);
           toyRoot.add(bead);
         });
       } else if (id === 'lucky_cat') {
@@ -4717,44 +4723,105 @@
         toyRoot.add(wavingPaw);
         group.userData.wavingPaw = wavingPaw;
       } else if (id === 'fc_console') {
-        const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.32 });
-        const redMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.35 });
-        const goldMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.55, roughness: 0.25 });
-
-        const baseBox = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.20, 0.48), whiteMat);
-        baseBox.position.y = 0.10;
-        baseBox.castShadow = true;
-        toyRoot.add(baseBox);
-
-        const redTrim = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.09, 0.50), redMat);
-        redTrim.position.y = 0.045;
-        toyRoot.add(redTrim);
-
-        // 两侧立体红白手柄卡槽
-        [-0.34, 0.34].forEach((cx) => {
-          const pad = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.14, 0.26), redMat);
-          pad.position.set(cx, 0.12, 0.02);
-          toyRoot.add(pad);
+        function roundedShell(w, d, r) {
+          const s = new THREE.Shape();
+          const x = -w * 0.5;
+          const y = -d * 0.5;
+          s.moveTo(x + r, y);
+          s.lineTo(x + w - r, y);
+          s.quadraticCurveTo(x + w, y, x + w, y + r);
+          s.lineTo(x + w, y + d - r);
+          s.quadraticCurveTo(x + w, y + d, x + w - r, y + d);
+          s.lineTo(x + r, y + d);
+          s.quadraticCurveTo(x, y + d, x, y + d - r);
+          s.lineTo(x, y + r);
+          s.quadraticCurveTo(x, y, x + r, y);
+          return s;
+        }
+        const shellMat = new THREE.MeshStandardMaterial({
+          map: createPrizeGrain('#e4e0d6'),
+          color: 0xffffff,
+          roughness: 0.4,
+          metalness: 0.05
         });
-
-        // 开关与复位滑块按键
-        [-0.15, -0.05].forEach((bx) => {
-          const btn = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.04, 0.08), goldMat);
-          btn.position.set(bx, 0.21, 0.14);
-          toyRoot.add(btn);
+        const redMat = new THREE.MeshStandardMaterial({
+          map: createPrizeGrain('#8a221c'),
+          color: 0xffffff,
+          roughness: 0.44,
+          metalness: 0.04
         });
-
-        // 亮黄 99 合 1 游戏卡带
-        const cart = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.22, 0.09), goldMat);
-        cart.position.set(0, 0.29, -0.04);
+        const cartMat = new THREE.MeshStandardMaterial({
+          map: createPrizeGrain('#c49218'),
+          color: 0xffffff,
+          roughness: 0.46,
+          metalness: 0.06
+        });
+        const skirt = new THREE.Mesh(
+          new THREE.ExtrudeGeometry(roundedShell(0.62, 0.44, 0.07), {
+            depth: 0.05,
+            bevelEnabled: true,
+            bevelThickness: 0.008,
+            bevelSize: 0.008,
+            bevelSegments: 2,
+            curveSegments: 6
+          }),
+          redMat
+        );
+        skirt.rotation.x = -Math.PI * 0.5;
+        skirt.position.y = 0.02;
+        skirt.castShadow = true;
+        toyRoot.add(skirt);
+        const shell = new THREE.Mesh(
+          new THREE.ExtrudeGeometry(roundedShell(0.56, 0.38, 0.06), {
+            depth: 0.09,
+            bevelEnabled: true,
+            bevelThickness: 0.01,
+            bevelSize: 0.01,
+            bevelSegments: 2,
+            curveSegments: 6
+          }),
+          shellMat
+        );
+        shell.rotation.x = -Math.PI * 0.5;
+        shell.position.y = 0.07;
+        shell.castShadow = true;
+        toyRoot.add(shell);
+        const slot = new THREE.Mesh(
+          new THREE.BoxGeometry(0.2, 0.012, 0.05),
+          new THREE.MeshBasicMaterial({ color: 0x14120f })
+        );
+        slot.position.set(0, 0.168, -0.02);
+        toyRoot.add(slot);
+        const cart = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 0.04), cartMat);
+        cart.position.set(0, 0.25, -0.02);
+        cart.castShadow = true;
         toyRoot.add(cart);
-
         const sticker = new THREE.Mesh(
-          new THREE.PlaneGeometry(0.24, 0.13),
+          new THREE.PlaneGeometry(0.15, 0.09),
           new THREE.MeshBasicMaterial({ map: createConsoleStickerTexture() })
         );
-        sticker.position.set(0, 0.30, 0.008);
+        sticker.position.set(0, 0.25, 0.002);
         toyRoot.add(sticker);
+        [-0.16, 0.16].forEach((px) => {
+          const port = new THREE.Mesh(
+            new THREE.BoxGeometry(0.07, 0.028, 0.012),
+            new THREE.MeshBasicMaterial({ color: 0x1a1816 })
+          );
+          port.position.set(px, 0.09, 0.2);
+          toyRoot.add(port);
+        });
+        const power = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.016, 0.016, 0.012, 12),
+          new THREE.MeshStandardMaterial({ map: createPrizeGrain('#8d2a24'), color: 0xffffff, roughness: 0.4 })
+        );
+        power.position.set(-0.12, 0.172, 0.08);
+        toyRoot.add(power);
+        const reset = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.014, 0.014, 0.01, 12),
+          new THREE.MeshStandardMaterial({ map: createPrizeGrain('#6d6a64'), color: 0xffffff, roughness: 0.45 })
+        );
+        reset.position.set(-0.06, 0.17, 0.08);
+        toyRoot.add(reset);
       } else if (id === 'white_goose') {
         // 压轴 Boss：贝塞尔样条曲线 S 型曲颈 + 车削流线型身躯 + 多层羽翼扇动 3D 大白鹅
         const whiteFeatherMat = new THREE.MeshStandardMaterial({ map: loadPhotoMap('assets/world/goose-feather.jpg', 2, 2), color: 0xffffff, roughness: 0.9 });
