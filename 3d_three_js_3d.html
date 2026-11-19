@@ -1966,6 +1966,31 @@
       });
     }
 
+    function hideSkinnedSkull(mat) {
+      // 压扁后的头皮仍会在肖像四周露出一圈白边，直接丢掉颅骨片元
+      mat.onBeforeCompile = (shader) => {
+        shader.vertexShader = shader.vertexShader
+          .replace(
+            '#include <common>',
+            '#include <common>\nvarying float vSkullY;'
+          )
+          .replace(
+            '#include <skinning_vertex>',
+            '#include <skinning_vertex>\nvSkullY = transformed.y;'
+          );
+        shader.fragmentShader = shader.fragmentShader
+          .replace(
+            '#include <common>',
+            '#include <common>\nvarying float vSkullY;'
+          )
+          .replace(
+            '#include <dithering_fragment>',
+            'if (vSkullY > 1.7) discard;\n#include <dithering_fragment>'
+          );
+      };
+      mat.needsUpdate = true;
+    }
+
     function attachPropToNeck(model, prop) {
       const neck = model.getObjectByName('neck_01') || model.getObjectByName('head') || model;
       neck.add(prop);
@@ -2201,7 +2226,12 @@
         roughness: 0.9,
         metalness: 0.0
       });
-      const pantMat = new THREE.MeshStandardMaterial({ color: spec.pant, roughness: 0.92, metalness: 0.0 });
+      const pantMat = new THREE.MeshStandardMaterial({
+        map: spec.coat,
+        color: spec.pant,
+        roughness: 0.94,
+        metalness: 0.0
+      });
       function tube(boneName, childName, r0, r1, mat, cover) {
         const bone = model.getObjectByName(boneName);
         const child = model.getObjectByName(childName);
@@ -2231,8 +2261,8 @@
       const neck = model.getObjectByName('neck_01');
       if (chest && neck) {
         const len = neck.position.length();
-        const coat = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, len * 0.9, 16), coatMat);
-        coat.position.set(0, len * 0.4, 0.035);
+        const coat = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, len * 0.7, 16), coatMat);
+        coat.position.set(0, len * 0.26, 0.02);
         coat.castShadow = true;
         chest.add(coat);
       }
@@ -2255,11 +2285,27 @@
       const headBone = model.getObjectByName('head');
       if (neck && headBone) {
         const len = Math.max(0.08, headBone.position.length());
-        const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.074, len * 0.9, 12), coatMat);
-        collar.position.y = len * 0.32;
+        const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.07, len * 1.05, 12), coatMat);
+        collar.position.set(0, len * 0.36, 0);
         collar.castShadow = true;
         neck.add(collar);
       }
+      // 白手套是素体的手。棉手套挂在腕骨上，把手指盖住。
+      ['hand_l', 'hand_r'].forEach((boneName) => {
+        const bone = model.getObjectByName(boneName);
+        if (!bone) return;
+        const side = boneName.charAt(boneName.length - 1) === 'l' ? -1 : 1;
+        const palm = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.05, 0.22, 10), coatMat);
+        palm.position.set(0, 0.13, 0.03);
+        palm.castShadow = true;
+        bone.add(palm);
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), coatMat);
+        tip.position.set(0, 0.22, 0.035);
+        bone.add(tip);
+        const thumb = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), coatMat);
+        thumb.position.set(side * 0.03, 0.1, 0.07);
+        bone.add(thumb);
+      });
     }
 
     function dressHenanFarmer(model) {
@@ -2274,6 +2320,7 @@
             mat.color.setHex(0xffffff);
             mat.roughness = 0.55;
             mat.metalness = 0.02;
+            hideSkinnedSkull(mat);
             mat.needsUpdate = true;
           } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
             applyWorldCotton(mat, cottonTex.farmer);
@@ -2283,12 +2330,12 @@
           }
         });
       });
-      dressWinterLayers(model, { coat: cottonTex.farmer, pant: 0x2c241c });
+      dressWinterLayers(model, { coat: cottonTex.farmer, pant: 0x6a5344 });
       attachLivingPortrait(model, {
         url: 'assets/people/portraits/laowang.png?v=3',
         height: 0.46,
         aspect: 864 / 748,
-        position: { x: 0, y: 0.1, z: 0.07 },
+        position: { x: 0, y: 0.14, z: 0.07 },
         yaw: 0
       });
     }
@@ -2305,6 +2352,7 @@
             mat.color.setHex(0xffffff);
             mat.roughness = 0.52;
             mat.metalness = 0.02;
+            hideSkinnedSkull(mat);
           } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
             applyWorldCotton(mat, cottonTex.auntie);
           } else if (name.indexOf('shoe') !== -1) {
@@ -2312,12 +2360,12 @@
           }
         });
       });
-      dressWinterLayers(model, { coat: cottonTex.auntie, pant: 0x241c18 });
+      dressWinterLayers(model, { coat: cottonTex.auntie, pant: 0x5c4038 });
       attachLivingPortrait(model, {
         url: 'assets/people/portraits/auntie.png?v=3',
         height: 0.44,
         aspect: 864 / 707,
-        position: { x: 0, y: 0.14, z: 0.07 },
+        position: { x: 0, y: 0.18, z: 0.07 },
         yaw: -0.42
       });
     }
@@ -2334,6 +2382,7 @@
             mat.color.setHex(0xffffff);
             mat.roughness = 0.5;
             mat.metalness = 0.02;
+            hideSkinnedSkull(mat);
           } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
             applyWorldCotton(mat, cottonTex.kid);
           } else if (name.indexOf('shoe') !== -1) {
@@ -2341,12 +2390,12 @@
           }
         });
       });
-      dressWinterLayers(model, { coat: cottonTex.kid, pant: 0x3a2a1c });
+      dressWinterLayers(model, { coat: cottonTex.kid, pant: 0x7a5a38 });
       attachLivingPortrait(model, {
         url: 'assets/people/portraits/kid.png?v=3',
         height: 0.5,
         aspect: 864 / 811,
-        position: { x: 0, y: 0.12, z: 0.07 },
+        position: { x: 0, y: 0.16, z: 0.07 },
         yaw: 0.55
       });
     }
@@ -3001,7 +3050,7 @@
         map: snowTex,
         bumpMap: snowTex,
         bumpScale: 0.14,
-        color: 0xffffff,
+        color: 0x8d9aaa,
         roughness: 0.96,
         metalness: 0.0
       });
@@ -3028,7 +3077,7 @@
         map: snowTex,
         bumpMap: snowTex,
         bumpScale: 0.04,
-        color: 0xffffff,
+        color: 0x8d9aaa,
         roughness: 0.92,
         side: THREE.DoubleSide
       });
