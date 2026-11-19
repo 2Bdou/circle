@@ -2219,67 +2219,72 @@
     }
 
     function dressWinterLayers(model, spec) {
-      // 西装是同一套男模。棉衣棉裤挂在骨骼上，把西装轮廓盖成冬装。
+      // 西装是同一套男模。棉衣沿骨骼收成一件袄：肩连袖，腰收进去，下摆略敞。
+      const coatMap = spec.coat.clone();
+      coatMap.wrapS = THREE.RepeatWrapping;
+      coatMap.wrapT = THREE.RepeatWrapping;
+      coatMap.repeat.set(1.6, 0.42);
+      coatMap.needsUpdate = true;
       const coatMat = new THREE.MeshStandardMaterial({
-        map: spec.coat,
+        map: coatMap,
         color: 0xffffff,
-        roughness: 0.9,
+        roughness: 0.92,
         metalness: 0.0
       });
       const pantMat = new THREE.MeshStandardMaterial({
-        map: spec.coat,
+        map: coatMap,
         color: spec.pant,
         roughness: 0.94,
         metalness: 0.0
       });
-      function tube(boneName, childName, r0, r1, mat, cover) {
+      function tube(boneName, childName, rParent, rChild, mat, cover) {
         const bone = model.getObjectByName(boneName);
         const child = model.getObjectByName(childName);
         if (!bone || !child) return;
         const len = child.position.length();
         if (len < 0.02) return;
         const mesh = new THREE.Mesh(
-          new THREE.CylinderGeometry(r0, r1, len * (cover || 0.94), 12),
+          new THREE.CylinderGeometry(rChild, rParent, len * (cover || 0.98), 12),
           mat
         );
         mesh.castShadow = true;
-        mesh.position.y = len * 0.46;
+        mesh.position.y = len * 0.48;
         bone.add(mesh);
-        const joint = new THREE.Mesh(new THREE.SphereGeometry(r0 * 0.96, 10, 8), mat);
-        joint.position.y = len * 0.92;
+        const joint = new THREE.Mesh(
+          new THREE.SphereGeometry(Math.min(rParent, rChild) * 0.9, 8, 6),
+          mat
+        );
+        joint.scale.y = 0.62;
+        joint.position.y = len * 0.97;
         bone.add(joint);
       }
-      tube('upperarm_l', 'lowerarm_l', 0.105, 0.09, coatMat);
-      tube('upperarm_r', 'lowerarm_r', 0.105, 0.09, coatMat);
-      tube('lowerarm_l', 'hand_l', 0.086, 0.072, coatMat, 0.84);
-      tube('lowerarm_r', 'hand_r', 0.086, 0.072, coatMat, 0.84);
-      tube('thigh_l', 'calf_l', 0.13, 0.105, pantMat);
-      tube('thigh_r', 'calf_r', 0.13, 0.105, pantMat);
-      tube('calf_l', 'foot_l', 0.098, 0.078, pantMat, 0.78);
-      tube('calf_r', 'foot_r', 0.098, 0.078, pantMat, 0.78);
+      tube('upperarm_l', 'lowerarm_l', 0.09, 0.072, coatMat);
+      tube('upperarm_r', 'lowerarm_r', 0.09, 0.072, coatMat);
+      tube('lowerarm_l', 'hand_l', 0.074, 0.064, coatMat, 1.08);
+      tube('lowerarm_r', 'hand_r', 0.074, 0.064, coatMat, 1.08);
+      tube('thigh_l', 'calf_l', 0.115, 0.092, pantMat);
+      tube('thigh_r', 'calf_r', 0.115, 0.092, pantMat);
+      tube('calf_l', 'foot_l', 0.092, 0.074, pantMat, 1.05);
+      tube('calf_r', 'foot_r', 0.092, 0.074, pantMat, 1.05);
       const chest = model.getObjectByName('spine_03');
       const neck = model.getObjectByName('neck_01');
       if (chest && neck) {
-        const len = neck.position.length();
-        const coat = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, len * 0.7, 16), coatMat);
-        coat.position.set(0, len * 0.26, 0.02);
+        const coat = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.19, 0.34, 16), coatMat);
+        coat.position.set(0, 0.1, 0.02);
         coat.castShadow = true;
         chest.add(coat);
       }
       const waist = model.getObjectByName('spine_01');
       const mid = model.getObjectByName('spine_02');
       if (waist && mid) {
-        const len = Math.max(0.12, mid.position.length());
-        const hem = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, len + 0.32, 16), coatMat);
-        hem.position.y = len * 0.02;
+        const hem = new THREE.Mesh(new THREE.CylinderGeometry(0.185, 0.23, 0.36, 16), coatMat);
+        hem.position.y = 0.05;
         hem.castShadow = true;
         waist.add(hem);
       }
       if (mid) {
-        const up = model.getObjectByName('spine_03');
-        const len = up ? Math.max(0.1, up.position.length()) : 0.12;
-        const band = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.25, len + 0.24, 14), coatMat);
-        band.position.y = len * 0.15;
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(0.178, 0.19, 0.28, 14), coatMat);
+        band.position.y = 0.03;
         mid.add(band);
       }
       const headBone = model.getObjectByName('head');
@@ -2295,15 +2300,15 @@
         const bone = model.getObjectByName(boneName);
         if (!bone) return;
         const side = boneName.charAt(boneName.length - 1) === 'l' ? -1 : 1;
-        const palm = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.05, 0.22, 10), coatMat);
-        palm.position.set(0, 0.13, 0.03);
+        const palm = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.06, 0.26, 10), coatMat);
+        palm.position.set(0, 0.14, 0.04);
         palm.castShadow = true;
         bone.add(palm);
-        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), coatMat);
-        tip.position.set(0, 0.22, 0.035);
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), coatMat);
+        tip.position.set(0, 0.25, 0.045);
         bone.add(tip);
-        const thumb = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), coatMat);
-        thumb.position.set(side * 0.03, 0.1, 0.07);
+        const thumb = new THREE.Mesh(new THREE.SphereGeometry(0.046, 8, 6), coatMat);
+        thumb.position.set(side * 0.045, 0.12, 0.085);
         bone.add(thumb);
       });
     }
@@ -2516,7 +2521,7 @@
           try {
             realHumans = {
               owner: mountRealHuman(loaded[0], npcGroup, 0, 1, dressHenanFarmer, { x: 1.08, y: 1.0, z: 1.1 }),
-              auntie: mountRealHuman(loaded[1], crowdAuntieGroup, 0.42, 1, dressMarketAuntie, { x: 1.22, y: 0.88, z: 1.2 }),
+              auntie: mountRealHuman(loaded[1], crowdAuntieGroup, 0.42, 1, dressMarketAuntie, { x: 1.06, y: 0.94, z: 1.06 }),
               kid: mountRealHuman(loaded[2], crowdKidGroup, -0.55, 0.52, dressMarketKid)
             };
             // 第一人称只露手，不放玩家全身
@@ -3408,7 +3413,7 @@
 
       // 4. 左下角 3D 红泥炭火盆 (brazierGroup)
       brazierGroup = new THREE.Group();
-      brazierGroup.position.set(-STALL_HALF_W - 0.85, 0.22, -1.2);
+      brazierGroup.position.set(-STALL_HALF_W - 0.85, 0.0, -1.2);
 
       const potMesh = new THREE.Mesh(
         new THREE.LatheGeometry([
@@ -3419,23 +3424,27 @@
           new THREE.Vector2(0.68, 0.52),
           new THREE.Vector2(0.7, 0.62)
         ], 28),
-        new THREE.MeshStandardMaterial({ color: 0x3a241c, roughness: 0.92, metalness: 0.04, side: THREE.DoubleSide })
+        new THREE.MeshStandardMaterial({ color: 0x241814, roughness: 0.84, metalness: 0.32, side: THREE.DoubleSide })
       );
       potMesh.castShadow = true;
       brazierGroup.add(potMesh);
 
       const rimTorus = new THREE.Mesh(
         new THREE.TorusGeometry(0.68, 0.06, 12, 24),
-        new THREE.MeshStandardMaterial({ color: 0x5c3a28, roughness: 0.78, metalness: 0.08 })
+        new THREE.MeshStandardMaterial({ color: 0x3a3028, roughness: 0.72, metalness: 0.4 })
       );
       rimTorus.rotation.x = Math.PI * 0.5;
       rimTorus.position.y = 0.62;
       brazierGroup.add(rimTorus);
+      const snowNest = new THREE.Mesh(new THREE.SphereGeometry(0.78, 16, 10), snowMoundMat);
+      snowNest.scale.set(1.05, 0.16, 1.05);
+      snowNest.position.y = 0.02;
+      brazierGroup.add(snowNest);
 
       const coalMat = new THREE.MeshStandardMaterial({
-        color: 0x1a100c,
-        emissive: 0xff4a12,
-        emissiveIntensity: 0.42,
+        color: 0x120c0a,
+        emissive: 0xc2410c,
+        emissiveIntensity: 0.28,
         roughness: 0.96
       });
       for (let i = 0; i < 9; i++) {
@@ -3450,20 +3459,26 @@
       brazierFlames = [];
       const flameTex = document.createElement('canvas');
       flameTex.width = 64;
-      flameTex.height = 128;
+      flameTex.height = 160;
       const flameCtx = flameTex.getContext('2d');
-      const flameGrad = flameCtx.createLinearGradient(32, 124, 32, 0);
-      flameGrad.addColorStop(0, 'rgba(120, 20, 0, 0)');
-      flameGrad.addColorStop(0.22, 'rgba(210, 50, 8, 0.95)');
-      flameGrad.addColorStop(0.55, 'rgba(255, 130, 24, 0.85)');
-      flameGrad.addColorStop(0.82, 'rgba(255, 214, 120, 0.55)');
-      flameGrad.addColorStop(1, 'rgba(255, 244, 210, 0)');
-      flameCtx.fillStyle = flameGrad;
-      flameCtx.beginPath();
-      flameCtx.moveTo(32, 2);
-      flameCtx.bezierCurveTo(60, 36, 52, 88, 32, 124);
-      flameCtx.bezierCurveTo(12, 88, 4, 36, 32, 2);
-      flameCtx.fill();
+      function flameTongue(cx, top, width, height) {
+        const g = flameCtx.createLinearGradient(cx, top + height, cx, top);
+        g.addColorStop(0, 'rgba(90, 16, 0, 0)');
+        g.addColorStop(0.18, 'rgba(190, 42, 6, 0.9)');
+        g.addColorStop(0.5, 'rgba(255, 120, 20, 0.75)');
+        g.addColorStop(0.78, 'rgba(255, 214, 120, 0.35)');
+        g.addColorStop(1, 'rgba(255, 244, 210, 0)');
+        flameCtx.fillStyle = g;
+        flameCtx.beginPath();
+        flameCtx.moveTo(cx, top);
+        flameCtx.bezierCurveTo(cx + width, top + height * 0.35, cx + width * 0.45, top + height * 0.72, cx + width * 0.12, top + height);
+        flameCtx.lineTo(cx - width * 0.08, top + height);
+        flameCtx.bezierCurveTo(cx - width * 0.7, top + height * 0.6, cx - width * 0.35, top + height * 0.28, cx, top);
+        flameCtx.fill();
+      }
+      flameTongue(34, 4, 16, 150);
+      flameTongue(24, 36, 10, 110);
+      flameTongue(44, 48, 8, 96);
       const flameMap = new THREE.CanvasTexture(flameTex);
       flameMap.encoding = THREE.sRGBEncoding;
       const flameMat = new THREE.MeshBasicMaterial({
@@ -3472,12 +3487,12 @@
         depthWrite: false,
         side: THREE.DoubleSide
       });
-      [[0, 0.78, 0, 0.42], [0.12, 0.7, 0.05, 0.28], [-0.1, 0.7, -0.06, 0.26]].forEach((spec, idx) => {
+      [[0, 0.86, 0, 0.22, 0.72], [0.1, 0.78, 0.04, 0.14, 0.46]].forEach((spec, idx) => {
         const flame = new THREE.Group();
         flame.position.set(spec[0], spec[1], spec[2]);
-        for (let k = 0; k < 3; k++) {
-          const card = new THREE.Mesh(new THREE.PlaneGeometry(spec[3], spec[3] * 1.15), flameMat);
-          card.rotation.y = k * Math.PI / 3 + idx;
+        for (let k = 0; k < 2; k++) {
+          const card = new THREE.Mesh(new THREE.PlaneGeometry(spec[3], spec[4]), flameMat);
+          card.rotation.y = k * Math.PI * 0.5 + idx * 0.4;
           flame.add(card);
         }
         brazierGroup.add(flame);
