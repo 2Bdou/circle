@@ -3148,6 +3148,79 @@
       ropeMesh.castShadow = true;
       scene.add(ropeMesh);
 
+      // 摊顶旧帆布：前低后高，中间下垂，不挡匾额和灯笼
+      const canvasPaint = document.createElement('canvas');
+      canvasPaint.width = 256;
+      canvasPaint.height = 256;
+      const canvasG = canvasPaint.getContext('2d');
+      canvasG.fillStyle = '#cbb892';
+      canvasG.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 256; i += 4) {
+        canvasG.strokeStyle = i % 8 === 0 ? 'rgba(92, 68, 40, 0.38)' : 'rgba(255, 246, 224, 0.16)';
+        canvasG.beginPath();
+        canvasG.moveTo(0, i);
+        canvasG.lineTo(256, i);
+        canvasG.stroke();
+        canvasG.beginPath();
+        canvasG.moveTo(i, 0);
+        canvasG.lineTo(i, 256);
+        canvasG.stroke();
+      }
+      const canvasTex = new THREE.CanvasTexture(canvasPaint);
+      canvasTex.wrapS = THREE.RepeatWrapping;
+      canvasTex.wrapT = THREE.RepeatWrapping;
+      canvasTex.encoding = THREE.sRGBEncoding;
+      const canvasMat = new THREE.MeshStandardMaterial({
+        map: canvasTex,
+        color: 0xffffff,
+        roughness: 0.94,
+        side: THREE.DoubleSide
+      });
+      const canopyCols = 8;
+      const canopyRows = 10;
+      const canopyPos = [];
+      const canopyUv = [];
+      const canopyIdx = [];
+      const canopyX0 = -STALL_HALF_W + 0.2;
+      const canopyX1 = STALL_HALF_W - 0.2;
+      const canopyZ0 = -0.2;
+      const canopyZ1 = -STALL_DEPTH + 1.6;
+      for (let iz = 0; iz <= canopyRows; iz++) {
+        const tz = iz / canopyRows;
+        for (let ix = 0; ix <= canopyCols; ix++) {
+          const tx = ix / canopyCols;
+          const sag = Math.sin(Math.PI * tx) * (0.18 + tz * 0.1);
+          canopyPos.push(
+            canopyX0 + (canopyX1 - canopyX0) * tx,
+            2.85 + tz * 0.55 - sag,
+            canopyZ0 + (canopyZ1 - canopyZ0) * tz
+          );
+          canopyUv.push(tx * 4, tz * 3);
+        }
+      }
+      for (let iz = 0; iz < canopyRows; iz++) {
+        for (let ix = 0; ix < canopyCols; ix++) {
+          const a = iz * (canopyCols + 1) + ix;
+          const b = a + 1;
+          const c = a + canopyCols + 1;
+          canopyIdx.push(a, c, b, b, c, c + 1);
+        }
+      }
+      const canopyGeo = new THREE.BufferGeometry();
+      canopyGeo.setAttribute('position', new THREE.Float32BufferAttribute(canopyPos, 3));
+      canopyGeo.setAttribute('uv', new THREE.Float32BufferAttribute(canopyUv, 2));
+      canopyGeo.setIndex(canopyIdx);
+      canopyGeo.computeVertexNormals();
+      const canopy = new THREE.Mesh(canopyGeo, canvasMat);
+      canopy.receiveShadow = true;
+      scene.add(canopy);
+      [[canopyX0, canopyZ0, 2.85], [canopyX1, canopyZ0, 2.85], [canopyX0, canopyZ1, 3.4], [canopyX1, canopyZ1, 3.4]].forEach((pole) => {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.075, pole[2], 8), postWood);
+        post.position.set(pole[0], pole[2] * 0.5, pole[1]);
+        post.castShadow = true;
+        scene.add(post);
+      });
+
       // 3. 北方民俗飞檐牌坊门头 + 竖幅春联 + 16 根高透光 3D 冰溜子 + 3D 冰糖葫芦草靶
       const bambooMat = new THREE.MeshStandardMaterial({
         map: loadPhotoMap('assets/world/wood-planks.jpg', 1, 4),
