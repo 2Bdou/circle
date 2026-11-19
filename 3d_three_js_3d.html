@@ -4043,12 +4043,19 @@
         persMesh.castShadow = true;
         toyRoot.add(persMesh);
 
-        const leafMat = new THREE.MeshStandardMaterial({ color: 0x3f5c32, roughness: 0.84 });
+        const leafMat = new THREE.MeshStandardMaterial({ color: 0x3f5c32, roughness: 0.84, side: THREE.DoubleSide });
+        const leafShape = new THREE.Shape();
+        leafShape.moveTo(0, 0);
+        leafShape.quadraticCurveTo(0.08, 0.04, 0.02, 0.15);
+        leafShape.quadraticCurveTo(-0.02, 0.08, -0.07, 0.04);
+        leafShape.quadraticCurveTo(-0.03, 0.01, 0, 0);
+        const leafGeo = new THREE.ShapeGeometry(leafShape);
         for (let l = 0; l < 4; l++) {
-          const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.18, 6), leafMat);
-          leaf.rotation.x = Math.PI * 0.42;
-          leaf.rotation.z = (l / 4) * Math.PI * 2;
-          leaf.position.set(Math.sin((l / 4) * Math.PI * 2) * 0.10, 0.40, Math.cos((l / 4) * Math.PI * 2) * 0.10);
+          const leaf = new THREE.Mesh(leafGeo, leafMat);
+          const a = (l / 4) * Math.PI * 2;
+          leaf.rotation.x = -1.15;
+          leaf.rotation.y = a;
+          leaf.position.set(Math.sin(a) * 0.06, 0.4, Math.cos(a) * 0.06);
           toyRoot.add(leaf);
         }
       } else if (id === 'clay_frog' || id === 'tin_frog') {
@@ -4397,13 +4404,15 @@
         const wingGeo = new THREE.ExtrudeGeometry(wingShape, { depth: 0.015, bevelEnabled: false });
         function buildWing(side) {
           const wing = new THREE.Group();
-          wing.position.set(side * 0.3, 0.48, -0.08);
+          wing.position.set(side * 0.24, 0.4, -0.12);
           const outer = new THREE.Mesh(wingGeo, wingFeatherMat);
-          outer.scale.set(side, 1, 1);
+          outer.scale.set(side * 0.68, 0.46, 1);
+          outer.rotation.x = 1.05;
           wing.add(outer);
           const inner = new THREE.Mesh(wingGeo, wingFeatherMat);
-          inner.scale.set(side * 0.62, 0.7, 1);
-          inner.position.set(side * 0.02, -0.04, 0.02);
+          inner.scale.set(side * 0.4, 0.3, 1);
+          inner.rotation.x = 0.85;
+          inner.position.set(0, -0.02, 0.03);
           wing.add(inner);
           return wing;
         }
