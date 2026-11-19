@@ -590,13 +590,13 @@
           <div class="gh-note">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center gap-2">
-                <span class="font-medium" style="color:#e6edf3;">摊主老王</span>
+                <span class="font-medium" style="color:#e6edf3;">摊主老王 · 河南大叔</span>
                 <span id="shopBargainBadge" class="gh-badge">尚未砍价</span>
               </div>
               <span id="bargainChanceState" class="text-xs font-medium" style="color:#3fb950;">本轮可砍价</span>
             </div>
             <p id="shopNpcDialogText" class="mt-2 text-sm leading-relaxed" style="color:#e6edf3;">
-              “细塑料圈轻脆容易磕边弹飞，老藤竹圈柔韧吸震好擦边进，铜芯大圈沉甸甸落点最稳！”
+              “中！细塑料圈轻脆爱磕边，老藤竹圈吸震好擦边，铜芯大圈沉，落点最稳当哩！”
             </p>
           </div>
 
@@ -608,17 +608,17 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button id="btnBargainHaggle" type="button" class="bargain-pill p-3 text-left">
                 <div class="gh-choice-kicker"><span>实在讲价</span><span class="gh-badge">+2~4圈</span></div>
-                <div class="text-sm font-medium" style="color:#e6edf3;">“叔，买一捆饶仨圈呗！”</div>
+                <div class="text-sm font-medium" style="color:#e6edf3;">“王叔，买一捆饶仨圈中不中！”</div>
                 <p class="gh-muted text-xs mt-1">下次下单多抓一把赠送圈。</p>
               </button>
               <button id="btnBargainFlatter" type="button" class="bargain-pill p-3 text-left">
                 <div class="gh-choice-kicker"><span>拜年吉利话</span><span class="gh-badge">立减 ¥2</span></div>
-                <div class="text-sm font-medium" style="color:#e6edf3;">“祝老王叔今年发大财！”</div>
+                <div class="text-sm font-medium" style="color:#e6edf3;">“祝恁老王叔今年发大财！”</div>
                 <p class="gh-muted text-xs mt-1">全店立减 2 元，再送 1 个藤竹圈。</p>
               </button>
               <button id="btnBargainCold" type="button" class="bargain-pill p-3 text-left">
                 <div class="gh-choice-kicker"><span>借火暖手</span><span class="gh-badge">回温</span></div>
-                <div class="text-sm font-medium" style="color:#e6edf3;">“叔，手冻僵了借火烤烤！”</div>
+                <div class="text-sm font-medium" style="color:#e6edf3;">“叔，手冻木了，借个火烤烤！”</div>
                 <p class="gh-muted text-xs mt-1">手温回到 100%，并送练手塑料圈。</p>
               </button>
             </div>
@@ -790,7 +790,7 @@
     <div class="absolute bottom-3 left-3 right-3 flex flex-wrap items-end justify-between gap-2 pointer-events-none z-20">
       <div class="gh-dock flex flex-wrap items-center gap-1.5 pointer-events-auto p-1.5">
         <button id="btnWarmHands" type="button" title="凑近红泥炭火盆烤手回温 (F)" aria-label="烤手回温" class="ui-btn">烤手<span class="ui-kbd">F</span></button>
-        <button id="btnTalkNpcPreview" type="button" title="找摊主老王买圈与东北话砍价 (B)" aria-label="老王商铺" class="ui-btn">商铺<span class="ui-kbd">B</span></button>
+        <button id="btnTalkNpcPreview" type="button" title="找摊主老王买圈与河南话砍价 (B)" aria-label="老王商铺" class="ui-btn">商铺<span class="ui-kbd">B</span></button>
         <button id="btnOpenBagBottom" type="button" title="查看战利品背包与年代图鉴 (G)" aria-label="背包图鉴" class="ui-btn">图鉴<span class="ui-kbd">G</span></button>
         <div class="gh-seg" role="group" aria-label="切换套圈种类">
           <button id="btnSelectPlastic" type="button" data-ring="plastic" title="快捷键 1：细塑料圈（轻巧量大）" aria-label="选择细塑料圈" class="ring-select-btn ui-btn ui-btn-active">塑料 <span id="hudCountPlastic" class="font-num">3</span></button>
@@ -1159,7 +1159,7 @@
       chargePower: 0,
       chargeDir: 1,
 
-      npcBubbleText: '“瞧瞧咱这新棉袄！旁边大妈和小孩都来看你套圈啦，拉紧右手甩起来！”',
+      npcBubbleText: '“中！瞧瞧俺这摊儿，旁边大妈跟恁小侄都瞅着哩，右手甩开中不中！”',
       npcBubbleTimer: 420,
       npcMood: 'happy',
       npcAnimState: 'idle_rub',   // 'idle_rub' | 'cheer_slap' | 'heartache' | 'hand_rings'
@@ -1858,18 +1858,257 @@
       texture.userData.eyesFixed = true;
     }
 
-    function mountRealHuman(gltf, anchor, yaw, scale) {
+    function cloneCanvasTextureFrom(texture, paintFn) {
+      const img = texture && texture.image;
+      const canvas = document.createElement('canvas');
+      if (img && img.width) {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        if (paintFn) paintFn(ctx, canvas.width, canvas.height);
+      } else {
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+        if (paintFn) paintFn(ctx, canvas.width, canvas.height);
+      }
+      const next = new THREE.CanvasTexture(canvas);
+      next.encoding = THREE.sRGBEncoding;
+      next.flipY = false;
+      next.needsUpdate = true;
+      next.userData = { eyesFixed: true };
+      return next;
+    }
+
+    function paintFarmerJacket(ctx, w, h) {
+      ctx.fillStyle = '#1f3d2a';
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#2f5d3c';
+      for (let y = 0; y < h; y += 18) {
+        for (let x = 0; x < w; x += 18) {
+          ctx.fillRect(x + (y % 36 === 0 ? 0 : 9), y, 16, 2);
+          ctx.fillRect(x + (y % 36 === 0 ? 0 : 9), y, 2, 16);
+        }
+      }
+      ctx.fillStyle = 'rgba(180, 140, 60, 0.35)';
+      for (let i = 0; i < 40; i++) {
+        ctx.fillRect((i * 47) % w, (i * 31) % h, 8, 3);
+      }
+    }
+
+    function paintAuntieJacket(ctx, w, h) {
+      ctx.fillStyle = '#b91c1c';
+      ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 28; i++) {
+        const x = ((i * 73) % (w - 40)) + 20;
+        const y = ((i * 97) % (h - 40)) + 20;
+        ctx.fillStyle = '#fde68a';
+        ctx.beginPath();
+        ctx.arc(x, y, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.ellipse(x - 12, y + 4, 12, 5, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#fecaca';
+        ctx.beginPath();
+        ctx.arc(x + 4, y - 3, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function paintKidJacket(ctx, w, h) {
+      ctx.fillStyle = '#ea580c';
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#fbbf24';
+      for (let y = 0; y < h; y += 22) {
+        for (let x = 0; x < w; x += 22) {
+          ctx.fillRect(x + 2, y + 2, 18, 4);
+          ctx.fillRect(x + 2, y + 2, 4, 18);
+        }
+      }
+      ctx.fillStyle = '#fff7ed';
+      for (let i = 0; i < 20; i++) {
+        ctx.beginPath();
+        ctx.arc((i * 59) % w, (i * 83) % h, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function tintSkinMap(texture, rgbMul) {
+      return cloneCanvasTextureFrom(texture, (ctx, w, h) => {
+        const img = ctx.getImageData(0, 0, w, h);
+        const d = img.data;
+        for (let i = 0; i < d.length; i += 4) {
+          d[i] = Math.min(255, d[i] * rgbMul[0]);
+          d[i + 1] = Math.min(255, d[i + 1] * rgbMul[1]);
+          d[i + 2] = Math.min(255, d[i + 2] * rgbMul[2]);
+        }
+        ctx.putImageData(img, 0, 0);
+      });
+    }
+
+    function attachPropToHead(model, prop) {
+      const head = model.getObjectByName('head') || model.getObjectByName('neck_01');
+      if (!head) {
+        model.add(prop);
+        return;
+      }
+      head.add(prop);
+    }
+
+    function dressHenanFarmer(model) {
+      model.traverse((obj) => {
+        if (!obj.isMesh || !obj.material) return;
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+        mats.forEach((mat) => {
+          if (!mat) return;
+          const name = (mat.name || '').toLowerCase();
+          if (name.indexOf('body') !== -1 && mat.map) {
+            mat.map = tintSkinMap(mat.map, [0.88, 0.8, 0.7]);
+            // 大叔胡茬：在皮肤贴图下半张脸区域洒深点
+            mat.map = cloneCanvasTextureFrom(mat.map, (ctx, w, h) => {
+              ctx.fillStyle = 'rgba(60,40,30,0.22)';
+              for (let i = 0; i < 900; i++) {
+                const x = (w * 0.28) + Math.random() * w * 0.44;
+                const y = (h * 0.42) + Math.random() * h * 0.22;
+                ctx.fillRect(x, y, 1.2, 1.2);
+              }
+            });
+            mat.color.setHex(0xe8c49a);
+            mat.needsUpdate = true;
+          } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
+            mat.map = cloneCanvasTextureFrom(mat.map, paintFarmerJacket);
+            mat.color.setHex(0xffffff);
+            mat.roughness = 0.92;
+            mat.metalness = 0.02;
+            mat.needsUpdate = true;
+          } else if (name.indexOf('shoe') !== -1) {
+            mat.color.setHex(0x3f2a1d);
+            mat.roughness = 0.88;
+          }
+        });
+      });
+      const towel = new THREE.Group();
+      towel.position.set(0, 0.18, 0.02);
+      const towelMat = new THREE.MeshStandardMaterial({ color: 0xdbeafe, roughness: 0.85 });
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.035, 10, 22), towelMat);
+      band.rotation.x = Math.PI * 0.5;
+      towel.add(band);
+      const flap = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.03), towelMat);
+      flap.position.set(0.12, -0.05, 0.02);
+      towel.add(flap);
+      attachPropToHead(model, towel);
+      const scarf = new THREE.Mesh(
+        new THREE.TorusGeometry(0.16, 0.04, 10, 20),
+        new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 })
+      );
+      scarf.position.set(0, 1.42, 0.02);
+      scarf.rotation.x = Math.PI * 0.5;
+      model.add(scarf);
+    }
+
+    function dressMarketAuntie(model) {
+      model.traverse((obj) => {
+        if (!obj.isMesh || !obj.material) return;
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+        mats.forEach((mat) => {
+          if (!mat) return;
+          const name = (mat.name || '').toLowerCase();
+          if (name.indexOf('body') !== -1 && mat.map) {
+            mat.map = tintSkinMap(mat.map, [1.05, 0.95, 0.9]);
+            mat.color.setHex(0xffe0c8);
+          } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
+            mat.map = cloneCanvasTextureFrom(mat.map, paintAuntieJacket);
+            mat.color.setHex(0xffffff);
+            mat.roughness = 0.9;
+          } else if (name.indexOf('shoe') !== -1) {
+            mat.color.setHex(0x111827);
+          }
+        });
+      });
+      const hair = new THREE.Group();
+      hair.position.set(0, 0.16, -0.02);
+      const bunMat = new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.75 });
+      const bun = new THREE.Mesh(new THREE.SphereGeometry(0.08, 14, 12), bunMat);
+      bun.position.set(0, 0.06, -0.05);
+      hair.add(bun);
+      const fringe = new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 10), bunMat);
+      fringe.scale.set(1.05, 0.45, 0.85);
+      fringe.position.set(0, 0.02, 0.04);
+      hair.add(fringe);
+      const scarf = new THREE.Mesh(
+        new THREE.SphereGeometry(0.14, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55),
+        new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.85, side: THREE.DoubleSide })
+      );
+      scarf.position.set(0, 0.05, 0);
+      hair.add(scarf);
+      attachPropToHead(model, hair);
+    }
+
+    function dressMarketKid(model) {
+      model.traverse((obj) => {
+        if (!obj.isMesh || !obj.material) return;
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+        mats.forEach((mat) => {
+          if (!mat) return;
+          const name = (mat.name || '').toLowerCase();
+          if (name.indexOf('body') !== -1 && mat.map) {
+            mat.map = tintSkinMap(mat.map, [1.08, 1.0, 0.95]);
+            mat.color.setHex(0xffe7d1);
+          } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
+            mat.map = cloneCanvasTextureFrom(mat.map, paintKidJacket);
+            mat.color.setHex(0xffffff);
+          } else if (name.indexOf('shoe') !== -1) {
+            mat.color.setHex(0xdc2626);
+          }
+        });
+      });
+      const hat = new THREE.Group();
+      hat.position.set(0, 0.14, 0.02);
+      const hatMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.7 });
+      const earL = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), hatMat);
+      earL.position.set(-0.12, 0.04, 0);
+      const earR = earL.clone();
+      earR.position.x = 0.12;
+      hat.add(earL, earR);
+      const crown = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), hatMat);
+      hat.add(crown);
+      const face = new THREE.Mesh(
+        new THREE.CircleGeometry(0.05, 12),
+        new THREE.MeshStandardMaterial({ color: 0xfef3c7 })
+      );
+      face.position.set(0, 0.01, 0.12);
+      hat.add(face);
+      const nose = new THREE.Mesh(
+        new THREE.SphereGeometry(0.018, 8, 8),
+        new THREE.MeshStandardMaterial({ color: 0x111827 })
+      );
+      nose.position.set(0, -0.005, 0.13);
+      hat.add(nose);
+      attachPropToHead(model, hat);
+    }
+
+    function mountRealHuman(gltf, anchor, yaw, scale, dressFn, nonUniformScale) {
       const model = gltf.scene;
       softenHumanMaterials(model);
+      if (dressFn) dressFn(model);
       const holder = new THREE.Group();
       holder.rotation.y = yaw;
-      holder.scale.setScalar(scale || 1);
+      if (nonUniformScale) {
+        holder.scale.set(nonUniformScale.x, nonUniformScale.y, nonUniformScale.z);
+      } else {
+        holder.scale.setScalar(scale || 1);
+      }
       holder.add(model);
       anchor.add(holder);
       const mixer = new THREE.AnimationMixer(model);
       const clips = {};
       gltf.animations.forEach((clip) => {
-        clips[clip.name] = mixer.clipAction(clip);
+        const action = mixer.clipAction(clip);
+        action.clampWhenFinished = false;
+        clips[clip.name] = action;
       });
       const rig = {
         model,
@@ -1887,54 +2126,34 @@
           this.current = name;
         }
       };
+      Object.keys(clips).forEach((name) => {
+        clips[name].enabled = true;
+        clips[name].setEffectiveWeight(1);
+        clips[name].setLoop(THREE.LoopRepeat, Infinity);
+      });
       rig.play('idle');
       return rig;
     }
 
     function updateRealHumans() {
       if (!realHumans) return;
-      const dt = Math.min(0.05, humanClock.getDelta());
+      const dt = Math.min(0.05, humanClock.getDelta() || 0.016);
       const cheer = state.crowdCheerTimer > 0;
-      const ownerClip = (state.npcAnimState === 'cheer_slap' || state.npcAnimState === 'hand_rings') ? 'wave' : 'idle';
+      // 待机用 walk 的前几帧更自然；欢呼/递圈用 wave
+      const ownerClip = (state.npcAnimState === 'cheer_slap' || state.npcAnimState === 'hand_rings' || state.shopOpen) ? 'wave' : 'idle';
       realHumans.owner.play(ownerClip);
       realHumans.owner.mixer.update(dt);
       realHumans.auntie.play(cheer ? 'wave' : 'idle');
       realHumans.auntie.mixer.update(dt);
       realHumans.kid.play(cheer ? 'wave' : 'idle');
       realHumans.kid.mixer.update(dt);
-      if (state.throwFlickTimer > 0) state.throwFlickTimer--;
-      const charging = state.isCharging || state.throwFlickTimer > 0;
-      realHumans.player.play(charging ? 'wave' : 'idle');
-      realHumans.player.mixer.update(dt);
+      // 若剪辑未驱动到骨骼，强制从 bind 姿态刷新
       if (cheer) {
         crowdAuntieGroup.position.y = Math.abs(Math.sin(state.time * 0.35)) * 0.06;
         crowdKidGroup.position.y = Math.abs(Math.sin(state.time * 0.42)) * 0.08;
       } else {
         crowdAuntieGroup.position.y = 0;
         crowdKidGroup.position.y = Math.sin(state.time * 0.08) * 0.015;
-      }
-
-      if (realHumans.player.handR && handRingMesh) {
-        const hold = new THREE.Vector3();
-        realHumans.player.handR.getWorldPosition(hold);
-        const pull = state.isCharging ? (state.chargePower / 100) : 0;
-        const flick = state.throwFlickTimer > 0 ? (state.throwFlickTimer / 14) : 0;
-        hold.y += 0.04 - pull * 0.05 + flick * 0.08;
-        hold.z += 0.12 - pull * 0.08;
-        handRingMesh.position.copy(hold);
-        handRingMesh.rotation.set(Math.PI * 0.5, 0, 0);
-      }
-      if (fpsSpareRingMeshes.length && realHumans.player.handL) {
-        const activeSpec = RING_SPECS[state.selectedRingType] || RING_SPECS.plastic;
-        const spareCount = Math.max(0, (state.rings[state.selectedRingType] || 0) - 1);
-        const left = new THREE.Vector3();
-        realHumans.player.handL.getWorldPosition(left);
-        fpsSpareRingMeshes.forEach((mesh, idx) => {
-          mesh.visible = idx < spareCount;
-          mesh.material.color.setHex(activeSpec.hexColor);
-          mesh.scale.setScalar(activeSpec.radiusScale * 0.55);
-          mesh.position.set(left.x, left.y + 0.04 + idx * 0.035, left.z + 0.08);
-        });
       }
     }
 
@@ -1950,53 +2169,41 @@
       const take = () => {
         loader.load(modelUrl, (gltf) => {
           loaded.push(gltf);
-          if (loaded.length < 4 || failed) return;
+          if (loaded.length < 3 || failed) return;
           humanClock = new THREE.Clock();
           npcGroup = new THREE.Group();
           npcGroup.position.copy(normToWorld3D(0, 1.07, 0));
           scene.add(npcGroup);
 
+          // 摊子左上：大妈；右下：小孩
           crowdAuntieGroup = new THREE.Group();
-          crowdAuntieGroup.position.set(-1.85, 0, -10.15);
+          crowdAuntieGroup.position.set(-3.55, 0, -9.15);
           scene.add(crowdAuntieGroup);
 
           crowdKidGroup = new THREE.Group();
-          crowdKidGroup.position.set(1.95, 0, -10.35);
+          crowdKidGroup.position.set(3.65, 0, -3.55);
           scene.add(crowdKidGroup);
-
-          const playerAnchor = new THREE.Group();
-          playerAnchor.position.set(1.7, 0, 1.35);
-          scene.add(playerAnchor);
 
           try {
             realHumans = {
-            owner: mountRealHuman(loaded[0], npcGroup, 0, 1),
-            auntie: mountRealHuman(loaded[1], crowdAuntieGroup, 0.15, 0.96),
-            kid: mountRealHuman(loaded[2], crowdKidGroup, -0.2, 0.62),
-              player: mountRealHuman(loaded[3], playerAnchor, Math.PI, 1)
+              owner: mountRealHuman(loaded[0], npcGroup, 0, 1, dressHenanFarmer, { x: 1.06, y: 0.98, z: 1.08 }),
+              auntie: mountRealHuman(loaded[1], crowdAuntieGroup, 0.42, 1, dressMarketAuntie, { x: 1.12, y: 0.92, z: 1.16 }),
+              kid: mountRealHuman(loaded[2], crowdKidGroup, -0.55, 0.58, dressMarketKid)
             };
+            // 第一人称只露手，不放玩家全身
+            build3DFpsPlayerHands();
           } catch (err) {
             console.error(err);
-            onFail();
+            // 已挂上写实人前不再退回几何人，避免双份角色
+            if (!realHumans) onFail();
+            else build3DFpsPlayerHands();
           }
-
-        fpsSpareRingMeshes = [];
-        for (let i = 0; i < 4; i++) {
-          const ring = new THREE.Mesh(
-            new THREE.TorusGeometry(0.16, 0.014, 10, 24),
-            new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.35, metalness: 0.2 })
-          );
-          ring.rotation.x = Math.PI * 0.5;
-          scene.add(ring);
-          fpsSpareRingMeshes.push(ring);
-        }
-      }, undefined, () => {
-        if (failed) return;
-        failed = true;
-        onFail();
-      });
+        }, undefined, () => {
+          if (failed) return;
+          failed = true;
+          onFail();
+        });
       };
-      take();
       take();
       take();
       take();
@@ -2175,7 +2382,7 @@
       const scarfRed = pbrMat(0x9f1239, 0.66, 0.04);
 
       crowdAuntieGroup = new THREE.Group();
-      crowdAuntieGroup.position.set(-STALL_HALF_W - 1.55, 0, -4.5);
+      crowdAuntieGroup.position.set(-3.55, 0, -9.15);
       crowdAuntieGroup.rotation.y = 0.48;
 
       const auntieCoat = putMesh(crowdAuntieGroup, new THREE.LatheGeometry([
@@ -2225,7 +2432,7 @@
       scene.add(crowdAuntieGroup);
 
       crowdKidGroup = new THREE.Group();
-      crowdKidGroup.position.set(STALL_HALF_W + 1.35, 0, -5.2);
+      crowdKidGroup.position.set(3.65, 0, -3.55);
       crowdKidGroup.rotation.y = -0.52;
       const kidCoatMat = pbrMat(0x0369a1, 0.62, 0.04);
       const kidBody = putMesh(crowdKidGroup, new THREE.LatheGeometry([
@@ -2293,48 +2500,65 @@
     }
 
     function build3DFpsPlayerHands() {
+      if (fpsHandsGroup && fpsHandsGroup.parent) {
+        fpsHandsGroup.parent.remove(fpsHandsGroup);
+      }
       fpsHandsGroup = new THREE.Group();
-      const plaidTex = createPlaidGloveTexture();
-      const gloveMat = pbrMat(0xffffff, 0.62, 0.06, plaidTex, 0.03);
-      const sleeveMat = pbrMat(0xffffff, 0.74, 0.04, createQuiltedCoatTexture('#1e3a8a', '#0f172a'), 0.045);
+      const gloveMat = pbrMat(0xd6c3a8, 0.78, 0.04);
+      const sleeveMat = pbrMat(0x1e3a8a, 0.8, 0.03);
       const furMap = createFiberMap('#f8fafc', 'rgba(80,80,90,0.35)', 500);
       const furCuffMat = pbrMat(0xf8fafc, 0.9, 0.0, furMap, 0.06);
 
-      fpsLeftHandGroup = new THREE.Group();
-      fpsLeftHandGroup.position.set(-1.15, 1.55, 2.35);
-      fpsLeftHandGroup.rotation.set(0.35, 0.42, -0.25);
-      const sleeveL = putMesh(fpsLeftHandGroup, new THREE.CylinderGeometry(0.16, 0.2, 0.7, 20), sleeveMat, -0.15, -0.35, 0.35);
-      sleeveL.rotation.x = Math.PI * 0.35;
-      const cuffL = putMesh(fpsLeftHandGroup, new THREE.TorusGeometry(0.16, 0.045, 12, 22), furCuffMat, -0.05, -0.1, 0.12);
-      cuffL.rotation.x = Math.PI * 0.85;
-      attachGloveHand(fpsLeftHandGroup, gloveMat, -1);
+      // 相机本地：+X 右、+Y 上、-Z 前方。手套指尖朝 -Z。
+      function buildCamHand(side) {
+        const g = new THREE.Group();
+        // 棉手套：掌心略朝内上，指尖朝 -Z
+        const palm = putMesh(g, new THREE.SphereGeometry(0.09, 18, 14), gloveMat, 0, 0, -0.05);
+        scaleMesh(palm, 1.1, 0.52, 1.3);
+        for (let i = 0; i < 4; i++) {
+          const len = i === 1 || i === 2 ? 0.11 : 0.09;
+          const f = putMesh(g, new THREE.CylinderGeometry(0.02, 0.024, len, 10), gloveMat, -0.052 + i * 0.036, 0.02, -0.14 - (i === 0 || i === 3 ? 0.01 : 0.02));
+          f.rotation.x = Math.PI * 0.52;
+          putMesh(g, new THREE.SphereGeometry(0.022, 8, 8), gloveMat, -0.052 + i * 0.036, 0.03, -0.19 - (i === 0 || i === 3 ? 0.01 : 0.025));
+        }
+        const thumb = putMesh(g, new THREE.CylinderGeometry(0.022, 0.026, 0.08, 10), gloveMat, side * 0.08, 0.025, -0.02);
+        thumb.rotation.z = side * 0.9;
+        thumb.rotation.x = 0.4;
+        putMesh(g, new THREE.SphereGeometry(0.025, 8, 8), gloveMat, side * 0.11, 0.05, -0.05);
+        const cuff = putMesh(g, new THREE.TorusGeometry(0.085, 0.03, 10, 16), furCuffMat, 0, -0.01, 0.07);
+        cuff.rotation.x = Math.PI * 0.5;
+        const sleeve = putMesh(g, new THREE.CylinderGeometry(0.085, 0.11, 0.3, 14), sleeveMat, 0, -0.02, 0.2);
+        sleeve.rotation.x = Math.PI * 0.5;
+        return g;
+      }
+
+      fpsLeftHandGroup = buildCamHand(-1);
+      fpsLeftHandGroup.position.set(-0.32, -0.26, -0.48);
+      fpsLeftHandGroup.rotation.set(0.35, 0.25, 0.15);
 
       fpsSpareRingMeshes = [];
       for (let i = 0; i < 4; i++) {
         const sRing = putMesh(
           fpsLeftHandGroup,
-          new THREE.TorusGeometry(0.34, 0.028, 14, 36),
+          new THREE.TorusGeometry(0.22, 0.02, 12, 28),
           pbrMat(0x38bdf8, 0.24, 0.32),
-          0.12,
-          0.08 + i * 0.045,
-          -0.16
+          0.06,
+          0.04 + i * 0.03,
+          -0.1
         );
-        sRing.rotation.x = Math.PI * 0.42;
-        sRing.rotation.y = -0.25;
+        sRing.rotation.x = Math.PI * 0.5;
         fpsSpareRingMeshes.push(sRing);
       }
       fpsHandsGroup.add(fpsLeftHandGroup);
 
-      fpsRightHandGroup = new THREE.Group();
-      fpsRightHandGroup.position.set(0.85, 1.52, 2.25);
-      const sleeveR = putMesh(fpsRightHandGroup, new THREE.CylinderGeometry(0.16, 0.2, 0.72, 20), sleeveMat, 0.18, -0.36, 0.38);
-      sleeveR.rotation.x = Math.PI * 0.35;
-      sleeveR.rotation.z = 0.22;
-      const cuffR = putMesh(fpsRightHandGroup, new THREE.TorusGeometry(0.16, 0.045, 12, 22), furCuffMat, 0.06, -0.1, 0.14);
-      cuffR.rotation.x = Math.PI * 0.85;
-      attachGloveHand(fpsRightHandGroup, gloveMat, 1);
+      fpsRightHandGroup = buildCamHand(1);
+      fpsRightHandGroup.position.set(0.3, -0.28, -0.46);
+      fpsRightHandGroup.rotation.set(0.3, -0.2, -0.12);
       fpsHandsGroup.add(fpsRightHandGroup);
-      scene.add(fpsHandsGroup);
+
+      fpsHandsGroup.traverse((o) => { o.frustumCulled = false; });
+      if (camera) camera.add(fpsHandsGroup);
+      else scene.add(fpsHandsGroup);
     }
     function updateCharactersAndHandsRig() {
       if (state.npcAnimTimer > 0) {
@@ -2348,11 +2572,8 @@
       if (state.crowdCheerTimer > 0) state.crowdCheerTimer--;
       if (realHumans) {
         updateRealHumans();
-        return;
-      }
-
-      // 1. 摊主老王 4 套骨骼姿态插值
-      if (npcGroup && npcTorsoGroup && npcLeftArmPivot && npcRightArmPivot) {
+      } else if (npcGroup && npcTorsoGroup && npcLeftArmPivot && npcRightArmPivot) {
+        // 1. 摊主老王 4 套骨骼姿态插值
         if (state.npcAnimState === 'cheer_slap') {
           // 拍大腿仰头叫好（套中奖品时）
           npcGroup.position.y = Math.abs(Math.sin(t * 0.32)) * 0.16;
@@ -2398,75 +2619,75 @@
           npcRightArmPivot.rotation.set(-0.62 - rubWave, -0.48, -0.32);
           npcRightForearmPivot.rotation.set(-1.12 + rubWave * 0.6, 0, -0.45);
         }
-      }
 
-      // 2. 围观大妈与虎头帽小孩的动态欢呼/看热闹动画
-      const isCheering = state.crowdCheerTimer > 0;
+        // 2. 围观大妈与虎头帽小孩的动态欢呼/看热闹动画
+        const isCheering = state.crowdCheerTimer > 0;
 
-      if (crowdAuntieGroup && crowdAuntieArmL && crowdAuntieArmR) {
-        if (isCheering) {
-          crowdAuntieGroup.position.y = Math.abs(Math.sin(t * 0.35)) * 0.18;
-          crowdAuntieArmL.rotation.x = -1.35 + Math.sin(t * 0.5) * 0.35;
-          crowdAuntieArmR.rotation.x = -1.35 - Math.sin(t * 0.5) * 0.35;
-        } else {
-          crowdAuntieGroup.position.y = 0;
-          crowdAuntieArmL.rotation.x = 0.45 + Math.sin(t * 0.06) * 0.08;
-          crowdAuntieArmR.rotation.x = 0.45 - Math.sin(t * 0.06) * 0.08;
+        if (crowdAuntieGroup && crowdAuntieArmL && crowdAuntieArmR) {
+          if (isCheering) {
+            crowdAuntieGroup.position.y = Math.abs(Math.sin(t * 0.35)) * 0.18;
+            crowdAuntieArmL.rotation.x = -1.35 + Math.sin(t * 0.5) * 0.35;
+            crowdAuntieArmR.rotation.x = -1.35 - Math.sin(t * 0.5) * 0.35;
+          } else {
+            crowdAuntieGroup.position.y = 0;
+            crowdAuntieArmL.rotation.x = 0.45 + Math.sin(t * 0.06) * 0.08;
+            crowdAuntieArmR.rotation.x = 0.45 - Math.sin(t * 0.06) * 0.08;
+          }
+        }
+
+        if (crowdKidGroup && crowdKidArmR) {
+          if (isCheering) {
+            crowdKidGroup.position.y = Math.abs(Math.sin(t * 0.42)) * 0.32;
+            crowdKidArmR.rotation.z = Math.sin(t * 0.45) * 0.45;
+          } else {
+            crowdKidGroup.position.y = Math.abs(Math.sin(t * 0.12)) * 0.06;
+            crowdKidArmR.rotation.z = Math.sin(t * 0.08) * 0.12;
+          }
         }
       }
 
-      if (crowdKidGroup && crowdKidArmR) {
-        if (isCheering) {
-          crowdKidGroup.position.y = Math.abs(Math.sin(t * 0.42)) * 0.32;
-          crowdKidArmR.rotation.z = Math.sin(t * 0.45) * 0.45;
-        } else {
-          crowdKidGroup.position.y = Math.abs(Math.sin(t * 0.12)) * 0.06;
-          crowdKidArmR.rotation.z = Math.sin(t * 0.08) * 0.12;
-        }
-      }
-
-      // 3. 玩家第一人称 3D 棉手套双手与手部待发圈联动
+      // 3. 玩家第一人称双手（挂在相机上）与手部待发圈联动
       if (fpsLeftHandGroup && fpsRightHandGroup && handRingMesh) {
         const activeSpec = RING_SPECS[state.selectedRingType] || RING_SPECS.plastic;
         const curCount = state.rings[state.selectedRingType] || 0;
         const effectiveAimX = Math.max(-0.92, Math.min(0.92, state.aimX + state.shiverOffsetX));
-        const breatheY = Math.sin(t * 0.08) * 0.03;
+        const breatheY = Math.sin(t * 0.08) * 0.012;
 
-        // 更新左手备用圈显示数量与颜色（除去右手正在拿的1个）
         const spareCount = Math.max(0, curCount - 1);
         fpsSpareRingMeshes.forEach((m, idx) => {
           m.visible = idx < spareCount;
           m.material.color.setHex(activeSpec.hexColor);
           m.scale.setScalar(activeSpec.radiusScale * 0.85);
         });
-        fpsLeftHandGroup.position.x = -1.12 + effectiveAimX * 0.25;
-        fpsLeftHandGroup.position.y = 1.48 + breatheY;
+        fpsLeftHandGroup.position.set(-0.32 + effectiveAimX * 0.05, -0.26 + breatheY, -0.48);
 
-        // 右手蓄力向后拉弓 vs 甩腕投出
         if (state.throwFlickTimer > 0) {
           state.throwFlickTimer--;
         }
         const pullRatio = state.isCharging ? (state.chargePower / 100) : 0;
         const flickRatio = state.throwFlickTimer > 0 ? (state.throwFlickTimer / 14) : 0;
 
-        const rHandX = 0.68 + effectiveAimX * 0.85;
-        const rHandY = 1.48 + breatheY - pullRatio * 0.22 + flickRatio * 0.35;
-        const rHandZ = 2.15 + pullRatio * 0.55 - flickRatio * 0.65;
-
-        fpsRightHandGroup.position.set(rHandX, rHandY, rHandZ);
+        fpsRightHandGroup.position.set(
+          0.3 + effectiveAimX * 0.14,
+          -0.28 + breatheY - pullRatio * 0.05 + flickRatio * 0.08,
+          -0.46 + pullRatio * 0.12 - flickRatio * 0.16
+        );
         fpsRightHandGroup.rotation.set(
-          -0.25 + pullRatio * 0.55 - flickRatio * 0.85,
-          -effectiveAimX * 0.35,
-          -0.15
+          0.3 + pullRatio * 0.25 - flickRatio * 0.4,
+          -0.2 - effectiveAimX * 0.18,
+          -0.12
         );
 
-        // 将待发 3D 套圈精准固定在右手拇指与食指虎口处
-        handRingMesh.position.set(rHandX - 0.16, rHandY + 0.08, rHandZ - 0.32);
+        // 套圈跟着右手（相机本地 -> 世界）
+        const hold = new THREE.Vector3(0.0, 0.03, -0.2);
+        fpsRightHandGroup.localToWorld(hold);
+        handRingMesh.position.copy(hold);
         handRingMesh.rotation.set(
           Math.PI * 0.42 + pullRatio * 0.35 - flickRatio * 0.6,
           -effectiveAimX * 0.3,
           0
         );
+        handRingMesh.visible = !state.shopOpen && state.camDirector.closeupTimer <= 0 && curCount > 0;
       }
     }
     // 构建次世代 3D 冬集环境：PBR 凹凸雪地、木质地台红毯、飞檐春联冰凌牌坊、3D 铁桶烤红薯摊与青砖民居
@@ -2815,46 +3036,179 @@
         stoveSteamPuffs.push({ mesh: sp, phase: s * 0.2 });
       }
 
-      // 6. 远景北方青砖雪顶民居（带程序化青砖贴图与屋檐冰溜子）
+      // 6. 写实北方农家宅院：青砖墙、灰瓦硬山顶、木门窗棂、院墙与暖窗光
       const brickTex = createBrickWallTexture();
+      brickTex.repeat.set(2.4, 1.6);
+      const roofTileTex = (() => {
+        const c = document.createElement('canvas');
+        c.width = 256;
+        c.height = 256;
+        const g = c.getContext('2d');
+        g.fillStyle = '#4b5563';
+        g.fillRect(0, 0, 256, 256);
+        for (let y = 0; y < 256; y += 14) {
+          g.fillStyle = y % 28 === 0 ? '#374151' : '#6b7280';
+          g.fillRect(0, y, 256, 10);
+          g.fillStyle = '#1f2937';
+          for (let x = (y % 28 === 0 ? 0 : 16); x < 256; x += 32) {
+            g.fillRect(x, y, 18, 10);
+          }
+        }
+        const tex = new THREE.CanvasTexture(c);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(3, 2);
+        return tex;
+      })();
+      const woodTex = (() => {
+        const c = document.createElement('canvas');
+        c.width = 128;
+        c.height = 128;
+        const g = c.getContext('2d');
+        g.fillStyle = '#6b3f24';
+        g.fillRect(0, 0, 128, 128);
+        for (let i = 0; i < 18; i++) {
+          g.strokeStyle = `rgba(40,20,10,${0.18 + (i % 3) * 0.08})`;
+          g.beginPath();
+          g.moveTo(i * 7, 0);
+          g.bezierCurveTo(i * 7 + 4, 40, i * 7 - 3, 80, i * 7 + 2, 128);
+          g.stroke();
+        }
+        const tex = new THREE.CanvasTexture(c);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        return tex;
+      })();
       const houseMat = new THREE.MeshStandardMaterial({
         map: brickTex,
         bumpMap: brickTex,
-        bumpScale: 0.05,
-        roughness: 0.88
+        bumpScale: 0.08,
+        roughness: 0.9,
+        color: 0xd6d3d1
       });
-      const windowMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+      const roofMat = new THREE.MeshStandardMaterial({
+        map: roofTileTex,
+        bumpMap: roofTileTex,
+        bumpScale: 0.06,
+        roughness: 0.82,
+        color: 0x9ca3af
+      });
+      const woodMat = new THREE.MeshStandardMaterial({
+        map: woodTex,
+        roughness: 0.78,
+        color: 0xa16207
+      });
+      const windowGlowMat = new THREE.MeshStandardMaterial({
+        color: 0xfde68a,
+        emissive: 0xf59e0b,
+        emissiveIntensity: 0.85,
+        roughness: 0.4
+      });
 
-      [
-        { x: -10.5, z: -15.5, w: 3.4, h: 2.2, d: 2.6, ry: 0.25 },
-        { x: -6.2, z: -17.0, w: 2.8, h: 1.9, d: 2.4, ry: 0.1 },
-        { x: 6.8, z: -16.8, w: 3.2, h: 2.1, d: 2.5, ry: -0.15 },
-        { x: 11.0, z: -15.0, w: 3.0, h: 2.0, d: 2.4, ry: -0.3 }
-      ].forEach((cfg) => {
+      function buildRealisticFarmHouse(cfg) {
         const hGroup = new THREE.Group();
         hGroup.position.set(cfg.x, 0, cfg.z);
         hGroup.rotation.y = cfg.ry;
 
+        const foundation = new THREE.Mesh(
+          new THREE.BoxGeometry(cfg.w * 1.06, 0.28, cfg.d * 1.06),
+          new THREE.MeshStandardMaterial({ color: 0x57534e, roughness: 0.95 })
+        );
+        foundation.position.y = 0.14;
+        foundation.receiveShadow = true;
+        hGroup.add(foundation);
+
         const wall = new THREE.Mesh(new THREE.BoxGeometry(cfg.w, cfg.h, cfg.d), houseMat);
-        wall.position.y = cfg.h * 0.5;
+        wall.position.y = cfg.h * 0.5 + 0.2;
         wall.castShadow = true;
+        wall.receiveShadow = true;
         hGroup.add(wall);
 
-        const roof = new THREE.Mesh(new THREE.ConeGeometry(cfg.w * 0.78, 1.25, 4), snowMoundMat);
-        roof.position.y = cfg.h + 0.6;
-        roof.rotation.y = Math.PI * 0.25;
-        hGroup.add(roof);
+        // 侧厢短墙，增加宅院厚度
+        const wing = new THREE.Mesh(new THREE.BoxGeometry(cfg.w * 0.42, cfg.h * 0.82, cfg.d * 0.55), houseMat);
+        wing.position.set(cfg.w * 0.55, cfg.h * 0.45 + 0.2, -cfg.d * 0.05);
+        wing.castShadow = true;
+        hGroup.add(wing);
 
-        const win1 = new THREE.Mesh(new THREE.PlaneGeometry(0.65, 0.55), windowMat);
-        win1.position.set(-cfg.w * 0.22, cfg.h * 0.52, cfg.d * 0.5 + 0.02);
-        hGroup.add(win1);
+        // 硬山灰瓦屋顶：主坡 + 屋脊 + 前后檐口
+        const roofW = cfg.w * 1.18;
+        const roofD = cfg.d * 1.22;
+        const slopeL = new THREE.Mesh(new THREE.BoxGeometry(roofW, 0.14, roofD * 0.6), roofMat);
+        slopeL.position.set(0, cfg.h + 0.55, -roofD * 0.18);
+        slopeL.rotation.x = 0.42;
+        slopeL.castShadow = true;
+        hGroup.add(slopeL);
+        const slopeR = slopeL.clone();
+        slopeR.position.z = roofD * 0.18;
+        slopeR.rotation.x = -0.42;
+        hGroup.add(slopeR);
+        const ridge = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, roofW * 0.94, 12), roofMat);
+        ridge.rotation.z = Math.PI * 0.5;
+        ridge.position.y = cfg.h + 0.95;
+        hGroup.add(ridge);
+        const eaveFront = new THREE.Mesh(new THREE.BoxGeometry(roofW * 0.98, 0.08, 0.28), woodMat);
+        eaveFront.position.set(0, cfg.h + 0.42, cfg.d * 0.52);
+        hGroup.add(eaveFront);
+        const snowCap = new THREE.Mesh(new THREE.BoxGeometry(roofW * 0.92, 0.1, 0.4), snowMoundMat);
+        snowCap.position.y = cfg.h + 1.02;
+        hGroup.add(snowCap);
 
-        const win2 = new THREE.Mesh(new THREE.PlaneGeometry(0.65, 0.55), windowMat);
-        win2.position.set(cfg.w * 0.22, cfg.h * 0.52, cfg.d * 0.5 + 0.02);
-        hGroup.add(win2);
+        // 木门与窗棂
+        const door = new THREE.Mesh(new THREE.BoxGeometry(0.72, 1.45, 0.08), woodMat);
+        door.position.set(0, 0.92, cfg.d * 0.5 + 0.04);
+        hGroup.add(door);
+        const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.62, 0.06), woodMat);
+        doorFrame.position.set(0, 1.0, cfg.d * 0.5 + 0.02);
+        hGroup.add(doorFrame);
+
+        [-cfg.w * 0.28, cfg.w * 0.28].forEach((wx) => {
+          const frame = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.78, 0.06), woodMat);
+          frame.position.set(wx, cfg.h * 0.58 + 0.2, cfg.d * 0.5 + 0.03);
+          hGroup.add(frame);
+          const pane = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.55), windowGlowMat);
+          pane.position.set(wx, cfg.h * 0.58 + 0.2, cfg.d * 0.5 + 0.07);
+          hGroup.add(pane);
+          for (let i = -1; i <= 1; i++) {
+            const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.55, 0.04), woodMat);
+            mullion.position.set(wx + i * 0.18, cfg.h * 0.58 + 0.2, cfg.d * 0.5 + 0.06);
+            hGroup.add(mullion);
+          }
+        });
+        // 山墙侧窗
+        const sidePane = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.5), windowGlowMat);
+        sidePane.position.set(-cfg.w * 0.5 - 0.02, cfg.h * 0.55 + 0.2, 0);
+        sidePane.rotation.y = Math.PI * 0.5;
+        hGroup.add(sidePane);
+
+        // 院墙矮段
+        if (cfg.yard) {
+          const yard = new THREE.Mesh(new THREE.BoxGeometry(cfg.w * 1.35, 0.95, 0.22), houseMat);
+          yard.position.set(0, 0.48, cfg.d * 0.5 + 1.15);
+          yard.castShadow = true;
+          hGroup.add(yard);
+          const gate = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.15, 0.12), woodMat);
+          gate.position.set(0, 0.58, cfg.d * 0.5 + 1.2);
+          hGroup.add(gate);
+        }
+
+        // 烟囱
+        const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.7, 0.28), houseMat);
+        chimney.position.set(cfg.w * 0.28, cfg.h + 0.95, -cfg.d * 0.1);
+        hGroup.add(chimney);
+
+        const glow = new THREE.PointLight(0xfbbf24, 0.45, 6.5);
+        glow.position.set(0, cfg.h * 0.55, cfg.d * 0.35);
+        hGroup.add(glow);
 
         scene.add(hGroup);
-      });
+      }
+
+      [
+        { x: -9.4, z: -13.6, w: 4.6, h: 2.75, d: 3.4, ry: 0.2, yard: true },
+        { x: -4.6, z: -15.8, w: 3.8, h: 2.45, d: 3.0, ry: 0.06, yard: false },
+        { x: 5.0, z: -15.5, w: 4.1, h: 2.6, d: 3.1, ry: -0.1, yard: true },
+        { x: 9.8, z: -13.2, w: 3.9, h: 2.5, d: 2.9, ry: -0.26, yard: false }
+      ].forEach(buildRealisticFarmHouse);
 
       // 两侧覆雪松树林
       const pineMat = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.85 });
@@ -3476,12 +3830,13 @@
     }
 
     function getBaseCameraTarget(preset) {
+      // 第一人称眼高机位：只看见前景双手与摊面
       if (preset === 'high') {
-        return { pos: { x: 0, y: 5.4, z: 5.2 }, look: { x: 0, y: 0.5, z: -5.2 } };
+        return { pos: { x: 0, y: 1.85, z: 3.35 }, look: { x: 0, y: 1.05, z: -5.4 } };
       } else if (preset === 'low') {
-        return { pos: { x: 0, y: 2.35, z: 3.8 }, look: { x: 0, y: 0.9, z: -5.6 } };
+        return { pos: { x: 0, y: 1.42, z: 2.75 }, look: { x: 0, y: 0.95, z: -5.2 } };
       }
-      return { pos: { x: 0, y: 3.55, z: 4.45 }, look: { x: 0, y: 0.72, z: -5.3 } };
+      return { pos: { x: 0, y: 1.55, z: 2.55 }, look: { x: 0, y: 1.15, z: -4.8 } };
     }
 
     function applyCameraPreset(preset) {
@@ -3558,7 +3913,8 @@
 
     function initThreeScene() {
       scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(46, state.width / state.height, 0.1, 120);
+      camera = new THREE.PerspectiveCamera(58, state.width / state.height, 0.08, 120);
+      scene.add(camera); // 相机入场景后，挂在相机上的第一人称双手才会被渲染
       applyCameraPreset('default');
 
       renderer = new THREE.WebGLRenderer({ canvas: webglCanvas, antialias: true });
@@ -4188,13 +4544,13 @@
       });
 
       if (spec.id === 'white_goose') {
-        state.npcBubbleText = '“哎呀妈呀！咚咚锵！镇摊 3D 大白鹅都被你套走啦，全集市放鞭炮给你贺喜！”';
+        state.npcBubbleText = '“哎呀妈呀中！咚咚锵！镇摊大白鹅都叫恁套走啦，全集市放鞭炮贺喜哩！”';
       } else if (hitQuality === 'perfect') {
-        state.npcBubbleText = `“好一个空心绝杀【${spec.name}】！圈边都没挨着，叔额外赏你 ¥${totalBonusCash} 彩头红包！”`;
+        state.npcBubbleText = `“好一个空心绝杀【${spec.name}】！圈边都没挨着，俺额外赏恁 ¥${totalBonusCash} 彩头！”`;
       } else if (state.comboCount >= 2) {
-        state.npcBubbleText = `“神枪手啊！连中 ${state.comboCount} 个，倍率 x${mult.toFixed(1)}，再赏你 ¥${totalBonusCash} 红包的彩头！”`;
+        state.npcBubbleText = `“得劲！连中 ${state.comboCount} 个，倍率 x${mult.toFixed(1)}，再赏恁 ¥${totalBonusCash} 红包彩头！”`;
       } else {
-        state.npcBubbleText = `“漂亮！套中【${spec.name}】一件，已装进你的战利品背包！”`;
+        state.npcBubbleText = `“中！套中【${spec.name}】一件，装进恁背包哩！”`;
       }
       state.npcBubbleTimer = 340;
       showToast(`${qualityPrefix}获得【${spec.emoji} ${spec.name}】${bonusSuffix}`);
@@ -4222,7 +4578,7 @@
       syncBagAndDexUI();
       saveProgress();
 
-      state.npcBubbleText = `“回收【${spec.name}】x${amount}，给你退 ¥${earned} 压岁钱，图鉴给你留着！”`;
+      state.npcBubbleText = `“回收【${spec.name}】x${amount}，退恁 ¥${earned} 压岁钱，图鉴给恁留着哩！”`;
       state.npcBubbleTimer = 280;
       showToast(`💰 卖出【${spec.name}】x${amount}，获得压岁钱 +¥${earned}！`);
     }
@@ -4370,7 +4726,7 @@
 
       const finalPrice = Math.max(5, spec.basePrice - state.bargainDiscount);
       if (state.walletMoney < finalPrice) {
-        shopNpcDialogText.textContent = `“哎呀老弟，兜里压岁钱不够 ¥${finalPrice} 啦！点左下角领个长辈拜年红包，或者去背包卖两件重复玩具！”`;
+        shopNpcDialogText.textContent = `“哎呀侄儿，兜里压岁钱不够 ¥${finalPrice} 啦！点左下角领个红包，或者去背包卖两件重复玩具中！”`;
         showToast('🧧 压岁钱不足！可领拜年红包或出售背包重复奖品');
         return;
       }
@@ -4400,7 +4756,7 @@
 
     function handleBargainAction(mode) {
       if (!state.canBargainThisRound) {
-        shopNpcDialogText.textContent = '“老弟，刚才咱都唠过一轮啦！你先买一捆圈试试手，买完咱接着唠！”';
+        shopNpcDialogText.textContent = '“侄儿，刚才咱都唠过一轮啦！恁先买一捆圈试试手，买完咱接着唠！”';
         showToast('💬 先买一捆圈即可刷新下一轮唠嗑砍价机会！');
         return;
       }
@@ -4413,19 +4769,19 @@
           const extra = 2 + Math.floor(Math.random() * 3);
           state.bargainBonusRings += extra;
           state.npcMood = 'laugh';
-          shopNpcDialogText.textContent = `“哈哈，看你小伙子挺实在！行，这把不管你买哪捆圈，叔额外给你多抓 ${extra} 个！”`;
+          shopNpcDialogText.textContent = `“哈哈中，看恁小伙子挺实在！这把不管买哪捆圈，俺额外给你多抓 ${extra} 个！”`;
           showToast(`🗣️ 砍价成功！下次买圈额外多送 ${extra} 个！`);
         } else {
           state.bargainBonusRings += 1;
           state.npcMood = 'happy';
-          shopNpcDialogText.textContent = '“哎妈呀，小本买卖再饶仨我连军大衣都得赔里头！行吧，最多给你搭 1 个！”';
+          shopNpcDialogText.textContent = '“哎妈呀，小本买卖再饶仨俺连军大衣都得赔里头！中吧，最多给你搭 1 个！”';
           showToast('🗣️ 老王嘴硬心软，答应多搭 1 个圈！');
         }
       } else if (mode === 'flatter') {
         state.bargainDiscount = 2;
         state.rings.bamboo += 1;
         state.npcMood = 'laugh';
-        shopNpcDialogText.textContent = '“借你吉言！大过年的听着舒坦，这把买圈立减 ¥2，叔再白塞给你 1 个老藤竹圈尝尝鲜！”';
+        shopNpcDialogText.textContent = '“借恁吉言！大过年的听着舒坦，这把买圈立减 ¥2，俺再白塞给你 1 个老藤竹圈尝尝鲜！”';
         showToast('🏮 老王眉开眼笑：本轮买圈立减 ¥2，还白送了 1 个藤竹圈！');
       } else if (mode === 'cold') {
         state.handTemp = 100;
@@ -4434,7 +4790,7 @@
         state.rings.plastic += 2;
         updateHandTempUI();
         state.npcMood = 'happy';
-        shopNpcDialogText.textContent = '“快凑火盆跟前暖和暖和！看你冻得吸溜鼻涕的，这 2 个细塑料圈叔白送你热热身！”';
+        shopNpcDialogText.textContent = '“快凑火盆跟前暖和暖和！看恁冻得吸溜鼻涕哩，这 2 个细塑料圈俺白送你热热身！”';
         showToast('🔥 手温已回满 100%，老王还白送了你 2 个细塑料圈！');
       }
 
@@ -4461,7 +4817,7 @@
           syncShopAndInventoryUI();
           showToast(`当前圈种已用完，自动切换为【${RING_SPECS[fallbackType].name}】`);
         } else {
-          state.npcBubbleText = '“手里的圈都甩光啦！快来我这儿买一捆接着套！”';
+          state.npcBubbleText = '“手里的圈都甩光啦！快来俺这儿买一捆接着套中！”';
           state.npcBubbleTimer = 280;
           showToast('⭕ 手里的套圈用光啦！已为您打开老王买圈铺');
           openShopModal();
@@ -4634,7 +4990,7 @@
           state.comboCount = 0;
           syncComboAndHonorUI();
         }
-        state.npcBubbleText = '“哎呀可惜！圈边正好磕在 3D 木托盘沿上弹飞了，换藤竹圈或铜圈更稳当！”';
+        state.npcBubbleText = '“哎呀可惜哩！圈边正好磕在木托盘沿上弹飞了，换藤竹圈或铜圈更稳当！”';
         state.npcBubbleTimer = 260;
         return;
       }
@@ -5069,8 +5425,8 @@
         });
       }
 
-      // 2. 绘制 3D 摊主老王头顶的可点击买圈铭牌与东北话气泡
-      const npcHeadScreen = worldToScreen(new THREE.Vector3(0, 3.05, -STALL_DEPTH - 0.8));
+      // 2. 绘制 3D 摊主老王头顶的可点击买圈铭牌与河南话气泡
+      const npcHeadScreen = worldToScreen(new THREE.Vector3(0, 1.85, -STALL_DEPTH - 0.55));
       ctx.save();
       const pulseBorder = Math.sin(state.time * 0.12) > 0 ? '#fde047' : '#f97316';
       ctx.fillStyle = 'rgba(127, 29, 29, 0.92)';
@@ -5408,7 +5764,7 @@
       state.walletMoney += 30;
       playSound('coin');
       syncShopAndInventoryUI();
-      shopNpcDialogText.textContent = '“哟，长辈又给塞了 ¥30 压岁钱红包！这回手头宽裕了，整捆铜圈试试？”';
+      shopNpcDialogText.textContent = '“哟中，长辈又给塞了 ¥30 压岁钱红包！这回手头宽裕了，整捆铜圈试试？”';
       showToast('🧧 收到长辈拜年红包 +¥30！');
     });
 
