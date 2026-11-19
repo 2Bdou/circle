@@ -3821,7 +3821,7 @@
         persMesh.castShadow = true;
         toyRoot.add(persMesh);
 
-        const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.65 });
+        const leafMat = new THREE.MeshStandardMaterial({ color: 0x3f5c32, roughness: 0.84 });
         for (let l = 0; l < 4; l++) {
           const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.18, 6), leafMat);
           leaf.rotation.x = Math.PI * 0.42;
@@ -3839,37 +3839,54 @@
         });
         const bellyMat = new THREE.MeshStandardMaterial({ map: createPrizeGrain('#d2c2a4'), color: 0xffffff, roughness: 0.88 });
 
-        const body = new THREE.Mesh(new THREE.SphereGeometry(0.27, 22, 18), frogMat);
-        body.scale.set(1.08, 0.72, 1.25);
-        body.position.y = 0.22;
+        const bodyProfile = [
+          new THREE.Vector2(0.0, 0.0),
+          new THREE.Vector2(0.18, 0.02),
+          new THREE.Vector2(0.34, 0.1),
+          new THREE.Vector2(0.32, 0.24),
+          new THREE.Vector2(0.14, 0.32),
+          new THREE.Vector2(0.0, 0.34)
+        ];
+        const body = new THREE.Mesh(new THREE.LatheGeometry(bodyProfile, 22), frogMat);
+        body.scale.set(1.25, 0.62, 1.15);
+        body.rotation.x = 0.15;
+        body.position.set(0, 0.04, 0);
         body.castShadow = true;
         toyRoot.add(body);
 
-        const belly = new THREE.Mesh(new THREE.SphereGeometry(0.22, 18, 14), bellyMat);
-        belly.scale.set(1.0, 0.5, 1.1);
-        belly.position.set(0, 0.13, 0.04);
+        const belly = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 10), bellyMat);
+        belly.scale.set(1.15, 0.4, 1.15);
+        belly.position.set(0, 0.09, 0.1);
         toyRoot.add(belly);
 
-        // 立体蛙腿折叠造型
-        [-0.24, 0.24].forEach((lx) => {
-          const thigh = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 12), frogMat);
-          thigh.scale.set(0.7, 0.85, 1.45);
-          thigh.position.set(lx, 0.14, -0.06);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12), frogMat);
+        head.scale.set(1.15, 0.7, 0.9);
+        head.position.set(0, 0.28, 0.06);
+        toyRoot.add(head);
+
+        [-0.2, 0.2].forEach((lx) => {
+          const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.048, 0.22, 8), frogMat);
+          thigh.position.set(lx * 1.85, 0.07, 0.02);
+          thigh.rotation.z = lx > 0 ? -1.15 : 1.15;
           toyRoot.add(thigh);
+          const foot = new THREE.Mesh(new THREE.SphereGeometry(0.038, 8, 6), frogMat);
+          foot.scale.set(1.8, 0.32, 1.15);
+          foot.position.set(lx * 2.35, 0.035, 0.06);
+          toyRoot.add(foot);
         });
 
-        [-0.13, 0.13].forEach((ex) => {
+        [-0.06, 0.06].forEach((ex) => {
           const eyeWhite = new THREE.Mesh(
-            new THREE.SphereGeometry(0.045, 12, 10),
+            new THREE.SphereGeometry(0.032, 12, 10),
             new THREE.MeshStandardMaterial({ color: 0xf4efe6, roughness: 0.7 })
           );
-          eyeWhite.position.set(ex, 0.38, 0.2);
+          eyeWhite.position.set(ex, 0.36, 0.14);
           toyRoot.add(eyeWhite);
           const pupil = new THREE.Mesh(
-            new THREE.SphereGeometry(0.02, 8, 8),
+            new THREE.SphereGeometry(0.014, 8, 8),
             new THREE.MeshBasicMaterial({ color: 0x0f172a })
           );
-          pupil.position.set(ex, 0.39, 0.24);
+          pupil.position.set(ex, 0.37, 0.165);
           toyRoot.add(pupil);
         });
 
@@ -4102,17 +4119,21 @@
         toyRoot.add(bodyMesh);
 
         // 左右多层扇动翅膀 Pivot
+        const wingShape = new THREE.Shape();
+        wingShape.moveTo(0, 0.02);
+        wingShape.bezierCurveTo(0.16, 0.2, 0.4, 0.16, 0.5, 0.02);
+        wingShape.bezierCurveTo(0.42, -0.08, 0.18, -0.1, 0, -0.02);
+        const wingGeo = new THREE.ExtrudeGeometry(wingShape, { depth: 0.02, bevelEnabled: false });
         const wingL = new THREE.Group();
-        wingL.position.set(-0.32, 0.48, -0.02);
-        const wingMeshL = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), wingFeatherMat);
-        wingMeshL.scale.set(0.22, 0.65, 1.35);
+        wingL.position.set(-0.28, 0.5, -0.04);
+        const wingMeshL = new THREE.Mesh(wingGeo, wingFeatherMat);
+        wingMeshL.scale.x = -1;
         wingL.add(wingMeshL);
         toyRoot.add(wingL);
 
         const wingR = new THREE.Group();
-        wingR.position.set(0.32, 0.48, -0.02);
-        const wingMeshR = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), wingFeatherMat);
-        wingMeshR.scale.set(0.22, 0.65, 1.35);
+        wingR.position.set(0.28, 0.5, -0.04);
+        const wingMeshR = new THREE.Mesh(wingGeo, wingFeatherMat);
         wingR.add(wingMeshR);
         toyRoot.add(wingR);
         group.userData.gooseWingL = wingL;
