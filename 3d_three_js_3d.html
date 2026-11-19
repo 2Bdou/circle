@@ -2270,16 +2270,16 @@
       const mid = model.getObjectByName('spine_02');
       if (waist && mid) {
         const len = Math.max(0.12, mid.position.length());
-        const hem = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.27, len + 0.14, 16), coatMat);
-        hem.position.y = len * 0.15;
+        const hem = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, len + 0.32, 16), coatMat);
+        hem.position.y = len * 0.02;
         hem.castShadow = true;
         waist.add(hem);
       }
       if (mid) {
         const up = model.getObjectByName('spine_03');
         const len = up ? Math.max(0.1, up.position.length()) : 0.12;
-        const band = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.23, len + 0.05, 14), coatMat);
-        band.position.y = len * 0.35;
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.25, len + 0.24, 14), coatMat);
+        band.position.y = len * 0.15;
         mid.add(band);
       }
       const headBone = model.getObjectByName('head');
