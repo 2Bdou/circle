@@ -4321,6 +4321,40 @@
       return tex;
     }
 
+    let goosePlumageTex = null;
+    function goosePlumage() {
+      if (goosePlumageTex) return goosePlumageTex;
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 256;
+      const g = c.getContext('2d');
+      g.fillStyle = '#f2eee6';
+      g.fillRect(0, 0, 256, 256);
+      for (let row = 0; row < 16; row++) {
+        for (let col = 0; col < 9; col++) {
+          const x = col * 34 + (row % 2) * 16;
+          const y = row * 18 + 6;
+          g.fillStyle = (row + col) % 4 === 0 ? '#e2dbd0' : '#f7f4ee';
+          g.beginPath();
+          g.ellipse(x, y, 20, 7, -0.35, 0, Math.PI * 2);
+          g.fill();
+          g.strokeStyle = 'rgba(120, 110, 96, 0.28)';
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(x - 14, y + 1);
+          g.quadraticCurveTo(x, y - 3, x + 15, y + 1);
+          g.stroke();
+        }
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 1.4);
+      tex.encoding = THREE.sRGBEncoding;
+      goosePlumageTex = tex;
+      return tex;
+    }
+
     function create3DPrizeGroup(pr) {
       const group = new THREE.Group();
       const id = pr.prizeId;
@@ -4824,9 +4858,12 @@
         toyRoot.add(reset);
       } else if (id === 'white_goose') {
         // 压轴 Boss：贝塞尔样条曲线 S 型曲颈 + 车削流线型身躯 + 多层羽翼扇动 3D 大白鹅
-        const whiteFeatherMat = new THREE.MeshStandardMaterial({ map: loadPhotoMap('assets/world/goose-feather.jpg', 2, 2), color: 0xffffff, roughness: 0.9 });
-        const wingFeatherMat = new THREE.MeshStandardMaterial({ map: loadPhotoMap('assets/world/goose-feather.jpg', 2, 1), color: 0xf4f1ea, roughness: 0.92 });
-        const orangeBeakMat = new THREE.MeshStandardMaterial({ color: 0xc45c26, roughness: 0.72 });
+        const whiteFeatherMat = new THREE.MeshStandardMaterial({ map: goosePlumage(), color: 0xffffff, roughness: 0.84 });
+        const orangeBeakMat = new THREE.MeshStandardMaterial({
+          map: createPrizeGrain('#d06a28'),
+          color: 0xffffff,
+          roughness: 0.62
+        });
 
         const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.34, 10), orangeBeakMat);
         legL.position.set(-0.13, 0.17, 0);
@@ -4840,93 +4877,65 @@
         // 车削饱满鹅身 + 上翘尾羽
         const bodyProfile = [
           new THREE.Vector2(0.0, 0.0),
-          new THREE.Vector2(0.24, 0.08),
-          new THREE.Vector2(0.36, 0.28),
-          new THREE.Vector2(0.34, 0.52),
-          new THREE.Vector2(0.18, 0.72),
-          new THREE.Vector2(0.0, 0.76)
+          new THREE.Vector2(0.1, 0.06),
+          new THREE.Vector2(0.2, 0.18),
+          new THREE.Vector2(0.26, 0.36),
+          new THREE.Vector2(0.24, 0.52),
+          new THREE.Vector2(0.14, 0.66),
+          new THREE.Vector2(0.0, 0.72)
         ];
-        const bodyMesh = new THREE.Mesh(new THREE.LatheGeometry(bodyProfile, 24), whiteFeatherMat);
+        const bodyMesh = new THREE.Mesh(new THREE.LatheGeometry(bodyProfile, 28), whiteFeatherMat);
+        bodyMesh.scale.set(1.02, 1.05, 0.86);
         bodyMesh.rotation.x = Math.PI * 0.42;
-        bodyMesh.position.set(0, 0.46, -0.34);
+        bodyMesh.position.set(0, 0.28, -0.2);
         bodyMesh.castShadow = true;
         toyRoot.add(bodyMesh);
 
-        const tail = new THREE.Group();
-        tail.position.set(0, 0.58, -0.58);
-        for (let i = -1; i <= 1; i++) {
-          const featherShape = new THREE.Shape();
-          featherShape.moveTo(0, 0);
-          featherShape.bezierCurveTo(0.08, 0.12, 0.16, 0.2, 0.05, 0.32);
-          featherShape.bezierCurveTo(0.02, 0.18, -0.04, 0.1, 0, 0);
-          const feather = new THREE.Mesh(
-            new THREE.ExtrudeGeometry(featherShape, { depth: 0.012, bevelEnabled: false }),
-            wingFeatherMat
-          );
-          feather.rotation.z = i * 0.42;
-          feather.rotation.x = -0.35;
-          feather.position.x = i * 0.04;
-          tail.add(feather);
-        }
-        toyRoot.add(tail);
-
-        // 左右两层羽毛，绕翅膀根扇动
-        const wingShape = new THREE.Shape();
-        wingShape.moveTo(0, 0.02);
-        wingShape.bezierCurveTo(0.16, 0.22, 0.42, 0.18, 0.52, 0.02);
-        wingShape.bezierCurveTo(0.4, -0.1, 0.16, -0.12, 0, -0.02);
-        const wingGeo = new THREE.ExtrudeGeometry(wingShape, { depth: 0.015, bevelEnabled: false });
-        function buildWing(side) {
-          const wing = new THREE.Group();
-          wing.position.set(side * 0.24, 0.4, -0.12);
-          const outer = new THREE.Mesh(wingGeo, wingFeatherMat);
-          outer.scale.set(side * 0.68, 0.46, 1);
-          outer.rotation.x = 1.05;
-          wing.add(outer);
-          const inner = new THREE.Mesh(wingGeo, wingFeatherMat);
-          inner.scale.set(side * 0.4, 0.3, 1);
-          inner.rotation.x = 0.85;
-          inner.position.set(0, -0.02, 0.03);
-          wing.add(inner);
-          return wing;
-        }
-        const wingL = buildWing(-1);
-        const wingR = buildWing(1);
-        toyRoot.add(wingL);
-        toyRoot.add(wingR);
-        group.userData.gooseWingL = wingL;
-        group.userData.gooseWingR = wingR;
-
         // S 型贝塞尔曲颈（套圈核心靶点！）
         const neckGroup = new THREE.Group();
-        neckGroup.position.set(0, 0.54, 0.20);
+        neckGroup.position.set(0, 0.46, 0.16);
 
         const neckCurve = new THREE.CatmullRomCurve3([
           new THREE.Vector3(0, 0.0, 0.0),
-          new THREE.Vector3(0, 0.25, 0.14),
-          new THREE.Vector3(0, 0.52, -0.04),
-          new THREE.Vector3(0, 0.75, 0.08)
+          new THREE.Vector3(0, 0.16, 0.1),
+          new THREE.Vector3(0, 0.34, 0.16),
+          new THREE.Vector3(0, 0.5, 0.24)
         ]);
         const neckTube = new THREE.Mesh(
-          new THREE.TubeGeometry(neckCurve, 20, 0.095, 14, false),
+          new THREE.TubeGeometry(neckCurve, 24, 0.046, 12, false),
           whiteFeatherMat
         );
         neckTube.castShadow = true;
         neckGroup.add(neckTube);
 
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.145, 18, 18), whiteFeatherMat);
-        head.position.set(0, 0.77, 0.10);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 18, 16), whiteFeatherMat);
+        head.scale.set(0.92, 0.78, 1.08);
+        head.position.set(0, 0.52, 0.26);
         neckGroup.add(head);
 
-        const knob = new THREE.Mesh(new THREE.SphereGeometry(0.068, 12, 12), orangeBeakMat);
-        knob.position.set(0, 0.86, 0.20);
+        const knob = new THREE.Mesh(new THREE.SphereGeometry(0.038, 12, 10), orangeBeakMat);
+        knob.position.set(0, 0.56, 0.34);
         neckGroup.add(knob);
 
-        const beak = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.25, 12), orangeBeakMat);
+        const beak = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.22, 12), orangeBeakMat);
         beak.rotation.x = Math.PI * 0.5;
-        beak.scale.set(1.1, 1.0, 0.55);
-        beak.position.set(0, 0.75, 0.30);
+        beak.scale.set(0.72, 1.2, 0.32);
+        beak.position.set(0, 0.5, 0.38);
         neckGroup.add(beak);
+        [-1, 1].forEach((side) => {
+          const eye = new THREE.Mesh(
+            new THREE.SphereGeometry(0.016, 8, 8),
+            new THREE.MeshBasicMaterial({ color: 0x1c140e })
+          );
+          eye.position.set(side * 0.062, 0.55, 0.34);
+          neckGroup.add(eye);
+        });
+        [-1, 1].forEach((side) => {
+          const foot = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), orangeBeakMat);
+          foot.scale.set(1.35, 0.22, 1.7);
+          foot.position.set(side * 0.13, 0.02, 0.08);
+          toyRoot.add(foot);
+        });
 
         toyRoot.add(neckGroup);
         group.userData.gooseNeck = neckGroup;
@@ -6362,7 +6371,7 @@
           }
           if (pr.prizeId === 'white_goose') {
             const dirSign = state.gooseState.vx >= 0 ? 1 : -1;
-            toyRoot.rotation.y = dirSign * 0.35;
+            toyRoot.rotation.y = dirSign * Math.PI * 0.5;
             if (grp.userData.gooseLegL && grp.userData.gooseLegR) {
               const step = Math.sin(state.time * 0.25) * 0.45;
               grp.userData.gooseLegL.rotation.x = step;
