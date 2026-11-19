@@ -2193,6 +2193,67 @@
       });
     }
 
+    function dressWinterLayers(model, spec) {
+      // 西装是同一套男模。棉衣棉裤挂在骨骼上，把西装轮廓盖成冬装。
+      const coatMat = new THREE.MeshStandardMaterial({
+        map: spec.coat,
+        color: 0xffffff,
+        roughness: 0.9,
+        metalness: 0.0
+      });
+      const pantMat = new THREE.MeshStandardMaterial({ color: spec.pant, roughness: 0.92, metalness: 0.0 });
+      function tube(boneName, childName, r0, r1, mat, cover) {
+        const bone = model.getObjectByName(boneName);
+        const child = model.getObjectByName(childName);
+        if (!bone || !child) return;
+        const len = child.position.length();
+        if (len < 0.02) return;
+        const mesh = new THREE.Mesh(
+          new THREE.CylinderGeometry(r0, r1, len * (cover || 0.94), 12),
+          mat
+        );
+        mesh.castShadow = true;
+        mesh.position.y = len * 0.46;
+        bone.add(mesh);
+        const joint = new THREE.Mesh(new THREE.SphereGeometry(r0 * 0.96, 10, 8), mat);
+        joint.position.y = len * 0.92;
+        bone.add(joint);
+      }
+      tube('upperarm_l', 'lowerarm_l', 0.105, 0.09, coatMat);
+      tube('upperarm_r', 'lowerarm_r', 0.105, 0.09, coatMat);
+      tube('lowerarm_l', 'hand_l', 0.086, 0.072, coatMat, 0.84);
+      tube('lowerarm_r', 'hand_r', 0.086, 0.072, coatMat, 0.84);
+      tube('thigh_l', 'calf_l', 0.13, 0.105, pantMat);
+      tube('thigh_r', 'calf_r', 0.13, 0.105, pantMat);
+      tube('calf_l', 'foot_l', 0.098, 0.078, pantMat, 0.78);
+      tube('calf_r', 'foot_r', 0.098, 0.078, pantMat, 0.78);
+      const chest = model.getObjectByName('spine_03');
+      const neck = model.getObjectByName('neck_01');
+      if (chest && neck) {
+        const len = neck.position.length();
+        const coat = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.24, len * 0.9, 16), coatMat);
+        coat.position.set(0, len * 0.4, 0.035);
+        coat.castShadow = true;
+        chest.add(coat);
+      }
+      const waist = model.getObjectByName('spine_01');
+      const mid = model.getObjectByName('spine_02');
+      if (waist && mid) {
+        const len = Math.max(0.12, mid.position.length());
+        const hem = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.27, len + 0.14, 16), coatMat);
+        hem.position.y = len * 0.15;
+        hem.castShadow = true;
+        waist.add(hem);
+      }
+      if (mid) {
+        const up = model.getObjectByName('spine_03');
+        const len = up ? Math.max(0.1, up.position.length()) : 0.12;
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.23, len + 0.05, 14), coatMat);
+        band.position.y = len * 0.35;
+        mid.add(band);
+      }
+    }
+
     function dressHenanFarmer(model) {
       model.traverse((obj) => {
         if (!obj.isMesh || !obj.material) return;
@@ -2214,13 +2275,13 @@
           }
         });
       });
+      dressWinterLayers(model, { coat: cottonTex.farmer, pant: 0x2c241c });
       attachLivingPortrait(model, {
         url: 'assets/people/portraits/laowang.png?v=3',
         height: 0.46,
         aspect: 864 / 748,
         position: { x: 0, y: 0.1, z: 0.07 },
-        yaw: 0,
-        capColor: 0xe4ddd2
+        yaw: 0
       });
     }
 
@@ -2243,13 +2304,13 @@
           }
         });
       });
+      dressWinterLayers(model, { coat: cottonTex.auntie, pant: 0x241c18 });
       attachLivingPortrait(model, {
         url: 'assets/people/portraits/auntie.png?v=3',
         height: 0.44,
         aspect: 864 / 707,
         position: { x: 0, y: 0.14, z: 0.07 },
-        yaw: -0.42,
-        capColor: 0x1c1412
+        yaw: -0.42
       });
     }
 
@@ -2272,13 +2333,13 @@
           }
         });
       });
+      dressWinterLayers(model, { coat: cottonTex.kid, pant: 0x3a2a1c });
       attachLivingPortrait(model, {
         url: 'assets/people/portraits/kid.png?v=3',
         height: 0.5,
         aspect: 864 / 811,
         position: { x: 0, y: 0.12, z: 0.07 },
-        yaw: 0.55,
-        capColor: 0xe0b034
+        yaw: 0.55
       });
     }
 
@@ -3757,6 +3818,79 @@
       return tex;
     }
 
+    function paintDollFace(kind) {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 256;
+      const g = c.getContext('2d');
+      if (kind === 'cat') {
+        g.fillStyle = '#fff4e8';
+        g.beginPath();
+        g.arc(128, 128, 120, 0, Math.PI * 2);
+        g.fill();
+        g.strokeStyle = '#1c140f';
+        g.lineWidth = 8;
+        g.lineCap = 'round';
+        g.beginPath();
+        g.arc(86, 112, 22, Math.PI * 0.15, Math.PI * 0.85);
+        g.stroke();
+        g.beginPath();
+        g.arc(170, 112, 22, Math.PI * 0.15, Math.PI * 0.85);
+        g.stroke();
+        g.fillStyle = '#e07a86';
+        g.beginPath();
+        g.moveTo(128, 132);
+        g.lineTo(118, 148);
+        g.lineTo(138, 148);
+        g.fill();
+        g.strokeStyle = '#2a211c';
+        g.lineWidth = 4;
+        [-1, 1].forEach((s) => {
+          for (let i = 0; i < 3; i++) {
+            g.beginPath();
+            g.moveTo(128 + s * 18, 146 + i * 8);
+            g.lineTo(128 + s * 78, 138 + i * 14);
+            g.stroke();
+          }
+        });
+        g.beginPath();
+        g.moveTo(116, 168);
+        g.quadraticCurveTo(128, 180, 140, 168);
+        g.stroke();
+      } else {
+        g.fillStyle = '#f3c7a2';
+        g.fillRect(0, 0, 256, 256);
+        g.fillStyle = '#1a120e';
+        g.beginPath();
+        g.ellipse(128, 46, 90, 36, 0, Math.PI, 0);
+        g.fill();
+        g.fillStyle = '#2a211c';
+        g.beginPath();
+        g.ellipse(78, 118, 14, 16, 0, 0, Math.PI * 2);
+        g.ellipse(178, 118, 14, 16, 0, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = '#f8f1ea';
+        g.beginPath();
+        g.arc(74, 112, 4, 0, Math.PI * 2);
+        g.arc(174, 112, 4, 0, Math.PI * 2);
+        g.fill();
+        g.strokeStyle = '#6b3a32';
+        g.lineWidth = 5;
+        g.beginPath();
+        g.moveTo(100, 168);
+        g.quadraticCurveTo(128, 190, 156, 168);
+        g.stroke();
+        g.fillStyle = 'rgba(214, 96, 96, 0.45)';
+        g.beginPath();
+        g.ellipse(62, 150, 22, 12, 0, 0, Math.PI * 2);
+        g.ellipse(194, 150, 22, 12, 0, 0, Math.PI * 2);
+        g.fill();
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
     function create3DPrizeGroup(pr) {
       const group = new THREE.Group();
       const id = pr.prizeId;
@@ -3962,16 +4096,22 @@
 
         const head = new THREE.Mesh(
           new THREE.SphereGeometry(0.19, 20, 20),
-          new THREE.MeshStandardMaterial({ color: 0xfed7aa, roughness: 0.45 })
+          new THREE.MeshStandardMaterial({ color: 0xf3c7a2, roughness: 0.55 })
         );
         head.position.y = 0.60;
         toyRoot.add(head);
+        const face = new THREE.Mesh(
+          new THREE.CircleGeometry(0.145, 22),
+          new THREE.MeshStandardMaterial({ map: paintDollFace('roly'), roughness: 0.62, metalness: 0 })
+        );
+        face.position.set(0, 0.61, 0.205);
+        toyRoot.add(face);
 
         // 两个冲天红髻小抓鬏
         [-0.14, 0.14].forEach((bx) => {
           const bun = new THREE.Mesh(
             new THREE.SphereGeometry(0.065, 12, 12),
-            new THREE.MeshStandardMaterial({ color: 0x0f172a })
+            new THREE.MeshStandardMaterial({ color: 0x1a120e, roughness: 0.7 })
           );
           bun.position.set(bx, 0.76, 0);
           toyRoot.add(bun);
@@ -4070,10 +4210,35 @@
           const ear = new THREE.Mesh(new THREE.ConeGeometry(0.085, 0.19, 10), goldMat);
           ear.position.set(ex, 0.77, 0);
           toyRoot.add(ear);
+          const inner = new THREE.Mesh(
+            new THREE.ConeGeometry(0.042, 0.1, 8),
+            new THREE.MeshStandardMaterial({ color: 0xd47a86, roughness: 0.7 })
+          );
+          inner.position.set(ex, 0.74, 0.03);
+          toyRoot.add(inner);
         });
+        const catFace = new THREE.Mesh(
+          new THREE.CircleGeometry(0.13, 22),
+          new THREE.MeshStandardMaterial({ map: paintDollFace('cat'), roughness: 0.48, metalness: 0.02 })
+        );
+        catFace.position.set(0, 0.58, 0.16);
+        toyRoot.add(catFace);
 
-        const wavingPaw = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.34, 12), goldMat);
-        wavingPaw.position.set(-0.28, 0.48, 0.1);
+        const wavingPaw = new THREE.Group();
+        wavingPaw.position.set(-0.26, 0.58, 0.12);
+        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.05, 0.2, 10), goldMat);
+        arm.position.y = -0.04;
+        wavingPaw.add(arm);
+        const paw = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), goldMat);
+        paw.scale.set(1.05, 0.78, 0.72);
+        paw.position.y = 0.1;
+        wavingPaw.add(paw);
+        const pad = new THREE.Mesh(
+          new THREE.SphereGeometry(0.026, 8, 6),
+          new THREE.MeshStandardMaterial({ color: 0xe7a0a8, roughness: 0.55 })
+        );
+        pad.position.set(0, 0.12, 0.04);
+        wavingPaw.add(pad);
         toyRoot.add(wavingPaw);
         group.userData.wavingPaw = wavingPaw;
       } else if (id === 'fc_console') {
@@ -4145,23 +4310,45 @@
         bodyMesh.castShadow = true;
         toyRoot.add(bodyMesh);
 
-        // 左右多层扇动翅膀 Pivot
+        const tail = new THREE.Group();
+        tail.position.set(0, 0.58, -0.58);
+        for (let i = -1; i <= 1; i++) {
+          const featherShape = new THREE.Shape();
+          featherShape.moveTo(0, 0);
+          featherShape.bezierCurveTo(0.08, 0.12, 0.16, 0.2, 0.05, 0.32);
+          featherShape.bezierCurveTo(0.02, 0.18, -0.04, 0.1, 0, 0);
+          const feather = new THREE.Mesh(
+            new THREE.ExtrudeGeometry(featherShape, { depth: 0.012, bevelEnabled: false }),
+            wingFeatherMat
+          );
+          feather.rotation.z = i * 0.42;
+          feather.rotation.x = -0.35;
+          feather.position.x = i * 0.04;
+          tail.add(feather);
+        }
+        toyRoot.add(tail);
+
+        // 左右两层羽毛，绕翅膀根扇动
         const wingShape = new THREE.Shape();
         wingShape.moveTo(0, 0.02);
-        wingShape.bezierCurveTo(0.16, 0.2, 0.4, 0.16, 0.5, 0.02);
-        wingShape.bezierCurveTo(0.42, -0.08, 0.18, -0.1, 0, -0.02);
-        const wingGeo = new THREE.ExtrudeGeometry(wingShape, { depth: 0.02, bevelEnabled: false });
-        const wingL = new THREE.Group();
-        wingL.position.set(-0.28, 0.5, -0.04);
-        const wingMeshL = new THREE.Mesh(wingGeo, wingFeatherMat);
-        wingMeshL.scale.x = -1;
-        wingL.add(wingMeshL);
+        wingShape.bezierCurveTo(0.16, 0.22, 0.42, 0.18, 0.52, 0.02);
+        wingShape.bezierCurveTo(0.4, -0.1, 0.16, -0.12, 0, -0.02);
+        const wingGeo = new THREE.ExtrudeGeometry(wingShape, { depth: 0.015, bevelEnabled: false });
+        function buildWing(side) {
+          const wing = new THREE.Group();
+          wing.position.set(side * 0.3, 0.48, -0.08);
+          const outer = new THREE.Mesh(wingGeo, wingFeatherMat);
+          outer.scale.set(side, 1, 1);
+          wing.add(outer);
+          const inner = new THREE.Mesh(wingGeo, wingFeatherMat);
+          inner.scale.set(side * 0.62, 0.7, 1);
+          inner.position.set(side * 0.02, -0.04, 0.02);
+          wing.add(inner);
+          return wing;
+        }
+        const wingL = buildWing(-1);
+        const wingR = buildWing(1);
         toyRoot.add(wingL);
-
-        const wingR = new THREE.Group();
-        wingR.position.set(0.28, 0.5, -0.04);
-        const wingMeshR = new THREE.Mesh(wingGeo, wingFeatherMat);
-        wingR.add(wingMeshR);
         toyRoot.add(wingR);
         group.userData.gooseWingL = wingL;
         group.userData.gooseWingR = wingR;
