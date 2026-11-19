@@ -4008,45 +4008,59 @@
       c.width = 512;
       c.height = 256;
       const g = c.getContext('2d');
-      g.fillStyle = '#f8fafc';
+      g.fillStyle = '#f4efe6';
       g.fillRect(0, 0, 512, 256);
-
-      // 经典搪瓷缸顶部与底部深蓝/大红滚边
-      g.fillStyle = '#1e3a8a';
-      g.fillRect(0, 0, 512, 20);
-      g.fillRect(0, 238, 512, 18);
-
-      // 正面大红牡丹花与“双喜/为人民服务”红字印章
-      g.fillStyle = '#dc2626';
-      g.beginPath();
-      g.arc(256, 128, 44, 0, Math.PI * 2);
-      g.fill();
-      g.fillStyle = '#f43f5e';
-      for (let k = 0; k < 6; k++) {
-        const ang = (k / 6) * Math.PI * 2;
-        g.beginPath();
-        g.arc(256 + Math.cos(ang) * 32, 128 + Math.sin(ang) * 32, 20, 0, Math.PI * 2);
-        g.fill();
+      const img = g.getImageData(0, 0, 512, 256);
+      const px = img.data;
+      for (let i = 0; i < px.length; i += 16) {
+        const n = (Math.random() - 0.45) * 18;
+        px[i] = Math.max(0, Math.min(255, px[i] + n));
+        px[i + 1] = Math.max(0, Math.min(255, px[i + 1] + n * 0.9));
+        px[i + 2] = Math.max(0, Math.min(255, px[i + 2] + n * 0.7));
       }
-      g.fillStyle = '#fde047';
+      g.putImageData(img, 0, 0);
+      g.fillStyle = '#1d3f86';
+      g.fillRect(0, 0, 512, 16);
+      g.fillRect(0, 240, 512, 16);
+      g.fillStyle = '#f7f3ea';
+      g.fillRect(0, 16, 512, 4);
+      g.fillRect(0, 236, 512, 4);
+      function petal(x, y, rot, len) {
+        g.save();
+        g.translate(x, y);
+        g.rotate(rot);
+        g.fillStyle = '#b4232c';
+        g.beginPath();
+        g.moveTo(0, 0);
+        g.bezierCurveTo(len * 0.35, -len * 0.45, len * 0.85, -len * 0.2, len, 0);
+        g.bezierCurveTo(len * 0.85, len * 0.2, len * 0.35, len * 0.45, 0, 0);
+        g.fill();
+        g.restore();
+      }
+      for (let k = 0; k < 8; k++) petal(256, 124, (k / 8) * Math.PI * 2, 52);
+      for (let k = 0; k < 6; k++) petal(256, 124, (k / 6) * Math.PI * 2 + 0.3, 30);
+      g.fillStyle = '#f2d48a';
       g.beginPath();
-      g.arc(256, 128, 12, 0, Math.PI * 2);
+      g.arc(256, 124, 10, 0, Math.PI * 2);
       g.fill();
-
-      // 两侧绿叶与红双喜
-      g.fillStyle = '#15803d';
+      g.fillStyle = '#2f6b3a';
       g.beginPath();
-      g.ellipse(196, 148, 22, 10, -0.5, 0, Math.PI * 2);
-      g.ellipse(316, 148, 22, 10, 0.5, 0, Math.PI * 2);
+      g.ellipse(188, 156, 26, 9, -0.6, 0, Math.PI * 2);
+      g.ellipse(324, 156, 26, 9, 0.6, 0, Math.PI * 2);
       g.fill();
-
-      g.fillStyle = '#b91c1c';
-      g.font = '900 32px "Noto Sans SC", sans-serif';
+      g.fillStyle = '#9f1d24';
+      g.font = '700 36px "Noto Sans SC", sans-serif';
       g.textAlign = 'center';
-      g.fillText('囍', 120, 138);
-      g.fillText('囍', 392, 138);
-
+      g.fillText('囍', 108, 140);
+      g.fillText('囍', 404, 140);
+      g.fillStyle = '#2a241c';
+      [[40, 48], [470, 60], [80, 210], [430, 200], [250, 30]].forEach((chip) => {
+        g.beginPath();
+        g.arc(chip[0], chip[1], 3 + (chip[0] % 3), 0, Math.PI * 2);
+        g.fill();
+      });
       const tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding;
       return tex;
     }
 
@@ -4055,10 +4069,19 @@
       c.width = 256;
       c.height = 256;
       const g = c.getContext('2d');
-      g.fillStyle = '#fef3c7';
+      g.fillStyle = '#e7d3a4';
       g.fillRect(0, 0, 256, 256);
-      g.strokeStyle = '#dc2626';
-      g.lineWidth = 14;
+      const skin = g.getImageData(0, 0, 256, 256);
+      const sd = skin.data;
+      for (let i = 0; i < sd.length; i += 16) {
+        const n = (Math.random() - 0.5) * 22;
+        sd[i] = Math.max(0, Math.min(255, sd[i] + n));
+        sd[i + 1] = Math.max(0, Math.min(255, sd[i + 1] + n * 0.85));
+        sd[i + 2] = Math.max(0, Math.min(255, sd[i + 2] + n * 0.6));
+      }
+      g.putImageData(skin, 0, 0);
+      g.strokeStyle = '#8f1d1d';
+      g.lineWidth = 10;
       g.beginPath();
       g.arc(128, 128, 108, 0, Math.PI * 2);
       g.stroke();
@@ -4067,7 +4090,9 @@
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       g.fillText('福', 128, 132);
-      return new THREE.CanvasTexture(c);
+      const faceMap = new THREE.CanvasTexture(c);
+      faceMap.encoding = THREE.sRGBEncoding;
+      return faceMap;
     }
 
     function createConsoleStickerTexture() {
@@ -4428,8 +4453,8 @@
         // 印有“牡丹红双喜”环绕贴图的陶瓷釉面搪瓷大茶缸
         const mugTex = createEnamelMugTexture();
         const mugBody = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.25, 0.24, 0.56, 28, 1, false),
-          new THREE.MeshStandardMaterial({ map: mugTex, roughness: 0.46, metalness: 0.02 })
+          new THREE.CylinderGeometry(0.25, 0.24, 0.56, 28, 1, true),
+          new THREE.MeshStandardMaterial({ map: mugTex, roughness: 0.46, metalness: 0.02, side: THREE.DoubleSide })
         );
         mugBody.position.y = 0.28;
         mugBody.rotation.y = -Math.PI * 0.5;
@@ -4444,6 +4469,13 @@
         lipRing.rotation.x = Math.PI * 0.5;
         lipRing.position.y = 0.56;
         toyRoot.add(lipRing);
+        const tea = new THREE.Mesh(
+          new THREE.CircleGeometry(0.21, 24),
+          new THREE.MeshStandardMaterial({ color: 0x4a3428, roughness: 0.42, metalness: 0.08 })
+        );
+        tea.rotation.x = -Math.PI * 0.5;
+        tea.position.y = 0.545;
+        toyRoot.add(tea);
 
         const handleCurve = new THREE.CatmullRomCurve3([
           new THREE.Vector3(0.23, 0.46, 0),
@@ -4459,16 +4491,24 @@
       } else if (id === 'rattle_drum') {
         const stick = new THREE.Mesh(
           new THREE.CylinderGeometry(0.036, 0.032, 0.44, 12),
-          new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.5 })
+          new THREE.MeshStandardMaterial({
+            map: loadPhotoMap('assets/world/wood-planks.jpg', 1, 2),
+            color: 0xc4a574,
+            roughness: 0.82
+          })
         );
         stick.position.y = 0.22;
         toyRoot.add(stick);
 
         const faceTex = createRattleDrumFaceTexture();
         const drumMat = [
-          new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4 }),
-          new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.5 }),
-          new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.5 })
+          new THREE.MeshStandardMaterial({
+            map: loadPhotoMap('assets/world/lacquer-red.jpg', 2, 1),
+            color: 0xffffff,
+            roughness: 0.46
+          }),
+          new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.62 }),
+          new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.62 })
         ];
         const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.14, 24), drumMat);
         drum.rotation.x = Math.PI * 0.5;
@@ -4480,7 +4520,11 @@
         [-0.28, 0.28].forEach((bx) => {
           const bead = new THREE.Mesh(
             new THREE.SphereGeometry(0.045, 10, 10),
-            new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.5 })
+            new THREE.MeshStandardMaterial({
+              map: loadPhotoMap('assets/world/wood-planks.jpg', 1, 1),
+              color: 0xd4b483,
+              roughness: 0.72
+            })
           );
           bead.position.set(bx, 0.45, 0);
           toyRoot.add(bead);
