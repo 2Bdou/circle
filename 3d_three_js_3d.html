@@ -3578,8 +3578,9 @@
 
       // 6. 写实北方农家宅院：青砖墙、灰瓦硬山顶、木门窗棂、院墙与暖窗光
       const brickTex = createBrickWallTexture();
+      brickTex.repeat.set(1, 1);
       const roofTileTex = loadPhotoMap('assets/world/roof-tiles.jpg', 2, 1.5);
-      const woodTex = loadPhotoMap('assets/world/wood-planks.jpg', 2, 1.2);
+      const woodTex = loadPhotoMap('assets/world/wood-planks.jpg', 1, 1);
       const houseMat = new THREE.MeshStandardMaterial({
         map: brickTex,
         bumpMap: brickTex,
@@ -3643,11 +3644,23 @@
         const t = 0.2;
         const rise = cfg.d * 0.34;
 
+        function scaleBoxUvs(geo, w, h, d, tile) {
+          const uv = geo.attributes.uv;
+          const faces = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
+          for (let f = 0; f < 6; f++) {
+            const su = Math.max(faces[f][0] / tile, 0.08);
+            const sv = Math.max(faces[f][1] / tile, 0.08);
+            for (let k = 0; k < 4; k++) {
+              const i = f * 4 + k;
+              uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
+            }
+          }
+        }
         function addBox(w, h, d, x, y, z, mat) {
-          const mesh = new THREE.Mesh(
-            new THREE.BoxGeometry(Math.max(w, 0.02), Math.max(h, 0.02), Math.max(d, 0.02)),
-            mat
-          );
+          const geo = new THREE.BoxGeometry(Math.max(w, 0.02), Math.max(h, 0.02), Math.max(d, 0.02));
+          if (mat === houseMat) scaleBoxUvs(geo, w, h, d, 1.55);
+          else if (mat === woodMat) scaleBoxUvs(geo, w, h, d, 0.72);
+          const mesh = new THREE.Mesh(geo, mat);
           mesh.position.set(x, y, z);
           mesh.castShadow = true;
           mesh.receiveShadow = true;
