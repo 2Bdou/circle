@@ -1769,8 +1769,12 @@
           if (mat.map && mat.map.isTexture) {
             mat.map.encoding = THREE.sRGBEncoding;
             mat.map.userData = mat.map.userData || {};
-            if (!mat.map.userData.eyesFixed && mat.name && mat.name.indexOf('body') !== -1) {
+            if (!mat.map.userData.skipEyeFix && !mat.map.userData.eyesFixed && mat.name && mat.name.indexOf('body') !== -1) {
               repaintHumanEyes(mat.map);
+            }
+            if (mat.name && mat.name.indexOf('body') !== -1) {
+              mat.roughness = Math.min(mat.roughness ?? 0.7, 0.58);
+              mat.metalness = 0.02;
             }
           }
         });
@@ -1958,6 +1962,154 @@
       head.add(prop);
     }
 
+    function crushMakeHumanHeadGeometry(model) {
+      // 永久压扁 body 头顶顶点（动画不会改 geometry），避免和扫描头叠两张脸
+      model.traverse((obj) => {
+        if (!obj.isMesh || !obj.geometry) return;
+        const matName = (obj.material && obj.material.name ? obj.material.name : '').toLowerCase();
+        const name = (obj.name || '').toLowerCase();
+        if (matName.indexOf('body') === -1 && name.indexOf('base') === -1 && name.indexOf('human') === -1) return;
+        if (obj.userData.headCrushed) return;
+        const geo = obj.geometry;
+        const pos = geo.attributes.position;
+        if (!pos) return;
+        // 头大约在 y>1.55；只收颅顶/脸，保留颈窝体积给衣领
+        for (let i = 0; i < pos.count; i++) {
+          const y = pos.getY(i);
+          if (y < 1.55) continue;
+          const x = pos.getX(i);
+          const z = pos.getZ(i);
+          const t = Math.min(1, (y - 1.55) / 0.32);
+          pos.setX(i, x * (1 - 0.9 * t));
+          pos.setY(i, 1.55 + (y - 1.55) * (1 - 0.95 * t));
+          pos.setZ(i, z * (1 - 0.8 * t) - 0.02 * t);
+        }
+        pos.needsUpdate = true;
+        geo.computeVertexNormals();
+        if (geo.boundingSphere) geo.computeBoundingSphere();
+        if (geo.boundingBox) geo.computeBoundingBox();
+        obj.userData.headCrushed = true;
+      });
+    }
+
+    function attachPropToNeck(model, prop) {
+      const neck = model.getObjectByName('neck_01') || model.getObjectByName('head') || model;
+      neck.add(prop);
+    }
+
+    const skinTexLoader = new THREE.TextureLoader();
+    const skinTexCache = {};
+    function loadRoleSkin(url, mat) {
+      if (skinTexCache[url]) {
+        mat.map = skinTexCache[url];
+        mat.map.userData.skipEyeFix = true;
+        mat.map.userData.eyesFixed = true;
+        mat.needsUpdate = true;
+        return;
+      }
+      skinTexLoader.load(url, (tex) => {
+        tex.encoding = THREE.sRGBEncoding;
+        tex.flipY = false;
+        tex.userData.skipEyeFix = true;
+        tex.userData.eyesFixed = true;
+        skinTexCache[url] = tex;
+        mat.map = tex;
+        mat.needsUpdate = true;
+      });
+    }
+
+    const lpsHeadCache = { gltf: null, loading: null, maps: {} };
+    function loadLpsGltf(cb) {
+      if (lpsHeadCache.gltf) {
+        cb(lpsHeadCache.gltf);
+        return;
+      }
+      if (lpsHeadCache.loading) {
+        lpsHeadCache.loading.push(cb);
+        return;
+      }
+      if (typeof THREE.GLTFLoader !== 'function') return;
+      lpsHeadCache.loading = [cb];
+      const loader = new THREE.GLTFLoader();
+      loader.load(
+        'assets/people/LeePerrySmith.glb',
+        (gltf) => {
+          lpsHeadCache.gltf = gltf;
+          const queue = lpsHeadCache.loading || [];
+          lpsHeadCache.loading = null;
+          queue.forEach((fn) => fn(gltf));
+        },
+        undefined,
+        () => {
+          lpsHeadCache.loading = null;
+        }
+      );
+    }
+
+    function getLpsFaceTextures(faceUrl) {
+      if (lpsHeadCache.maps[faceUrl]) return lpsHeadCache.maps[faceUrl];
+      const texLoader = new THREE.TextureLoader();
+      const map = texLoader.load(faceUrl);
+      map.encoding = THREE.sRGBEncoding;
+      map.flipY = true;
+      const spec = texLoader.load('assets/people/lps/Map-SPEC.jpg');
+      spec.flipY = true;
+      const normal = texLoader.load('assets/people/lps/Normal.jpg');
+      normal.flipY = true;
+      const pack = { map, spec, normal };
+      lpsHeadCache.maps[faceUrl] = pack;
+      return pack;
+    }
+
+    function attachPhotorealScanHead(model, opts) {
+      // Lee Perry Smith 扫描头：近景写实脸（仅取网格，丢掉场景里的 Camera/Lamp）
+      const options = opts || {};
+      const faceUrl = options.faceUrl || 'assets/people/lps/Map-COL.jpg';
+      const targetHeadH = options.headHeight || 0.38;
+      const localPos = options.position || { x: 0, y: 0.22, z: 0.06 };
+      const yaw = options.yaw != null ? options.yaw : 0;
+      const skinTint = options.tint != null ? options.tint : 0xffffff;
+      crushMakeHumanHeadGeometry(model);
+      loadLpsGltf((gltf) => {
+        const srcMesh = gltf.scene.getObjectByName('LeePerrySmith') || gltf.scene.children.find((c) => c.isMesh);
+        let headMesh = null;
+        if (srcMesh && srcMesh.isMesh) {
+          headMesh = srcMesh.clone(true);
+        } else {
+          gltf.scene.traverse((obj) => {
+            if (!headMesh && obj.isMesh) headMesh = obj.clone(true);
+          });
+        }
+        if (!headMesh) return;
+        const tex = getLpsFaceTextures(faceUrl);
+        // Map-SPEC 是高光图，不能直接当 roughnessMap（会油光），只用颜色+法线
+        headMesh.material = new THREE.MeshStandardMaterial({
+          map: tex.map,
+          normalMap: tex.normal,
+          normalScale: new THREE.Vector2(0.65, 0.65),
+          roughness: 0.82,
+          metalness: 0.015,
+          color: skinTint
+        });
+        headMesh.castShadow = true;
+        headMesh.receiveShadow = true;
+        headMesh.frustumCulled = false;
+        const box = new THREE.Box3().setFromObject(headMesh);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        const s = targetHeadH / Math.max(size.y, 0.001);
+        const wrap = new THREE.Group();
+        wrap.name = 'photorealScanHead';
+        // 几何中心归零；挂在 neck 上，抬到原头位置
+        headMesh.position.set(-center.x, -center.y - size.y * 0.05, -center.z);
+        wrap.add(headMesh);
+        wrap.scale.setScalar(s);
+        wrap.position.set(localPos.x, localPos.y, localPos.z);
+        wrap.rotation.y = yaw;
+        attachPropToNeck(model, wrap);
+      });
+    }
+
     function dressHenanFarmer(model) {
       model.traverse((obj) => {
         if (!obj.isMesh || !obj.material) return;
@@ -1965,18 +2117,11 @@
         mats.forEach((mat) => {
           if (!mat) return;
           const name = (mat.name || '').toLowerCase();
-          if (name.indexOf('body') !== -1 && mat.map) {
-            mat.map = tintSkinMap(mat.map, [0.88, 0.8, 0.7]);
-            // 大叔胡茬：在皮肤贴图下半张脸区域洒深点
-            mat.map = cloneCanvasTextureFrom(mat.map, (ctx, w, h) => {
-              ctx.fillStyle = 'rgba(60,40,30,0.22)';
-              for (let i = 0; i < 900; i++) {
-                const x = (w * 0.28) + Math.random() * w * 0.44;
-                const y = (h * 0.42) + Math.random() * h * 0.22;
-                ctx.fillRect(x, y, 1.2, 1.2);
-              }
-            });
-            mat.color.setHex(0xe8c49a);
+          if (name.indexOf('body') !== -1) {
+            loadRoleSkin('assets/people/skins/farmer_skin.png', mat);
+            mat.color.setHex(0xffffff);
+            mat.roughness = 0.55;
+            mat.metalness = 0.02;
             mat.needsUpdate = true;
           } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
             mat.map = cloneCanvasTextureFrom(mat.map, paintFarmerJacket);
@@ -1990,16 +2135,23 @@
           }
         });
       });
+      attachPhotorealScanHead(model, {
+        faceUrl: 'assets/people/lps/farmer_face.jpg?v=8',
+        headHeight: 0.34,
+        position: { x: 0, y: 0.175, z: 0.05 },
+        yaw: 0,
+        tint: 0xffffff
+      });
       const towel = new THREE.Group();
-      towel.position.set(0, 0.18, 0.02);
+      towel.position.set(0, 0.33, -0.04);
       const towelMat = new THREE.MeshStandardMaterial({ color: 0xdbeafe, roughness: 0.85 });
-      const band = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.035, 10, 22), towelMat);
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.035, 10, 22), towelMat);
       band.rotation.x = Math.PI * 0.5;
       towel.add(band);
       const flap = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.03), towelMat);
       flap.position.set(0.12, -0.05, 0.02);
       towel.add(flap);
-      attachPropToHead(model, towel);
+      attachPropToNeck(model, towel);
       const scarf = new THREE.Mesh(
         new THREE.TorusGeometry(0.16, 0.04, 10, 20),
         new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 })
@@ -2016,9 +2168,11 @@
         mats.forEach((mat) => {
           if (!mat) return;
           const name = (mat.name || '').toLowerCase();
-          if (name.indexOf('body') !== -1 && mat.map) {
-            mat.map = tintSkinMap(mat.map, [1.05, 0.95, 0.9]);
-            mat.color.setHex(0xffe0c8);
+          if (name.indexOf('body') !== -1) {
+            loadRoleSkin('assets/people/skins/auntie_skin.png', mat);
+            mat.color.setHex(0xffffff);
+            mat.roughness = 0.52;
+            mat.metalness = 0.02;
           } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
             mat.map = cloneCanvasTextureFrom(mat.map, paintAuntieJacket);
             mat.color.setHex(0xffffff);
@@ -2028,23 +2182,24 @@
           }
         });
       });
+      attachPhotorealScanHead(model, {
+        faceUrl: 'assets/people/lps/auntie_face.jpg?v=8',
+        headHeight: 0.33,
+        position: { x: 0, y: 0.165, z: 0.05 },
+        yaw: 0,
+        tint: 0xfff1e6
+      });
       const hair = new THREE.Group();
-      hair.position.set(0, 0.16, -0.02);
+      hair.position.set(0, 0.31, -0.05);
       const bunMat = new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.75 });
-      const bun = new THREE.Mesh(new THREE.SphereGeometry(0.08, 14, 12), bunMat);
-      bun.position.set(0, 0.06, -0.05);
+      const bun = new THREE.Mesh(new THREE.SphereGeometry(0.065, 14, 12), bunMat);
+      bun.position.set(0, 0.05, -0.08);
       hair.add(bun);
-      const fringe = new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 10), bunMat);
-      fringe.scale.set(1.05, 0.45, 0.85);
-      fringe.position.set(0, 0.02, 0.04);
+      const fringe = new THREE.Mesh(new THREE.SphereGeometry(0.09, 14, 10), bunMat);
+      fringe.scale.set(1.15, 0.3, 0.6);
+      fringe.position.set(0, 0.04, 0.03);
       hair.add(fringe);
-      const scarf = new THREE.Mesh(
-        new THREE.SphereGeometry(0.14, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55),
-        new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.85, side: THREE.DoubleSide })
-      );
-      scarf.position.set(0, 0.05, 0);
-      hair.add(scarf);
-      attachPropToHead(model, hair);
+      attachPropToNeck(model, hair);
     }
 
     function dressMarketKid(model) {
@@ -2054,9 +2209,11 @@
         mats.forEach((mat) => {
           if (!mat) return;
           const name = (mat.name || '').toLowerCase();
-          if (name.indexOf('body') !== -1 && mat.map) {
-            mat.map = tintSkinMap(mat.map, [1.08, 1.0, 0.95]);
-            mat.color.setHex(0xffe7d1);
+          if (name.indexOf('body') !== -1) {
+            loadRoleSkin('assets/people/skins/kid_skin.png', mat);
+            mat.color.setHex(0xffffff);
+            mat.roughness = 0.5;
+            mat.metalness = 0.02;
           } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
             mat.map = cloneCanvasTextureFrom(mat.map, paintKidJacket);
             mat.color.setHex(0xffffff);
@@ -2065,29 +2222,26 @@
           }
         });
       });
+      attachPhotorealScanHead(model, {
+        faceUrl: 'assets/people/lps/kid_face.jpg?v=8',
+        headHeight: 0.46,
+        position: { x: 0, y: 0.155, z: 0.045 },
+        yaw: 0,
+        tint: 0xffe8d8
+      });
       const hat = new THREE.Group();
-      hat.position.set(0, 0.14, 0.02);
+      hat.position.set(0, 0.33, -0.02);
       const hatMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.7 });
-      const earL = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), hatMat);
-      earL.position.set(-0.12, 0.04, 0);
+      const earL = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 10), hatMat);
+      earL.position.set(-0.12, -0.01, 0);
       const earR = earL.clone();
       earR.position.x = 0.12;
       hat.add(earL, earR);
-      const crown = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), hatMat);
+      const crown = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), hatMat);
+      crown.scale.set(1.05, 0.55, 1.05);
+      crown.position.set(0, 0.03, 0);
       hat.add(crown);
-      const face = new THREE.Mesh(
-        new THREE.CircleGeometry(0.05, 12),
-        new THREE.MeshStandardMaterial({ color: 0xfef3c7 })
-      );
-      face.position.set(0, 0.01, 0.12);
-      hat.add(face);
-      const nose = new THREE.Mesh(
-        new THREE.SphereGeometry(0.018, 8, 8),
-        new THREE.MeshStandardMaterial({ color: 0x111827 })
-      );
-      nose.position.set(0, -0.005, 0.13);
-      hat.add(nose);
-      attachPropToHead(model, hat);
+      attachPropToNeck(model, hat);
     }
 
     function mountRealHuman(gltf, anchor, yaw, scale, dressFn, nonUniformScale) {
@@ -3944,12 +4098,20 @@
       dirLight.shadow.camera.bottom = -9;
       scene.add(dirLight);
 
-      const charFill = new THREE.DirectionalLight(0xfff3e0, 0.48);
-      charFill.position.set(-3.4, 4.4, 7.4);
+      const charFill = new THREE.DirectionalLight(0xfff1de, 0.72);
+      charFill.position.set(-2.2, 3.8, 6.2);
       scene.add(charFill);
-      const charRim = new THREE.DirectionalLight(0x9ec9ff, 0.36);
+      const charRim = new THREE.DirectionalLight(0xb7d4ff, 0.55);
       charRim.position.set(3.1, 5.2, -7.6);
       scene.add(charRim);
+      // 脸部专用柔光，推近写实皮肤细节
+      const faceKey = new THREE.PointLight(0xffe4c8, 0.85, 8.5);
+      faceKey.position.set(0.35, 2.15, -8.2);
+      scene.add(faceKey);
+      const faceFill = new THREE.PointLight(0xcfe0ff, 0.4, 7.5);
+      faceFill.position.set(-1.1, 1.85, -9.4);
+      scene.add(faceFill);
+      renderer.toneMappingExposure = 1.22;
 
       build3DMarketEnvironment();
       build3DStallOwnerNpc();
