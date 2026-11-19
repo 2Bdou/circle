@@ -4180,6 +4180,7 @@
           metalness: 0.0
         });
         const pearMesh = new THREE.Mesh(new THREE.LatheGeometry(pearProfile, 24), pearMat);
+        pearMesh.scale.set(1, 1.28, 1);
         pearMesh.castShadow = true;
         toyRoot.add(pearMesh);
 
@@ -4191,12 +4192,12 @@
         toyRoot.add(frostCap);
 
         const stemCurve = new THREE.CatmullRomCurve3([
-          new THREE.Vector3(0, 0.54, 0),
-          new THREE.Vector3(0.04, 0.65, 0.02),
-          new THREE.Vector3(0.11, 0.70, 0.04)
+          new THREE.Vector3(0, 0.68, 0),
+          new THREE.Vector3(0.04, 0.8, 0.02),
+          new THREE.Vector3(0.12, 0.86, 0.04)
         ]);
         const stem = new THREE.Mesh(
-          new THREE.TubeGeometry(stemCurve, 10, 0.022, 8, false),
+          new THREE.TubeGeometry(stemCurve, 10, 0.03, 8, false),
           new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 })
         );
         toyRoot.add(stem);
@@ -4327,33 +4328,33 @@
         toyRoot.add(base);
 
         const goldBelt = new THREE.Mesh(
-          new THREE.TorusGeometry(0.21, 0.03, 10, 24),
+          new THREE.TorusGeometry(0.3, 0.028, 10, 24),
           new THREE.MeshStandardMaterial({ color: 0xc4a15a, metalness: 0.28, roughness: 0.5 })
         );
         goldBelt.rotation.x = Math.PI * 0.5;
-        goldBelt.position.y = 0.42;
+        goldBelt.position.y = 0.2;
         toyRoot.add(goldBelt);
 
         const head = new THREE.Mesh(
-          new THREE.SphereGeometry(0.19, 20, 20),
+          new THREE.SphereGeometry(0.18, 20, 20),
           new THREE.MeshStandardMaterial({ color: 0xf3c7a2, roughness: 0.55 })
         );
-        head.position.y = 0.60;
+        head.position.y = 0.44;
         toyRoot.add(head);
         const face = new THREE.Mesh(
-          new THREE.CircleGeometry(0.145, 22),
+          new THREE.CircleGeometry(0.14, 22),
           new THREE.MeshStandardMaterial({ map: paintDollFace('roly'), roughness: 0.62, metalness: 0 })
         );
-        face.position.set(0, 0.61, 0.205);
+        face.position.set(0, 0.5, 0.22);
         toyRoot.add(face);
 
         // 两个冲天红髻小抓鬏
         [-0.14, 0.14].forEach((bx) => {
           const bun = new THREE.Mesh(
-            new THREE.SphereGeometry(0.065, 12, 12),
+            new THREE.SphereGeometry(0.06, 12, 12),
             new THREE.MeshStandardMaterial({ color: 0x1a120e, roughness: 0.7 })
           );
-          bun.position.set(bx, 0.76, 0);
+          bun.position.set(bx, 0.6, -0.02);
           toyRoot.add(bun);
         });
       } else if (id === 'enamel_mug') {
