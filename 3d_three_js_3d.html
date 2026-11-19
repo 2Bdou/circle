@@ -3355,11 +3355,11 @@
       stoveGroup.position.set(STALL_HALF_W + 1.15, 0, -2.6);
 
       const barrelMat = new THREE.MeshStandardMaterial({
-        color: 0x3f3f46,
-        metalness: 0.68,
-        roughness: 0.48
+        color: 0x2c2c30,
+        metalness: 0.42,
+        roughness: 0.72
       });
-      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 1.42, 24), barrelMat);
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 1.42, 28), barrelMat);
       barrel.position.y = 0.71;
       barrel.castShadow = true;
       stoveGroup.add(barrel);
@@ -3373,11 +3373,17 @@
       });
 
       // 底部透红炉门
-      const firebox = new THREE.Mesh(
-        new THREE.BoxGeometry(0.36, 0.28, 0.12),
-        new THREE.MeshBasicMaterial({ color: 0xf97316 })
+      const doorFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(0.34, 0.28, 0.05),
+        new THREE.MeshStandardMaterial({ color: 0x1a1816, roughness: 0.7, metalness: 0.25 })
       );
-      firebox.position.set(0, 0.26, 0.54);
+      doorFrame.position.set(0, 0.34, 0.56);
+      stoveGroup.add(doorFrame);
+      const firebox = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.18, 0.12),
+        new THREE.MeshBasicMaterial({ color: 0xff6a1a })
+      );
+      firebox.position.set(0, 0.34, 0.59);
       stoveGroup.add(firebox);
 
       // 铁桶小烟囱与桶顶热乎烤红薯
@@ -3385,12 +3391,21 @@
       chimney.position.set(0.32, 1.65, -0.22);
       stoveGroup.add(chimney);
 
-      const potatoMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.6 });
-      [-0.22, 0.02, 0.24].forEach((px, idx) => {
-        const sweetPotato = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 12), potatoMat);
-        sweetPotato.scale.set(1.45, 0.75, 0.85);
-        sweetPotato.position.set(px, 1.46, 0.12 - (idx % 2) * 0.2);
+      const potatoMat = new THREE.MeshStandardMaterial({ color: 0x6a3a1c, roughness: 0.9 });
+      const tuber = new THREE.LatheGeometry([
+        new THREE.Vector2(0.0, 0.0),
+        new THREE.Vector2(0.05, 0.02),
+        new THREE.Vector2(0.09, 0.08),
+        new THREE.Vector2(0.07, 0.16),
+        new THREE.Vector2(0.03, 0.22),
+        new THREE.Vector2(0.0, 0.24)
+      ], 10);
+      [-0.2, 0.02, 0.22].forEach((px, idx) => {
+        const sweetPotato = new THREE.Mesh(tuber, potatoMat);
+        sweetPotato.scale.set(1.8, 1.8, 1.8);
+        sweetPotato.rotation.z = 1.15 + idx * 0.4;
         sweetPotato.rotation.y = idx * 0.8;
+        sweetPotato.position.set(px, 1.5, 0.06 - (idx % 2) * 0.14);
         stoveGroup.add(sweetPotato);
       });
 
