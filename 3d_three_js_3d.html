@@ -1327,44 +1327,33 @@
       c.width = 512;
       c.height = 512;
       const g = c.getContext('2d');
-      g.fillStyle = '#d8e2ee';
-      g.fillRect(0, 0, 512, 512);
-
-      // 柔和积雪斑块起伏
-      for (let i = 0; i < 260; i++) {
-        const x = Math.random() * 512;
-        const y = Math.random() * 512;
-        const r = 12 + Math.random() * 42;
-        const grad = g.createRadialGradient(x, y, 2, x, y, r);
-        const bright = Math.random() > 0.45 ? 'rgba(255,255,255,0.28)' : 'rgba(148,163,184,0.22)';
-        grad.addColorStop(0, bright);
-        grad.addColorStop(1, 'rgba(216,226,238,0)');
-        g.fillStyle = grad;
-        g.beginPath();
-        g.arc(x, y, r, 0, Math.PI * 2);
-        g.fill();
+      const img = g.createImageData(512, 512);
+      const d = img.data;
+      for (let y = 0; y < 512; y++) {
+        for (let x = 0; x < 512; x++) {
+          const n = Math.sin(x * 0.17) * Math.cos(y * 0.13) * 0.5
+            + Math.sin(x * 0.71 + y * 0.33) * 0.28
+            + (Math.random() - 0.5) * 0.22;
+          const shade = 214 + n * 36;
+          const i = (y * 512 + x) * 4;
+          d[i] = shade;
+          d[i + 1] = shade + 4;
+          d[i + 2] = shade + 12;
+          d[i + 3] = 255;
+        }
       }
-
-      // 赶集车辙印与鞋印凹痕
-      g.strokeStyle = 'rgba(100, 116, 139, 0.25)';
-      g.lineWidth = 6;
+      g.putImageData(img, 0, 0);
+      g.strokeStyle = 'rgba(90, 108, 128, 0.28)';
+      g.lineWidth = 7;
       g.beginPath();
-      g.moveTo(40, 0);
-      g.quadraticCurveTo(95, 256, 55, 512);
-      g.moveTo(455, 0);
-      g.quadraticCurveTo(420, 256, 465, 512);
+      g.moveTo(48, 0);
+      g.quadraticCurveTo(110, 240, 60, 512);
       g.stroke();
-
-      // 冰晶颗粒噪点
-      for (let i = 0; i < 3500; i++) {
-        g.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.45)' : 'rgba(100,116,139,0.25)';
-        g.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
-      }
-
       const tex = new THREE.CanvasTexture(c);
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(6, 6);
+      tex.repeat.set(10, 10);
+      tex.encoding = THREE.sRGBEncoding;
       return tex;
     }
 
@@ -1376,9 +1365,9 @@
       const g = c.getContext('2d');
 
       const grad = g.createLinearGradient(0, 0, 0, 1024);
-      grad.addColorStop(0, '#6b1414');
-      grad.addColorStop(0.5, '#881313');
-      grad.addColorStop(1, '#a81818');
+      grad.addColorStop(0, '#6a2420');
+      grad.addColorStop(0.5, '#7a2c26');
+      grad.addColorStop(1, '#5c1f1c');
       g.fillStyle = grad;
       g.fillRect(0, 0, 1024, 1024);
 
@@ -1432,27 +1421,29 @@
     // 3. 程序化北方青砖墙面贴图
     function createBrickWallTexture() {
       const c = document.createElement('canvas');
-      c.width = 256;
-      c.height = 256;
+      c.width = 512;
+      c.height = 512;
       const g = c.getContext('2d');
-      g.fillStyle = '#334155';
-      g.fillRect(0, 0, 256, 256);
-      g.strokeStyle = '#64748b';
-      g.lineWidth = 2;
-      const rows = 8;
-      const cols = 4;
-      const bh = 256 / rows;
-      const bw = 256 / cols;
+      g.fillStyle = '#5c6168';
+      g.fillRect(0, 0, 512, 512);
+      const rows = 16;
+      const cols = 8;
+      const bh = 512 / rows;
+      const bw = 512 / cols;
       for (let r = 0; r < rows; r++) {
         const offset = (r % 2) * (bw * 0.5);
         for (let col = -1; col <= cols; col++) {
-          g.fillStyle = (r + col) % 2 === 0 ? '#3b495e' : '#2d3a4d';
-          g.fillRect(col * bw + offset + 2, r * bh + 2, bw - 4, bh - 4);
+          const n = 86 + ((r * 17 + col * 13) % 26);
+          g.fillStyle = `rgb(${n - 6},${n},${n + 8})`;
+          g.fillRect(col * bw + offset + 2, r * bh + 2, bw - 4, bh - 5);
+          g.fillStyle = 'rgba(255,255,255,0.04)';
+          g.fillRect(col * bw + offset + 3, r * bh + 3, bw - 8, 2);
         }
       }
       const tex = new THREE.CanvasTexture(c);
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.RepeatWrapping;
+      tex.encoding = THREE.sRGBEncoding;
       tex.repeat.set(2, 2);
       return tex;
     }
@@ -1885,59 +1876,49 @@
       return next;
     }
 
-    function paintFarmerJacket(ctx, w, h) {
-      ctx.fillStyle = '#1f3d2a';
+    function paintQuiltedCloth(ctx, w, h, base, stitch, wear) {
+      ctx.fillStyle = base;
       ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#2f5d3c';
-      for (let y = 0; y < h; y += 18) {
-        for (let x = 0; x < w; x += 18) {
-          ctx.fillRect(x + (y % 36 === 0 ? 0 : 9), y, 16, 2);
-          ctx.fillRect(x + (y % 36 === 0 ? 0 : 9), y, 2, 16);
-        }
+      const img = ctx.getImageData(0, 0, w, h);
+      const d = img.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const n = (Math.random() - 0.5) * 18;
+        d[i] = Math.max(0, Math.min(255, d[i] + n));
+        d[i + 1] = Math.max(0, Math.min(255, d[i + 1] + n * 0.9));
+        d[i + 2] = Math.max(0, Math.min(255, d[i + 2] + n * 0.7));
       }
-      ctx.fillStyle = 'rgba(180, 140, 60, 0.35)';
-      for (let i = 0; i < 40; i++) {
-        ctx.fillRect((i * 47) % w, (i * 31) % h, 8, 3);
+      ctx.putImageData(img, 0, 0);
+      ctx.strokeStyle = stitch;
+      ctx.lineWidth = 1;
+      const step = Math.max(14, Math.floor(w / 28));
+      for (let y = step; y < h; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
       }
+      for (let x = step; x < w; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      ctx.fillStyle = wear;
+      for (let i = 0; i < 80; i++) {
+        ctx.fillRect((i * 53) % w, (i * 29) % h, 6, 2);
+      }
+    }
+
+    function paintFarmerJacket(ctx, w, h) {
+      paintQuiltedCloth(ctx, w, h, '#5c4033', 'rgba(30,18,12,0.45)', 'rgba(90,60,40,0.25)');
     }
 
     function paintAuntieJacket(ctx, w, h) {
-      ctx.fillStyle = '#b91c1c';
-      ctx.fillRect(0, 0, w, h);
-      for (let i = 0; i < 28; i++) {
-        const x = ((i * 73) % (w - 40)) + 20;
-        const y = ((i * 97) % (h - 40)) + 20;
-        ctx.fillStyle = '#fde68a';
-        ctx.beginPath();
-        ctx.arc(x, y, 10, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#15803d';
-        ctx.beginPath();
-        ctx.ellipse(x - 12, y + 4, 12, 5, -0.4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#fecaca';
-        ctx.beginPath();
-        ctx.arc(x + 4, y - 3, 6, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      paintQuiltedCloth(ctx, w, h, '#8f2d2d', 'rgba(60,12,12,0.4)', 'rgba(255,220,200,0.12)');
     }
 
     function paintKidJacket(ctx, w, h) {
-      ctx.fillStyle = '#ea580c';
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#fbbf24';
-      for (let y = 0; y < h; y += 22) {
-        for (let x = 0; x < w; x += 22) {
-          ctx.fillRect(x + 2, y + 2, 18, 4);
-          ctx.fillRect(x + 2, y + 2, 4, 18);
-        }
-      }
-      ctx.fillStyle = '#fff7ed';
-      for (let i = 0; i < 20; i++) {
-        ctx.beginPath();
-        ctx.arc((i * 59) % w, (i * 83) % h, 5, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      paintQuiltedCloth(ctx, w, h, '#d4652f', 'rgba(90,40,10,0.4)', 'rgba(255,230,200,0.16)');
     }
 
     function tintSkinMap(texture, rgbMul) {
@@ -2198,8 +2179,13 @@
           pos.setZ(i, (1 - nx * nx) * (opts.curve || 0.02));
         }
         pos.needsUpdate = true;
-        const mat = new THREE.MeshBasicMaterial({
+        const mat = new THREE.MeshStandardMaterial({
           map: tex,
+          emissiveMap: tex,
+          emissive: new THREE.Color(0xffffff),
+          emissiveIntensity: 0.42,
+          roughness: 0.72,
+          metalness: 0.0,
           transparent: true,
           alphaTest: 0.22,
           side: THREE.DoubleSide,
@@ -2208,6 +2194,7 @@
         const card = new THREE.Mesh(geo, mat);
         card.name = 'livingPortrait';
         card.frustumCulled = false;
+        card.renderOrder = 2;
         const wrap = new THREE.Group();
         wrap.name = 'photorealScanHead';
         wrap.add(card);
@@ -2245,19 +2232,13 @@
       });
       attachLivingPortrait(model, {
         url: 'assets/people/portraits/laowang.png?v=3',
-        height: 0.42,
+        height: 0.46,
         aspect: 864 / 748,
-        position: { x: 0, y: 0.22, z: 0.09 },
+        position: { x: 0, y: 0.1, z: 0.07 },
         yaw: 0,
-        backColor: 0xe7eef6
+        skull: 0.13,
+        skullColor: 0xc49a7c
       });
-      const scarf = new THREE.Mesh(
-        new THREE.TorusGeometry(0.18, 0.05, 10, 20),
-        new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 })
-      );
-      scarf.position.set(0, 1.42, 0.02);
-      scarf.rotation.x = Math.PI * 0.5;
-      model.add(scarf);
     }
 
     function dressMarketAuntie(model) {
@@ -2283,11 +2264,12 @@
       });
       attachLivingPortrait(model, {
         url: 'assets/people/portraits/auntie.png?v=3',
-        height: 0.4,
+        height: 0.44,
         aspect: 864 / 707,
-        position: { x: 0, y: 0.2, z: 0.09 },
+        position: { x: 0, y: 0.14, z: 0.07 },
         yaw: -0.42,
-        backColor: 0x1a1410
+        skull: 0.125,
+        skullColor: 0xd0a48c
       });
     }
 
@@ -2307,17 +2289,18 @@
             mat.map = cloneCanvasTextureFrom(mat.map, paintKidJacket);
             mat.color.setHex(0xffffff);
           } else if (name.indexOf('shoe') !== -1) {
-            mat.color.setHex(0xdc2626);
+            mat.color.setHex(0x3f2a1d);
           }
         });
       });
       attachLivingPortrait(model, {
         url: 'assets/people/portraits/kid.png?v=3',
-        height: 0.48,
+        height: 0.5,
         aspect: 864 / 811,
-        position: { x: 0, y: 0.24, z: 0.09 },
+        position: { x: 0, y: 0.12, z: 0.07 },
         yaw: 0.55,
-        backColor: 0xf59e0b
+        skull: 0.14,
+        skullColor: 0xe0b090
       });
     }
 
@@ -2735,8 +2718,8 @@
         fpsHandsGroup.parent.remove(fpsHandsGroup);
       }
       fpsHandsGroup = new THREE.Group();
-      const gloveMat = pbrMat(0xd6c3a8, 0.78, 0.04);
-      const sleeveMat = pbrMat(0x1e3a8a, 0.8, 0.03);
+      const gloveMat = pbrMat(0x6b5344, 0.92, 0.02);
+      const sleeveMat = pbrMat(0x3a2a22, 0.88, 0.02);
       const furMap = createFiberMap('#f8fafc', 'rgba(80,80,90,0.35)', 500);
       const furCuffMat = pbrMat(0xf8fafc, 0.9, 0.0, furMap, 0.06);
 
@@ -2933,7 +2916,17 @@
         roughness: 0.86,
         metalness: 0.05
       });
-      const snowGround = new THREE.Mesh(new THREE.PlaneGeometry(96, 96, 32, 32), snowGroundMat);
+      const snowGroundGeo = new THREE.PlaneGeometry(96, 96, 48, 48);
+      const snowPos = snowGroundGeo.attributes.position;
+      for (let i = 0; i < snowPos.count; i++) {
+        const x = snowPos.getX(i);
+        const y = snowPos.getY(i);
+        const h = Math.sin(x * 0.31) * Math.cos(y * 0.27) * 0.07
+          + Math.sin(x * 1.3 + y * 0.8) * 0.025;
+        snowPos.setZ(i, h);
+      }
+      snowGroundGeo.computeVertexNormals();
+      const snowGround = new THREE.Mesh(snowGroundGeo, snowGroundMat);
       snowGround.rotation.x = -Math.PI * 0.5;
       snowGround.position.y = -0.04;
       snowGround.receiveShadow = true;
@@ -2963,9 +2956,38 @@
       });
 
       // 2. 摊位底层厚实原木地台 + 上层 PBR 织物大红毡毯
+      const stallWoodTex = (() => {
+        const c = document.createElement('canvas');
+        c.width = 256;
+        c.height = 256;
+        const g = c.getContext('2d');
+        const img = g.createImageData(256, 256);
+        const d = img.data;
+        for (let y = 0; y < 256; y++) {
+          const plank = Math.floor(y / 32);
+          const seam = (y % 32) < 2;
+          for (let x = 0; x < 256; x++) {
+            const grain = Math.sin(x * 0.35 + plank * 1.7) * 16 + Math.sin(y * 0.08) * 6;
+            const n = (Math.random() - 0.5) * 8;
+            const i = (y * 256 + x) * 4;
+            const base = seam ? 42 : 108 + (plank % 3) * 8;
+            d[i] = base + grain + n;
+            d[i + 1] = base * 0.62 + grain * 0.55 + n;
+            d[i + 2] = base * 0.32 + grain * 0.25 + n;
+            d[i + 3] = 255;
+          }
+        }
+        g.putImageData(img, 0, 0);
+        const tex = new THREE.CanvasTexture(c);
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(4, 2);
+        tex.encoding = THREE.sRGBEncoding;
+        return tex;
+      })();
       const woodBaseMesh = new THREE.Mesh(
         new THREE.BoxGeometry(STALL_HALF_W * 2 + 0.45, 0.09, STALL_DEPTH + 0.45),
-        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.88 })
+        new THREE.MeshStandardMaterial({ map: stallWoodTex, roughness: 0.86, metalness: 0.02 })
       );
       woodBaseMesh.position.set(0, -0.01, -STALL_DEPTH * 0.5);
       woodBaseMesh.receiveShadow = true;
@@ -3006,7 +3028,7 @@
       scene.add(ropeMesh);
 
       // 3. 北方民俗飞檐牌坊门头 + 竖幅春联 + 16 根高透光 3D 冰溜子 + 3D 冰糖葫芦草靶
-      const bambooMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.55 });
+      const bambooMat = new THREE.MeshStandardMaterial({ color: 0x6b4f3a, roughness: 0.78, metalness: 0.02 });
       const archZ = -STALL_DEPTH - 0.30;
       const archHalfX = STALL_HALF_W + 0.45;
 
@@ -3089,13 +3111,11 @@
 
       // 牌坊下沿悬挂的 16 根高透光 3D 晶莹冰溜子 (Icicles)
       const icicleMat = new THREE.MeshStandardMaterial({
-        color: 0xe0f2fe,
-        emissive: 0x38bdf8,
-        emissiveIntensity: 0.18,
-        roughness: 0.06,
-        metalness: 0.35,
+        color: 0xe8eef4,
+        roughness: 0.12,
+        metalness: 0.04,
         transparent: true,
-        opacity: 0.84
+        opacity: 0.72
       });
       for (let ic = 0; ic < 16; ic++) {
         const ix = -archHalfX + 0.35 + (ic / 15) * (archHalfX * 2 - 0.7);
@@ -3110,10 +3130,10 @@
       lanternPivots = [];
       lanternLights = [];
       const lanternBodyMat = new THREE.MeshStandardMaterial({
-        color: 0xef4444,
-        emissive: 0xdc2626,
-        emissiveIntensity: 0.72,
-        roughness: 0.32
+        color: 0xc2413a,
+        emissive: 0xf97316,
+        emissiveIntensity: 0.38,
+        roughness: 0.58
       });
 
       for (let i = 0; i < 4; i++) {
@@ -3275,20 +3295,32 @@
         c.width = 256;
         c.height = 256;
         const g = c.getContext('2d');
-        g.fillStyle = '#4b5563';
+        g.fillStyle = '#3a4048';
         g.fillRect(0, 0, 256, 256);
-        for (let y = 0; y < 256; y += 14) {
-          g.fillStyle = y % 28 === 0 ? '#374151' : '#6b7280';
-          g.fillRect(0, y, 256, 10);
-          g.fillStyle = '#1f2937';
-          for (let x = (y % 28 === 0 ? 0 : 16); x < 256; x += 32) {
-            g.fillRect(x, y, 18, 10);
+        const tileH = 18;
+        const tileW = 28;
+        for (let row = 0; row < 16; row++) {
+          const y = row * tileH;
+          const shift = (row % 2) * (tileW * 0.5);
+          for (let col = -1; col < 12; col++) {
+            const x = col * tileW + shift;
+            const shade = 78 + ((row * 5 + col * 3) % 18);
+            g.fillStyle = `rgb(${shade},${shade + 2},${shade + 6})`;
+            g.beginPath();
+            g.moveTo(x + 2, y + tileH - 2);
+            g.quadraticCurveTo(x + tileW * 0.5, y + 2, x + tileW - 2, y + tileH - 2);
+            g.lineTo(x + 2, y + tileH - 2);
+            g.fill();
+            g.strokeStyle = 'rgba(20,24,28,0.55)';
+            g.lineWidth = 1.2;
+            g.stroke();
           }
         }
         const tex = new THREE.CanvasTexture(c);
         tex.wrapS = THREE.RepeatWrapping;
         tex.wrapT = THREE.RepeatWrapping;
         tex.repeat.set(3, 2);
+        tex.encoding = THREE.sRGBEncoding;
         return tex;
       })();
       const woodTex = (() => {
@@ -3296,15 +3328,20 @@
         c.width = 128;
         c.height = 128;
         const g = c.getContext('2d');
-        g.fillStyle = '#6b3f24';
-        g.fillRect(0, 0, 128, 128);
-        for (let i = 0; i < 18; i++) {
-          g.strokeStyle = `rgba(40,20,10,${0.18 + (i % 3) * 0.08})`;
-          g.beginPath();
-          g.moveTo(i * 7, 0);
-          g.bezierCurveTo(i * 7 + 4, 40, i * 7 - 3, 80, i * 7 + 2, 128);
-          g.stroke();
+        const woodImg = g.createImageData(128, 128);
+        const wd = woodImg.data;
+        for (let y = 0; y < 128; y++) {
+          for (let x = 0; x < 128; x++) {
+            const grain = Math.sin(x * 0.45 + Math.sin(y * 0.2) * 3) * 18;
+            const n = (Math.random() - 0.5) * 10;
+            const i = (y * 128 + x) * 4;
+            wd[i] = 92 + grain + n;
+            wd[i + 1] = 62 + grain * 0.6 + n;
+            wd[i + 2] = 38 + grain * 0.3 + n;
+            wd[i + 3] = 255;
+          }
         }
+        g.putImageData(woodImg, 0, 0);
         const tex = new THREE.CanvasTexture(c);
         tex.wrapS = THREE.RepeatWrapping;
         tex.wrapT = THREE.RepeatWrapping;
@@ -3314,20 +3351,20 @@
         map: brickTex,
         bumpMap: brickTex,
         bumpScale: 0.08,
-        roughness: 0.9,
-        color: 0xd6d3d1
+        roughness: 0.92,
+        color: 0xffffff
       });
       const roofMat = new THREE.MeshStandardMaterial({
         map: roofTileTex,
         bumpMap: roofTileTex,
-        bumpScale: 0.06,
-        roughness: 0.82,
-        color: 0x9ca3af
+        bumpScale: 0.12,
+        roughness: 0.88,
+        color: 0xffffff
       });
       const woodMat = new THREE.MeshStandardMaterial({
         map: woodTex,
-        roughness: 0.78,
-        color: 0xa16207
+        roughness: 0.82,
+        color: 0xffffff
       });
       const windowGlowMat = new THREE.MeshStandardMaterial({
         color: 0xfde68a,
@@ -3373,6 +3410,14 @@
         slopeR.position.z = roofD * 0.18;
         slopeR.rotation.x = -0.42;
         hGroup.add(slopeR);
+        const snowL = new THREE.Mesh(new THREE.BoxGeometry(roofW * 0.98, 0.07, roofD * 0.52), snowMoundMat);
+        snowL.position.set(0, cfg.h + 0.66, -roofD * 0.18);
+        snowL.rotation.x = 0.42;
+        hGroup.add(snowL);
+        const snowR = snowL.clone();
+        snowR.position.z = roofD * 0.18;
+        snowR.rotation.x = -0.42;
+        hGroup.add(snowR);
         const ridge = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, roofW * 0.94, 12), roofMat);
         ridge.rotation.z = Math.PI * 0.5;
         ridge.position.y = cfg.h + 0.95;
@@ -3441,27 +3486,36 @@
         { x: 9.8, z: -13.2, w: 3.9, h: 2.5, d: 2.9, ry: -0.26, yard: false }
       ].forEach(buildRealisticFarmHouse);
 
-      // 两侧覆雪松树林
-      const pineMat = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.85 });
-      [-8.5, -7.2, 7.5, 8.8].forEach((tx, idx) => {
+      // 两侧覆雪松树：分层针叶锥，不是低模宝石堆
+      const pineMat = new THREE.MeshStandardMaterial({ color: 0x1c3a28, roughness: 0.94 });
+      const pineDark = new THREE.MeshStandardMaterial({ color: 0x12261b, roughness: 0.96 });
+      [-8.6, -6.8, 7.2, 8.9, -5.6, 6.2].forEach((tx, idx) => {
         const tree = new THREE.Group();
-        tree.position.set(tx, 0, -5.8 - (idx % 2) * 3.8);
+        const tall = 1 + (idx % 3) * 0.18;
+        tree.position.set(tx, 0, -4.6 - (idx % 3) * 2.8);
         const trunk = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.16, 0.22, 0.9, 10),
-          new THREE.MeshStandardMaterial({ color: 0x451a03 })
+          new THREE.CylinderGeometry(0.07, 0.13, 1.15, 8),
+          new THREE.MeshStandardMaterial({ color: 0x4a3424, roughness: 0.9 })
         );
-        trunk.position.y = 0.45;
+        trunk.position.y = 0.55;
         tree.add(trunk);
-        for (let layer = 0; layer < 3; layer++) {
-          const cone = new THREE.Mesh(new THREE.ConeGeometry(1.05 - layer * 0.24, 1.25, 12), pineMat);
-          cone.position.y = 1.15 + layer * 0.72;
+        const layers = [
+          { y: 1.05 * tall, r: 0.95, h: 1.15, mat: pineDark },
+          { y: 1.85 * tall, r: 0.72, h: 1.0, mat: pineMat },
+          { y: 2.55 * tall, r: 0.48, h: 0.85, mat: pineDark }
+        ];
+        layers.forEach((layer) => {
+          const cone = new THREE.Mesh(new THREE.ConeGeometry(layer.r, layer.h, 14), layer.mat);
+          cone.position.y = layer.y;
           cone.castShadow = true;
           tree.add(cone);
-
-          const snowCap = new THREE.Mesh(new THREE.ConeGeometry(0.92 - layer * 0.22, 0.45, 12), snowMoundMat);
-          snowCap.position.y = 1.48 + layer * 0.72;
-          tree.add(snowCap);
-        }
+          const cap = new THREE.Mesh(
+            new THREE.ConeGeometry(layer.r * 0.62, layer.h * 0.22, 12),
+            snowMoundMat
+          );
+          cap.position.y = layer.y + layer.h * 0.28;
+          tree.add(cap);
+        });
         scene.add(tree);
       });
 
@@ -3509,9 +3563,28 @@
         positions[i * 3 + 2] = -Math.random() * 20 + 4;
       }
       snowGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const flakeCanvas = document.createElement('canvas');
+      flakeCanvas.width = 32;
+      flakeCanvas.height = 32;
+      const flakeG = flakeCanvas.getContext('2d');
+      const flakeGrad = flakeG.createRadialGradient(16, 16, 1, 16, 16, 15);
+      flakeGrad.addColorStop(0, 'rgba(255,255,255,0.95)');
+      flakeGrad.addColorStop(0.45, 'rgba(255,255,255,0.45)');
+      flakeGrad.addColorStop(1, 'rgba(255,255,255,0)');
+      flakeG.fillStyle = flakeGrad;
+      flakeG.fillRect(0, 0, 32, 32);
+      const flakeMap = new THREE.CanvasTexture(flakeCanvas);
       snowPoints = new THREE.Points(
         snowGeo,
-        new THREE.PointsMaterial({ color: 0xffffff, size: 0.11, transparent: true, opacity: 0.85 })
+        new THREE.PointsMaterial({
+          color: 0xf4f7fb,
+          map: flakeMap,
+          size: 0.055,
+          transparent: true,
+          opacity: 0.75,
+          depthWrite: false,
+          sizeAttenuation: true
+        })
       );
       scene.add(snowPoints);
     }
@@ -3609,8 +3682,9 @@
       // 底部精致车削木质圆托盘（带金边凹槽）
       const woodTex = createQuiltedCoatTexture('#b45309', '#78350f');
       const pedestalMat = new THREE.MeshStandardMaterial({
-        color: pr.isMovingGoose ? 0xfef08a : 0xfde68a,
-        roughness: 0.58
+        color: pr.isMovingGoose ? 0x5c3d28 : 0x4a3020,
+        roughness: 0.86,
+        metalness: 0.02
       });
       const pedProfile = [
         new THREE.Vector2(0.0, 0.0),
@@ -3628,7 +3702,7 @@
 
       const rimRing = new THREE.Mesh(
         new THREE.TorusGeometry(0.47, 0.024, 10, 28),
-        new THREE.MeshStandardMaterial({ color: pr.isMovingGoose ? 0xdc2626 : 0x92400e, roughness: 0.45 })
+        new THREE.MeshStandardMaterial({ color: pr.isMovingGoose ? 0x7f1d1d : 0x4a3424, roughness: 0.7 })
       );
       rimRing.rotation.x = Math.PI * 0.5;
       rimRing.position.y = 0.11;
@@ -4038,26 +4112,44 @@
         hemiLight.intensity = 0.95;
         dirLight.color.setHex(0xfffbeb);
         dirLight.intensity = 1.15;
+        renderer.toneMappingExposure = 1.0;
         lanternLights.forEach((l) => { l.intensity = 0.55; });
       } else if (state.skyMode === 'dusk') {
-        scene.background = new THREE.Color(0x1e1b4b);
-        scene.fog = new THREE.FogExp2(0x312e81, 0.025);
-        hemiLight.color.setHex(0xfde68a);
-        hemiLight.groundColor.setHex(0x1e1b4b);
-        hemiLight.intensity = 0.68;
-        dirLight.color.setHex(0xf97316);
-        dirLight.intensity = 1.1;
-        lanternLights.forEach((l) => { l.intensity = 1.25; });
+        scene.background = createGradientSkyTexture(['#243044', '#3e5168', '#8a6a52', '#e7c39a']);
+        scene.fog = new THREE.FogExp2(0x5c6a78, 0.011);
+        hemiLight.color.setHex(0xd5e2f2);
+        hemiLight.groundColor.setHex(0x3a3228);
+        hemiLight.intensity = 0.38;
+        dirLight.color.setHex(0xffe0b8);
+        dirLight.intensity = 0.42;
+        renderer.toneMappingExposure = 0.86;
+        lanternLights.forEach((l) => { l.intensity = 1.15; });
       } else {
-        scene.background = new THREE.Color(0x020617);
-        scene.fog = new THREE.FogExp2(0x0f172a, 0.028);
-        hemiLight.color.setHex(0x38bdf8);
-        hemiLight.groundColor.setHex(0x020617);
-        hemiLight.intensity = 0.42;
-        dirLight.color.setHex(0x93c5fd);
-        dirLight.intensity = 0.55;
-        lanternLights.forEach((l) => { l.intensity = 1.65; });
+        scene.background = createGradientSkyTexture(['#070d18', '#152033', '#2c3a52', '#4a4038']);
+        scene.fog = new THREE.FogExp2(0x2a3344, 0.013);
+        hemiLight.color.setHex(0xb7c6dc);
+        hemiLight.groundColor.setHex(0x241c16);
+        hemiLight.intensity = 0.32;
+        dirLight.color.setHex(0xd5e2f4);
+        dirLight.intensity = 0.34;
+        renderer.toneMappingExposure = 0.8;
+        lanternLights.forEach((l) => { l.intensity = 1.25; });
       }
+    }
+
+    function createGradientSkyTexture(stops) {
+      if (scene.background && scene.background.isTexture) scene.background.dispose();
+      const c = document.createElement('canvas');
+      c.width = 8;
+      c.height = 256;
+      const g = c.getContext('2d');
+      const grad = g.createLinearGradient(0, 0, 0, 256);
+      stops.forEach((hex, i) => grad.addColorStop(i / (stops.length - 1), hex));
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 8, 256);
+      const tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
     }
 
     function getBaseCameraTarget(preset) {
@@ -4175,20 +4267,20 @@
       dirLight.shadow.camera.bottom = -9;
       scene.add(dirLight);
 
-      const charFill = new THREE.DirectionalLight(0xfff1de, 0.72);
+      const charFill = new THREE.DirectionalLight(0xfff1de, 0.28);
       charFill.position.set(-2.2, 3.8, 6.2);
       scene.add(charFill);
-      const charRim = new THREE.DirectionalLight(0xb7d4ff, 0.55);
+      const charRim = new THREE.DirectionalLight(0xb7d4ff, 0.16);
       charRim.position.set(3.1, 5.2, -7.6);
       scene.add(charRim);
       // 脸部专用柔光，推近写实皮肤细节
-      const faceKey = new THREE.PointLight(0xffe4c8, 0.85, 8.5);
+      const faceKey = new THREE.PointLight(0xffe4c8, 0.4, 8.5);
       faceKey.position.set(0.35, 2.15, -8.2);
       scene.add(faceKey);
-      const faceFill = new THREE.PointLight(0xcfe0ff, 0.4, 7.5);
+      const faceFill = new THREE.PointLight(0xcfe0ff, 0.16, 7.5);
       faceFill.position.set(-1.1, 1.85, -9.4);
       scene.add(faceFill);
-      renderer.toneMappingExposure = 1.22;
+      renderer.toneMappingExposure = 1.05;
 
       build3DMarketEnvironment();
       build3DStallOwnerNpc();
