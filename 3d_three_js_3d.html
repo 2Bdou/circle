@@ -3065,8 +3065,10 @@
         const packed = Math.exp(-(x * x) / 30 - ((y - 5.1) * (y - 5.1)) / 38);
         const path = Math.exp(-(x * x) / 10) * Math.exp(-((y + 1.1) * (y + 1.1)) / 26);
         const side = Math.exp(-Math.pow(Math.max(0, Math.abs(x) - 6.2), 2) / 30) * Math.exp(-((y - 3.2) * (y - 3.2)) / 70);
-        const h = (Math.sin(x * 0.23) * Math.cos(y * 0.19) * 0.22
-          + Math.sin(x * 0.85 + y * 0.55) * 0.07) * (1 - 0.82 * packed);
+        const far = Math.min(1, Math.max(0, (Math.abs(x) - 9) / 8));
+        const h = (Math.sin(x * 0.17) * Math.cos(y * 0.13) * (0.18 + far * 0.42)
+          + Math.sin(x * 0.55 + y * 0.31) * far * 0.16
+          + Math.sin(x * 0.85 + y * 0.55) * 0.05) * (1 - 0.9 * packed);
         snowPos.setZ(i, h - packed * 0.02 - path * 0.015 - side * 0.02);
         const shade = 1 - Math.min(0.45, packed * 0.2 + path * 0.35 + side * 0.36);
         snowColors[i * 3] = shade;
@@ -3098,10 +3100,24 @@
         { x: 8.2, z: -8.5, sx: 2.8, sy: 0.60, sz: 2.4 },
         { x: -4.2, z: -12.2, sx: 2.4, sy: 0.50, sz: 1.6 },
         { x: 4.5, z: -12.4, sx: 2.5, sy: 0.52, sz: 1.7 }
-      ].forEach((m) => {
-        const mound = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), snowMoundMat);
+      ].forEach((m, idx) => {
+        const pileGeo = new THREE.SphereGeometry(1, 14, 10);
+        const pilePos = pileGeo.attributes.position;
+        for (let i = 0; i < pilePos.count; i++) {
+          const px = pilePos.getX(i);
+          const py = pilePos.getY(i);
+          const pz = pilePos.getZ(i);
+          if (py < -0.05) {
+            pilePos.setY(i, -0.08);
+            continue;
+          }
+          const n = Math.sin(px * 3.4 + pz * 2.6 + idx) * 0.16 + Math.sin(px * 7.5 + py * 5.0 + idx * 2) * 0.06;
+          pilePos.setXYZ(i, px * (1 + n), py * (0.72 + n * 0.25), pz * (1 + n * 0.8));
+        }
+        pileGeo.computeVertexNormals();
+        const mound = new THREE.Mesh(pileGeo, snowMoundMat);
         mound.scale.set(m.sx, m.sy, m.sz);
-        mound.position.set(m.x, -0.08, m.z);
+        mound.position.set(m.x, -0.32, m.z);
         mound.receiveShadow = true;
         scene.add(mound);
       });
