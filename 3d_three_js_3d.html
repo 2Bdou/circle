@@ -3117,7 +3117,7 @@
         map: carpetTex,
         bumpMap: carpetTex,
         bumpScale: 0.02,
-        color: 0x73403c,
+        color: 0x5c3330,
         roughness: 0.94,
         metalness: 0.0
       });
@@ -4386,7 +4386,7 @@
           new THREE.Vector2(0.0, 0.34)
         ];
         const body = new THREE.Mesh(new THREE.LatheGeometry(bodyProfile, 22), frogMat);
-        body.scale.set(1.25, 0.62, 1.15);
+        body.scale.set(1.08, 0.82, 1.02);
         body.rotation.x = 0.15;
         body.position.set(0, 0.04, 0);
         body.castShadow = true;
@@ -4398,8 +4398,8 @@
         toyRoot.add(belly);
 
         const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12), frogMat);
-        head.scale.set(1.15, 0.7, 0.9);
-        head.position.set(0, 0.28, 0.06);
+        head.scale.set(1.2, 0.78, 1.05);
+        head.position.set(0, 0.38, 0.14);
         toyRoot.add(head);
 
         [-0.2, 0.2].forEach((lx) => {
@@ -4418,13 +4418,13 @@
             new THREE.SphereGeometry(0.016, 10, 8),
             new THREE.MeshStandardMaterial({ color: 0xf4efe6, roughness: 0.55 })
           );
-          eyeWhite.position.set(ex, 0.33, 0.11);
+          eyeWhite.position.set(ex, 0.42, 0.22);
           toyRoot.add(eyeWhite);
           const pupil = new THREE.Mesh(
             new THREE.SphereGeometry(0.007, 8, 6),
             new THREE.MeshBasicMaterial({ color: 0x0f172a })
           );
-          pupil.position.set(ex, 0.338, 0.122);
+          pupil.position.set(ex, 0.428, 0.232);
           toyRoot.add(pupil);
         });
 
@@ -4575,53 +4575,62 @@
         });
       } else if (id === 'lucky_cat') {
         const goldMat = new THREE.MeshStandardMaterial({
-          map: loadPhotoMap('assets/world/ceramic-ivory.jpg', 2, 2),
-          color: 0xfff6ea,
+          color: 0xf7f1e8,
           metalness: 0.02,
-          roughness: 0.42
+          roughness: 0.34
         });
         const catProfile = [
-          new THREE.Vector2(0.0, 0.0),
-          new THREE.Vector2(0.28, 0.04),
-          new THREE.Vector2(0.30, 0.20),
-          new THREE.Vector2(0.24, 0.44),
-          new THREE.Vector2(0.22, 0.62),
-          new THREE.Vector2(0.14, 0.72),
-          new THREE.Vector2(0.0, 0.75)
+          new THREE.Vector2(0.0, 0.02),
+          new THREE.Vector2(0.22, 0.04),
+          new THREE.Vector2(0.34, 0.14),
+          new THREE.Vector2(0.30, 0.32),
+          new THREE.Vector2(0.18, 0.46),
+          new THREE.Vector2(0.0, 0.50)
         ];
         const bodyMesh = new THREE.Mesh(new THREE.LatheGeometry(catProfile, 24), goldMat);
         bodyMesh.castShadow = true;
         toyRoot.add(bodyMesh);
 
-        // 红色铃铛项圈
+        const bib = new THREE.Mesh(
+          new THREE.CircleGeometry(0.12, 16),
+          new THREE.MeshStandardMaterial({ color: 0x9f2d2d, roughness: 0.62 })
+        );
+        bib.position.set(0, 0.28, 0.3);
+        toyRoot.add(bib);
+
         const collar = new THREE.Mesh(
-          new THREE.TorusGeometry(0.22, 0.032, 10, 24),
-          new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4 })
+          new THREE.TorusGeometry(0.16, 0.018, 8, 20),
+          new THREE.MeshStandardMaterial({ color: 0x9f2d2d, roughness: 0.5 })
         );
         collar.rotation.x = Math.PI * 0.5;
-        collar.position.y = 0.44;
+        collar.position.y = 0.5;
         toyRoot.add(collar);
 
-        [-0.14, 0.14].forEach((ex) => {
-          const ear = new THREE.Mesh(new THREE.ConeGeometry(0.085, 0.19, 10), goldMat);
-          ear.position.set(ex, 0.77, 0);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 20, 16), goldMat);
+        head.scale.set(1.05, 0.92, 0.95);
+        head.position.set(0, 0.62, 0.04);
+        toyRoot.add(head);
+
+        [-0.09, 0.09].forEach((ex) => {
+          const ear = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.14, 10), goldMat);
+          ear.position.set(ex, 0.74, -0.01);
           toyRoot.add(ear);
           const inner = new THREE.Mesh(
-            new THREE.ConeGeometry(0.042, 0.1, 8),
-            new THREE.MeshStandardMaterial({ color: 0xd47a86, roughness: 0.7 })
+            new THREE.ConeGeometry(0.026, 0.07, 8),
+            new THREE.MeshStandardMaterial({ color: 0xe7b4b8, roughness: 0.7 })
           );
-          inner.position.set(ex, 0.74, 0.03);
+          inner.position.set(ex, 0.73, 0.02);
           toyRoot.add(inner);
         });
         const catFace = new THREE.Mesh(
-          new THREE.CircleGeometry(0.13, 22),
+          new THREE.CircleGeometry(0.1, 22),
           new THREE.MeshStandardMaterial({ map: paintDollFace('cat'), roughness: 0.48, metalness: 0.02 })
         );
-        catFace.position.set(0, 0.58, 0.16);
+        catFace.position.set(0, 0.63, 0.2);
         toyRoot.add(catFace);
 
         const wavingPaw = new THREE.Group();
-        wavingPaw.position.set(-0.26, 0.58, 0.12);
+        wavingPaw.position.set(-0.24, 0.5, 0.12);
         const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.05, 0.2, 10), goldMat);
         arm.position.y = -0.04;
         wavingPaw.add(arm);
