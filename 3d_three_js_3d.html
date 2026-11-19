@@ -4259,6 +4259,61 @@
       return tex;
     }
 
+    let frozenPearSkinTex = null;
+    function frozenPearSkin() {
+      if (frozenPearSkinTex) return frozenPearSkinTex;
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 256;
+      const g = c.getContext('2d');
+      const base = g.createLinearGradient(0, 0, 0, 256);
+      base.addColorStop(0, '#6b4630');
+      base.addColorStop(0.4, '#4a2e1e');
+      base.addColorStop(1, '#2c1810');
+      g.fillStyle = base;
+      g.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 160; i++) {
+        g.fillStyle = `rgba(214, 176, 132, ${0.2 + Math.random() * 0.35})`;
+        g.beginPath();
+        g.ellipse(Math.random() * 256, Math.random() * 256, 1.4, 0.55, Math.random() * 3, 0, Math.PI * 2);
+        g.fill();
+      }
+      const frost = g.createRadialGradient(188, 64, 8, 188, 64, 96);
+      frost.addColorStop(0, 'rgba(226, 234, 238, 0.5)');
+      frost.addColorStop(1, 'rgba(226, 234, 238, 0)');
+      g.fillStyle = frost;
+      g.fillRect(0, 0, 256, 256);
+      const tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding;
+      frozenPearSkinTex = tex;
+      return tex;
+    }
+
+    let persimmonSkinTex = null;
+    function persimmonSkin() {
+      if (persimmonSkinTex) return persimmonSkinTex;
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 256;
+      const g = c.getContext('2d');
+      const base = g.createRadialGradient(120, 90, 16, 128, 150, 170);
+      base.addColorStop(0, '#ff9440');
+      base.addColorStop(0.5, '#e25a14');
+      base.addColorStop(1, '#8f3010');
+      g.fillStyle = base;
+      g.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 70; i++) {
+        g.fillStyle = 'rgba(80, 24, 6, 0.4)';
+        g.beginPath();
+        g.arc(Math.random() * 256, Math.random() * 256, 0.5 + Math.random() * 0.8, 0, Math.PI * 2);
+        g.fill();
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding;
+      persimmonSkinTex = tex;
+      return tex;
+    }
+
     function create3DPrizeGroup(pr) {
       const group = new THREE.Group();
       const id = pr.prizeId;
@@ -4318,22 +4373,15 @@
           new THREE.Vector2(0.0, 0.56)
         ];
         const pearMat = new THREE.MeshStandardMaterial({
-          map: loadPhotoMap('assets/world/pear-skin.jpg', 1, 1),
+          map: frozenPearSkin(),
           color: 0xffffff,
-          roughness: 0.78,
-          metalness: 0.0
+          roughness: 0.58,
+          metalness: 0.02
         });
-        const pearMesh = new THREE.Mesh(new THREE.LatheGeometry(pearProfile, 24), pearMat);
+        const pearMesh = new THREE.Mesh(new THREE.LatheGeometry(pearProfile, 28), pearMat);
         pearMesh.scale.set(1, 1.28, 1);
         pearMesh.castShadow = true;
         toyRoot.add(pearMesh);
-
-        // 表面挂霜冰晶点缀
-        const frostMat = new THREE.MeshStandardMaterial({ color: 0xd7e2ea, roughness: 0.84, transparent: true, opacity: 0.38 });
-        const frostCap = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 12), frostMat);
-        frostCap.scale.set(1.2, 0.35, 1.2);
-        frostCap.position.set(0.08, 0.40, 0.12);
-        toyRoot.add(frostCap);
 
         const stemCurve = new THREE.CatmullRomCurve3([
           new THREE.Vector3(0, 0.68, 0),
@@ -4355,7 +4403,7 @@
           new THREE.Vector2(0.16, 0.40),
           new THREE.Vector2(0.0, 0.38)
         ];
-        const persMat = new THREE.MeshStandardMaterial({ map: loadPhotoMap('assets/world/persimmon-skin.jpg', 1, 1), color: 0xffffff, roughness: 0.84, metalness: 0.0 });
+        const persMat = new THREE.MeshStandardMaterial({ map: persimmonSkin(), color: 0xffffff, roughness: 0.72, metalness: 0.0 });
         const persMesh = new THREE.Mesh(new THREE.LatheGeometry(persProfile, 24), persMat);
         persMesh.castShadow = true;
         toyRoot.add(persMesh);
