@@ -488,15 +488,9 @@
       <div class="space-y-1">
         <label class="block text-slate-300 font-semibold">1. 3D 集市光照与天色：</label>
         <div class="grid grid-cols-3 gap-1.5">
-          <button type="button" data-sky="morning" class="sky-mode-btn px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-medium">
-            🌨️ 瑞雪清晨
-          </button>
-          <button type="button" data-sky="dusk" class="sky-mode-btn px-2 py-1.5 rounded bg-amber-600 text-slate-950 border border-amber-300 font-bold">
-            🏮 腊月黄昏
-          </button>
-          <button type="button" data-sky="night" class="sky-mode-btn px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-medium">
-            🌙 夜市灯会
-          </button>
+          <button type="button" data-sky="morning" class="sky-mode-btn ui-btn">瑞雪清晨</button>
+          <button type="button" data-sky="dusk" class="sky-mode-btn ui-btn ui-btn-active">腊月黄昏</button>
+          <button type="button" data-sky="night" class="sky-mode-btn ui-btn">夜市灯会</button>
         </div>
       </div>
 
@@ -504,15 +498,9 @@
       <div class="space-y-1">
         <label class="block text-slate-300 font-semibold">2. 3D 摄像机机位视角：</label>
         <div class="grid grid-cols-3 gap-1.5">
-          <button type="button" data-cam="default" class="cam-mode-btn px-2 py-1 rounded bg-amber-500 text-slate-950 font-bold border border-amber-300 text-xs">
-            👁️ 经典平视
-          </button>
-          <button type="button" data-cam="high" class="cam-mode-btn px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-600 text-xs">
-            🦅 全景高机位
-          </button>
-          <button type="button" data-cam="low" class="cam-mode-btn px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-600 text-xs">
-            🎯 沉浸低机位
-          </button>
+          <button type="button" data-cam="default" class="cam-mode-btn ui-btn ui-btn-active">经典平视</button>
+          <button type="button" data-cam="high" class="cam-mode-btn ui-btn">全景高机位</button>
+          <button type="button" data-cam="low" class="cam-mode-btn ui-btn">沉浸低机位</button>
         </div>
       </div>
 
@@ -549,21 +537,13 @@
       <div class="pt-2 border-t border-slate-800 space-y-1.5">
         <div class="flex items-center justify-between">
           <span class="text-slate-300 font-semibold">测试用压岁钱补贴：</span>
-          <button id="btnAddDebugMoney" type="button" class="px-2.5 py-1 rounded bg-red-700 hover:bg-red-600 text-amber-200 font-bold border border-amber-400/50">
-            🧧 +50 元压岁钱
-          </button>
+          <button id="btnAddDebugMoney" type="button" class="ui-btn">+50 元</button>
         </div>
         <div class="grid grid-cols-2 gap-1.5 pt-1">
-          <button id="btnRestockStall" type="button" class="px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold border border-amber-400/40 text-xs">
-            🔄 补满摊位奖品
-          </button>
-          <button id="btnDebugCatchGoose" type="button" class="px-2 py-1.5 rounded bg-emerald-800 hover:bg-emerald-700 text-emerald-100 font-bold border border-emerald-400/40 text-xs">
-            🦢 测试套中白鹅
-          </button>
+          <button id="btnRestockStall" type="button" class="ui-btn">补满摊位</button>
+          <button id="btnDebugCatchGoose" type="button" class="ui-btn">测试套中白鹅</button>
         </div>
-        <button id="btnDebugRimBounce" type="button" class="w-full px-2 py-1.5 rounded bg-amber-900/80 hover:bg-amber-800 text-amber-200 font-bold border border-amber-400/50 text-xs">
-          💥 物理演示：模拟磕碰玩具边缘弹飞
-        </button>
+        <button id="btnDebugRimBounce" type="button" class="ui-btn ui-btn-block">演示磕边弹飞</button>
       </div>
     </aside>
 
@@ -1273,8 +1253,8 @@
       return new THREE.Vector3(wx, wy, wz);
     }
 
-    let scene, camera, renderer, raycaster;
-    let hemiLight, dirLight, brazierLight, lanternLights = [];
+    let scene, camera, renderer, raycaster, skyDome;
+    let hemiLight, dirLight, brazierLight, charFillLight, lanternLights = [], stallLamps = [];
     let npcGroup, npcHeadGroup, npcBreathPuffs = [];
     let brazierGroup, brazierFlames = [];
     let lanternPivots = [];
@@ -1322,49 +1302,76 @@
     let stoveSteamPuffs = [];
 
     // 1. 程序化雪地凹凸贴图（车辙、脚印与积雪微起伏）
-    function createSnowPBRTextures() {
-      const c = document.createElement('canvas');
-      c.width = 512;
-      c.height = 512;
-      const g = c.getContext('2d');
-      g.fillStyle = '#d8e2ee';
-      g.fillRect(0, 0, 512, 512);
-
-      // 柔和积雪斑块起伏
-      for (let i = 0; i < 260; i++) {
-        const x = Math.random() * 512;
-        const y = Math.random() * 512;
-        const r = 12 + Math.random() * 42;
-        const grad = g.createRadialGradient(x, y, 2, x, y, r);
-        const bright = Math.random() > 0.45 ? 'rgba(255,255,255,0.28)' : 'rgba(148,163,184,0.22)';
-        grad.addColorStop(0, bright);
-        grad.addColorStop(1, 'rgba(216,226,238,0)');
-        g.fillStyle = grad;
-        g.beginPath();
-        g.arc(x, y, r, 0, Math.PI * 2);
-        g.fill();
-      }
-
-      // 赶集车辙印与鞋印凹痕
-      g.strokeStyle = 'rgba(100, 116, 139, 0.25)';
-      g.lineWidth = 6;
-      g.beginPath();
-      g.moveTo(40, 0);
-      g.quadraticCurveTo(95, 256, 55, 512);
-      g.moveTo(455, 0);
-      g.quadraticCurveTo(420, 256, 465, 512);
-      g.stroke();
-
-      // 冰晶颗粒噪点
-      for (let i = 0; i < 3500; i++) {
-        g.fillStyle = i % 2 === 0 ? 'rgba(255,255,255,0.45)' : 'rgba(100,116,139,0.25)';
-        g.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
-      }
-
-      const tex = new THREE.CanvasTexture(c);
+    function loadPhotoMap(url, rx, ry) {
+      const tex = new THREE.TextureLoader().load(url);
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(6, 6);
+      tex.repeat.set(rx, ry);
+      tex.encoding = THREE.sRGBEncoding;
+      tex.anisotropy = 8;
+      return tex;
+    }
+
+    function loadCutout(url) {
+      const tex = new THREE.Texture();
+      tex.encoding = THREE.sRGBEncoding;
+      tex.anisotropy = 8;
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const d = image.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const r = d[i];
+          const g = d[i + 1];
+          const b = d[i + 2];
+          if (r > 145 && b > 135 && g < 120 && r - g > 45 && b - g > 35) {
+            d[i + 3] = 0;
+          } else if (r > g + 28 && b > g + 28) {
+            d[i] = Math.min(r, g + 6);
+            d[i + 2] = Math.min(b, g + 6);
+          }
+        }
+        ctx.putImageData(image, 0, 0);
+        tex.image = canvas;
+        tex.needsUpdate = true;
+      };
+      img.src = url;
+      return tex;
+    }
+
+    function createSnowPBRTextures() {
+      const tex = new THREE.Texture();
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(8, 8);
+      tex.encoding = THREE.sRGBEncoding;
+      tex.anisotropy = 8;
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const d = image.data;
+        for (let i = 0; i < d.length; i += 4) {
+          const l = (d[i] + d[i + 1] + d[i + 2]) / (3 * 255);
+          const shade = Math.pow(l, 1.65);
+          d[i] = Math.min(255, shade * 150);
+          d[i + 1] = Math.min(255, shade * 162);
+          d[i + 2] = Math.min(255, shade * 176);
+        }
+        ctx.putImageData(image, 0, 0);
+        tex.image = canvas;
+        tex.needsUpdate = true;
+      };
+      img.src = 'assets/world/snow-ground.jpg';
       return tex;
     }
 
@@ -1375,86 +1382,49 @@
       c.height = 1024;
       const g = c.getContext('2d');
 
-      const grad = g.createLinearGradient(0, 0, 0, 1024);
-      grad.addColorStop(0, '#6b1414');
-      grad.addColorStop(0.5, '#881313');
-      grad.addColorStop(1, '#a81818');
-      g.fillStyle = grad;
+      function paintCarpetMarks() {
+        g.strokeStyle = 'rgba(70, 32, 24, 0.55)';
+        g.lineWidth = 10;
+        g.strokeRect(28, 28, 968, 968);
+        const rowLabels = ['1.5m 近排冻货区', '2.8m 中排铁皮区', '4.2m 远排大奖区', '5.2m 镇摊白鹅轨'];
+        [0.24, 0.48, 0.72, 0.90].forEach((rz, idx) => {
+          const y = (1 - rz) * 1024;
+          g.strokeStyle = idx === 3 ? 'rgba(196, 154, 74, 0.55)' : 'rgba(90, 48, 28, 0.28)';
+          g.lineWidth = idx === 3 ? 4 : 2;
+          g.setLineDash([18, 16]);
+          g.beginPath();
+          g.moveTo(54, y);
+          g.lineTo(970, y);
+          g.stroke();
+          g.setLineDash([]);
+          g.fillStyle = 'rgba(70, 36, 24, 0.55)';
+          g.font = 'bold 22px "Noto Sans SC", sans-serif';
+          g.fillText(rowLabels[idx], 70, y - 10);
+        });
+      }
+      g.fillStyle = '#6a2420';
       g.fillRect(0, 0, 1024, 1024);
-
-      // 经纬毛毡织物纹理
-      g.strokeStyle = 'rgba(255, 220, 180, 0.04)';
-      g.lineWidth = 2;
-      for (let i = 0; i < 1024; i += 6) {
-        g.beginPath();
-        g.moveTo(0, i);
-        g.lineTo(1024, i);
-        g.stroke();
-      }
-      for (let j = 0; j < 1024; j += 8) {
-        g.beginPath();
-        g.moveTo(j, 0);
-        g.lineTo(j, 1024);
-        g.stroke();
-      }
-
-      // 烫金双层国风回纹边框与四角祥云
-      g.strokeStyle = '#fbbf24';
-      g.lineWidth = 18;
-      g.strokeRect(20, 20, 984, 984);
-      g.strokeStyle = '#fde047';
-      g.lineWidth = 5;
-      g.strokeRect(46, 46, 932, 932);
-
-      // 4 排奖品距离金色刻度横线与档位文字
-      const rowLabels = ['1.5m 近排冻货区', '2.8m 中排铁皮区', '4.2m 远排大奖区', '5.2m 镇摊白鹅轨'];
-      [0.24, 0.48, 0.72, 0.90].forEach((rz, idx) => {
-        const y = (1 - rz) * 1024;
-        g.strokeStyle = idx === 3 ? 'rgba(254, 240, 138, 0.85)' : 'rgba(251, 191, 36, 0.48)';
-        g.lineWidth = idx === 3 ? 9 : 4;
-        g.setLineDash([22, 14]);
-        g.beginPath();
-        g.moveTo(54, y);
-        g.lineTo(970, y);
-        g.stroke();
-        g.setLineDash([]);
-
-        g.fillStyle = 'rgba(254, 240, 138, 0.55)';
-        g.font = 'bold 24px "Noto Sans SC", sans-serif';
-        g.fillText(rowLabels[idx], 70, y - 10);
-      });
-
+      paintCarpetMarks();
+      const wool = new Image();
+      wool.onload = () => {
+        g.drawImage(wool, 0, 0, 1024, 1024);
+        g.globalCompositeOperation = 'multiply';
+        g.fillStyle = '#3a1e1a';
+        g.fillRect(0, 0, 1024, 1024);
+        g.globalCompositeOperation = 'source-over';
+        paintCarpetMarks();
+        tex.needsUpdate = true;
+      };
+      wool.src = 'assets/world/wool-red.jpg';
       const tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding;
       tex.anisotropy = 4;
       return tex;
     }
 
     // 3. 程序化北方青砖墙面贴图
     function createBrickWallTexture() {
-      const c = document.createElement('canvas');
-      c.width = 256;
-      c.height = 256;
-      const g = c.getContext('2d');
-      g.fillStyle = '#334155';
-      g.fillRect(0, 0, 256, 256);
-      g.strokeStyle = '#64748b';
-      g.lineWidth = 2;
-      const rows = 8;
-      const cols = 4;
-      const bh = 256 / rows;
-      const bw = 256 / cols;
-      for (let r = 0; r < rows; r++) {
-        const offset = (r % 2) * (bw * 0.5);
-        for (let col = -1; col <= cols; col++) {
-          g.fillStyle = (r + col) % 2 === 0 ? '#3b495e' : '#2d3a4d';
-          g.fillRect(col * bw + offset + 2, r * bh + 2, bw - 4, bh - 4);
-        }
-      }
-      const tex = new THREE.CanvasTexture(c);
-      tex.wrapS = THREE.RepeatWrapping;
-      tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(2, 2);
-      return tex;
+      return loadPhotoMap('assets/world/brick-wall.jpg', 1.4, 1.1);
     }
 
     // 4. 生成门头横幅与左右春联贴图
@@ -1885,59 +1855,48 @@
       return next;
     }
 
-    function paintFarmerJacket(ctx, w, h) {
-      ctx.fillStyle = '#1f3d2a';
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#2f5d3c';
-      for (let y = 0; y < h; y += 18) {
-        for (let x = 0; x < w; x += 18) {
-          ctx.fillRect(x + (y % 36 === 0 ? 0 : 9), y, 16, 2);
-          ctx.fillRect(x + (y % 36 === 0 ? 0 : 9), y, 2, 16);
-        }
-      }
-      ctx.fillStyle = 'rgba(180, 140, 60, 0.35)';
-      for (let i = 0; i < 40; i++) {
-        ctx.fillRect((i * 47) % w, (i * 31) % h, 8, 3);
-      }
-    }
+    const cottonTex = {
+      farmer: loadPhotoMap('assets/world/cotton-brown.jpg', 1, 1),
+      auntie: loadPhotoMap('assets/world/cotton-red.jpg', 1, 1),
+      kid: loadPhotoMap('assets/world/cotton-orange.jpg', 1, 1)
+    };
 
-    function paintAuntieJacket(ctx, w, h) {
-      ctx.fillStyle = '#b91c1c';
-      ctx.fillRect(0, 0, w, h);
-      for (let i = 0; i < 28; i++) {
-        const x = ((i * 73) % (w - 40)) + 20;
-        const y = ((i * 97) % (h - 40)) + 20;
-        ctx.fillStyle = '#fde68a';
-        ctx.beginPath();
-        ctx.arc(x, y, 10, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#15803d';
-        ctx.beginPath();
-        ctx.ellipse(x - 12, y + 4, 12, 5, -0.4, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#fecaca';
-        ctx.beginPath();
-        ctx.arc(x + 4, y - 3, 6, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    function paintKidJacket(ctx, w, h) {
-      ctx.fillStyle = '#ea580c';
-      ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = '#fbbf24';
-      for (let y = 0; y < h; y += 22) {
-        for (let x = 0; x < w; x += 22) {
-          ctx.fillRect(x + 2, y + 2, 18, 4);
-          ctx.fillRect(x + 2, y + 2, 4, 18);
-        }
-      }
-      ctx.fillStyle = '#fff7ed';
-      for (let i = 0; i < 20; i++) {
-        ctx.beginPath();
-        ctx.arc((i * 59) % w, (i * 83) % h, 5, 0, Math.PI * 2);
-        ctx.fill();
-      }
+    // 西装 UV 会把横绗缝拉成胸口 V 字。改在蒙皮之后按世界坐标贴棉衣，绗缝跟着身体走。
+    function applyWorldCotton(mat, tex) {
+      mat.color.setHex(0xffffff);
+      mat.roughness = 0.92;
+      mat.metalness = 0.02;
+      mat.onBeforeCompile = (shader) => {
+        shader.uniforms.cottonMap = { value: tex };
+        shader.vertexShader = shader.vertexShader
+          .replace(
+            '#include <common>',
+            '#include <common>\nvarying vec3 vCottonWorldPos;\nvarying vec3 vCottonWorldNormal;'
+          )
+          .replace(
+            '#include <skinning_vertex>',
+            '#include <skinning_vertex>\nvCottonWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvCottonWorldNormal = mat3(modelMatrix) * objectNormal;'
+          );
+        shader.fragmentShader = shader.fragmentShader
+          .replace(
+            '#include <common>',
+            '#include <common>\nvarying vec3 vCottonWorldPos;\nvarying vec3 vCottonWorldNormal;\nuniform sampler2D cottonMap;\nvec3 cottonToLinear(vec3 c){return mix(pow(c*0.9478672986+vec3(0.0521327014),vec3(2.4)),c*0.0773993808,vec3(lessThanEqual(c,vec3(0.04045))));}'
+          )
+          .replace(
+            '#include <map_fragment>',
+            [
+              'vec3 cottonBlend = abs(normalize(vCottonWorldNormal));',
+              'cottonBlend = pow(cottonBlend, vec3(4.0));',
+              'cottonBlend /= cottonBlend.x + cottonBlend.y + cottonBlend.z + 1e-5;',
+              'float cottonScale = 1.15;',
+              'vec3 cottonX = cottonToLinear(texture2D(cottonMap, vCottonWorldPos.zy * cottonScale).rgb);',
+              'vec3 cottonY = cottonToLinear(texture2D(cottonMap, vCottonWorldPos.xz * cottonScale).rgb);',
+              'vec3 cottonZ = cottonToLinear(texture2D(cottonMap, vCottonWorldPos.xy * cottonScale).rgb);',
+              'diffuseColor.rgb *= cottonX * cottonBlend.x + cottonY * cottonBlend.y + cottonZ * cottonBlend.z;'
+            ].join('\n')
+          );
+      };
+      mat.needsUpdate = true;
     }
 
     function tintSkinMap(texture, rgbMul) {
@@ -1992,6 +1951,31 @@
       });
     }
 
+    function hideSkinnedSkull(mat) {
+      // 压扁后的头皮仍会在肖像四周露出一圈白边，直接丢掉颅骨片元
+      mat.onBeforeCompile = (shader) => {
+        shader.vertexShader = shader.vertexShader
+          .replace(
+            '#include <common>',
+            '#include <common>\nvarying float vSkullY;'
+          )
+          .replace(
+            '#include <skinning_vertex>',
+            '#include <skinning_vertex>\nvSkullY = transformed.y;'
+          );
+        shader.fragmentShader = shader.fragmentShader
+          .replace(
+            '#include <common>',
+            '#include <common>\nvarying float vSkullY;'
+          )
+          .replace(
+            '#include <dithering_fragment>',
+            'if (vSkullY > 1.7) discard;\n#include <dithering_fragment>'
+          );
+      };
+      mat.needsUpdate = true;
+    }
+
     function attachPropToNeck(model, prop) {
       const neck = model.getObjectByName('neck_01') || model.getObjectByName('head') || model;
       neck.add(prop);
@@ -2002,6 +1986,7 @@
     function loadRoleSkin(url, mat) {
       if (skinTexCache[url]) {
         mat.map = skinTexCache[url];
+        mat.map.userData = mat.map.userData || {};
         mat.map.userData.skipEyeFix = true;
         mat.map.userData.eyesFixed = true;
         mat.needsUpdate = true;
@@ -2010,6 +1995,7 @@
       skinTexLoader.load(url, (tex) => {
         tex.encoding = THREE.sRGBEncoding;
         tex.flipY = false;
+        tex.userData = tex.userData || {};
         tex.userData.skipEyeFix = true;
         tex.userData.eyesFixed = true;
         skinTexCache[url] = tex;
@@ -2188,33 +2174,123 @@
         tex.encoding = THREE.sRGBEncoding;
         tex.anisotropy = 8;
         const h = opts.height || 0.46;
-        const aspect = opts.aspect || 1;
-        const w = h * aspect;
-        const geo = new THREE.PlaneGeometry(w, h, 8, 1);
-        const pos = geo.attributes.position;
-        for (let i = 0; i < pos.count; i++) {
-          const x = pos.getX(i);
-          const nx = x / (w * 0.5);
-          pos.setZ(i, (1 - nx * nx) * (opts.curve || 0.02));
-        }
-        pos.needsUpdate = true;
-        const mat = new THREE.MeshBasicMaterial({
+        const radius = h * 0.5;
+        const arc = 2.3;
+        const geo = new THREE.CylinderGeometry(radius, radius * 0.9, h, 32, 1, true, -arc / 2, arc);
+        const mat = new THREE.MeshStandardMaterial({
           map: tex,
+          emissiveMap: tex,
+          emissive: new THREE.Color(0xffffff),
+          emissiveIntensity: 0.42,
+          roughness: 0.72,
+          metalness: 0.0,
           transparent: true,
           alphaTest: 0.22,
-          side: THREE.DoubleSide,
+          side: THREE.FrontSide,
           depthWrite: true
         });
         const card = new THREE.Mesh(geo, mat);
         card.name = 'livingPortrait';
         card.frustumCulled = false;
+        card.renderOrder = 2;
         const wrap = new THREE.Group();
         wrap.name = 'photorealScanHead';
         wrap.add(card);
         const p = opts.position || { x: 0, y: 0.26, z: 0.07 };
-        wrap.position.set(p.x, p.y, p.z);
+        wrap.position.set(p.x, p.y, p.z - radius + 0.04);
         wrap.rotation.y = opts.yaw || 0;
         attachPropToNeck(model, wrap);
+      });
+    }
+
+    function dressWinterLayers(model, spec) {
+      // 西装是同一套男模。棉衣沿骨骼收成一件袄：肩连袖，腰收进去，下摆略敞。
+      const coatMap = spec.coat.clone();
+      coatMap.wrapS = THREE.RepeatWrapping;
+      coatMap.wrapT = THREE.RepeatWrapping;
+      coatMap.repeat.set(1.6, 0.42);
+      coatMap.needsUpdate = true;
+      const coatMat = new THREE.MeshStandardMaterial({
+        map: coatMap,
+        color: 0xffffff,
+        roughness: 0.92,
+        metalness: 0.0
+      });
+      const pantMat = new THREE.MeshStandardMaterial({
+        map: coatMap,
+        color: spec.pant,
+        roughness: 0.94,
+        metalness: 0.0
+      });
+      function tube(boneName, childName, rParent, rChild, mat, cover) {
+        const bone = model.getObjectByName(boneName);
+        const child = model.getObjectByName(childName);
+        if (!bone || !child) return;
+        const len = child.position.length();
+        if (len < 0.02) return;
+        const mesh = new THREE.Mesh(
+          new THREE.CylinderGeometry(rChild, rParent, len * (cover || 0.98), 16),
+          mat
+        );
+        mesh.castShadow = true;
+        mesh.position.y = len * 0.48;
+        bone.add(mesh);
+      }
+      tube('upperarm_l', 'lowerarm_l', 0.09, 0.072, coatMat);
+      tube('upperarm_r', 'lowerarm_r', 0.09, 0.072, coatMat);
+      tube('lowerarm_l', 'hand_l', 0.074, 0.064, coatMat, 1.08);
+      tube('lowerarm_r', 'hand_r', 0.074, 0.064, coatMat, 1.08);
+      tube('thigh_l', 'calf_l', 0.118, 0.1, pantMat, 1.14);
+      tube('thigh_r', 'calf_r', 0.118, 0.1, pantMat, 1.14);
+      tube('calf_l', 'foot_l', 0.092, 0.074, pantMat, 1.05);
+      tube('calf_r', 'foot_r', 0.092, 0.074, pantMat, 1.05);
+      const neck = model.getObjectByName('neck_01');
+      const waist = model.getObjectByName('spine_01');
+      if (waist) {
+        // 一件连身棉袄：下摆敞、腰收、胸口鼓，不再三段圆筒叠缝。
+        const coat = new THREE.Mesh(new THREE.LatheGeometry([
+          new THREE.Vector2(0.19, -0.04),
+          new THREE.Vector2(0.22, 0.05),
+          new THREE.Vector2(0.168, 0.15),
+          new THREE.Vector2(0.195, 0.26),
+          new THREE.Vector2(0.15, 0.34),
+          new THREE.Vector2(0.12, 0.38)
+        ], 18), coatMat);
+        coat.scale.set(1.06, 1, 0.78);
+        coat.position.z = 0.02;
+        coat.castShadow = true;
+        waist.add(coat);
+        const buttonMat = new THREE.MeshBasicMaterial({ color: 0x2a2118 });
+        for (let i = 0; i < 4; i++) {
+          const button = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.006, 8), buttonMat);
+          button.rotation.x = Math.PI / 2;
+          button.position.set(0.02, 0.06 + i * 0.07, 0.2);
+          coat.add(button);
+        }
+      }
+      const headBone = model.getObjectByName('head');
+      if (neck && headBone) {
+        const len = Math.max(0.08, headBone.position.length());
+        const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.082, len * 0.5, 14), coatMat);
+        collar.position.set(0, len * 0.18, 0);
+        collar.castShadow = true;
+        neck.add(collar);
+      }
+      // 白手套是素体的手。棉手套挂在腕骨上，把手指盖住。
+      ['hand_l', 'hand_r'].forEach((boneName) => {
+        const bone = model.getObjectByName(boneName);
+        if (!bone) return;
+        const side = boneName.charAt(boneName.length - 1) === 'l' ? -1 : 1;
+        const palm = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.056, 0.24, 12), coatMat);
+        palm.position.set(0, 0.13, 0.035);
+        palm.castShadow = true;
+        bone.add(palm);
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.064, 12, 8), coatMat);
+        tip.position.set(0, 0.23, 0.04);
+        bone.add(tip);
+        const thumb = new THREE.Mesh(new THREE.SphereGeometry(0.042, 8, 6), coatMat);
+        thumb.position.set(side * 0.04, 0.11, 0.075);
+        bone.add(thumb);
       });
     }
 
@@ -2230,34 +2306,24 @@
             mat.color.setHex(0xffffff);
             mat.roughness = 0.55;
             mat.metalness = 0.02;
+            hideSkinnedSkull(mat);
             mat.needsUpdate = true;
           } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
-            mat.map = cloneCanvasTextureFrom(mat.map, paintFarmerJacket);
-            mat.color.setHex(0xffffff);
-            mat.roughness = 0.92;
-            mat.metalness = 0.02;
-            mat.needsUpdate = true;
+            applyWorldCotton(mat, cottonTex.farmer);
           } else if (name.indexOf('shoe') !== -1) {
             mat.color.setHex(0x3f2a1d);
             mat.roughness = 0.88;
           }
         });
       });
+      dressWinterLayers(model, { coat: cottonTex.farmer, pant: 0x6a5344 });
       attachLivingPortrait(model, {
         url: 'assets/people/portraits/laowang.png?v=3',
-        height: 0.42,
+        height: 0.46,
         aspect: 864 / 748,
-        position: { x: 0, y: 0.22, z: 0.09 },
-        yaw: 0,
-        backColor: 0xe7eef6
+        position: { x: 0, y: 0.14, z: 0.07 },
+        yaw: 0
       });
-      const scarf = new THREE.Mesh(
-        new THREE.TorusGeometry(0.18, 0.05, 10, 20),
-        new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 })
-      );
-      scarf.position.set(0, 1.42, 0.02);
-      scarf.rotation.x = Math.PI * 0.5;
-      model.add(scarf);
     }
 
     function dressMarketAuntie(model) {
@@ -2272,22 +2338,21 @@
             mat.color.setHex(0xffffff);
             mat.roughness = 0.52;
             mat.metalness = 0.02;
+            hideSkinnedSkull(mat);
           } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
-            mat.map = cloneCanvasTextureFrom(mat.map, paintAuntieJacket);
-            mat.color.setHex(0xffffff);
-            mat.roughness = 0.9;
+            applyWorldCotton(mat, cottonTex.auntie);
           } else if (name.indexOf('shoe') !== -1) {
             mat.color.setHex(0x111827);
           }
         });
       });
+      dressWinterLayers(model, { coat: cottonTex.auntie, pant: 0x5c4038 });
       attachLivingPortrait(model, {
         url: 'assets/people/portraits/auntie.png?v=3',
-        height: 0.4,
+        height: 0.44,
         aspect: 864 / 707,
-        position: { x: 0, y: 0.2, z: 0.09 },
-        yaw: -0.42,
-        backColor: 0x1a1410
+        position: { x: 0, y: 0.18, z: 0.07 },
+        yaw: -0.42
       });
     }
 
@@ -2303,21 +2368,21 @@
             mat.color.setHex(0xffffff);
             mat.roughness = 0.5;
             mat.metalness = 0.02;
+            hideSkinnedSkull(mat);
           } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
-            mat.map = cloneCanvasTextureFrom(mat.map, paintKidJacket);
-            mat.color.setHex(0xffffff);
+            applyWorldCotton(mat, cottonTex.kid);
           } else if (name.indexOf('shoe') !== -1) {
-            mat.color.setHex(0xdc2626);
+            mat.color.setHex(0x3f2a1d);
           }
         });
       });
+      dressWinterLayers(model, { coat: cottonTex.kid, pant: 0x7a5a38 });
       attachLivingPortrait(model, {
         url: 'assets/people/portraits/kid.png?v=3',
-        height: 0.48,
+        height: 0.5,
         aspect: 864 / 811,
-        position: { x: 0, y: 0.24, z: 0.09 },
-        yaw: 0.55,
-        backColor: 0xf59e0b
+        position: { x: 0, y: 0.16, z: 0.07 },
+        yaw: 0.55
       });
     }
 
@@ -2366,6 +2431,22 @@
       return rig;
     }
 
+    function settleIdleArms(rig) {
+      if (!rig || rig.current !== 'idle') return;
+      const model = rig.model;
+      // 待机剪辑不驱动大臂，减 z 会每帧累加，所以相对第一次的剪辑姿态写死
+      [['upperarm_l', -0.65], ['upperarm_r', 0.65]].forEach(([name, dz]) => {
+        const bone = model.getObjectByName(name);
+        if (!bone) return;
+        if (bone.userData.idleBaseZ === undefined) bone.userData.idleBaseZ = bone.rotation.z;
+        bone.rotation.z = bone.userData.idleBaseZ + dz;
+      });
+      const lowerL = model.getObjectByName('lowerarm_l');
+      const lowerR = model.getObjectByName('lowerarm_r');
+      if (lowerL) lowerL.rotation.x = 0.25;
+      if (lowerR) lowerR.rotation.x = 0.25;
+    }
+
     function updateRealHumans() {
       if (!realHumans) return;
       const dt = Math.min(0.05, humanClock.getDelta() || 0.016);
@@ -2378,6 +2459,9 @@
       realHumans.auntie.mixer.update(dt);
       realHumans.kid.play(cheer ? 'wave' : 'idle');
       realHumans.kid.mixer.update(dt);
+      settleIdleArms(realHumans.owner);
+      settleIdleArms(realHumans.auntie);
+      settleIdleArms(realHumans.kid);
       // 若剪辑未驱动到骨骼，强制从 bind 姿态刷新
       if (cheer) {
         crowdAuntieGroup.position.y = Math.abs(Math.sin(state.time * 0.35)) * 0.06;
@@ -2418,7 +2502,7 @@
           try {
             realHumans = {
               owner: mountRealHuman(loaded[0], npcGroup, 0, 1, dressHenanFarmer, { x: 1.08, y: 1.0, z: 1.1 }),
-              auntie: mountRealHuman(loaded[1], crowdAuntieGroup, 0.42, 1, dressMarketAuntie, { x: 1.22, y: 0.88, z: 1.2 }),
+              auntie: mountRealHuman(loaded[1], crowdAuntieGroup, 0.42, 1, dressMarketAuntie, { x: 1.06, y: 0.94, z: 1.06 }),
               kid: mountRealHuman(loaded[2], crowdKidGroup, -0.55, 0.52, dressMarketKid)
             };
             // 第一人称只露手，不放玩家全身
@@ -2730,15 +2814,38 @@
       scene.add(crowdKidGroup);
     }
 
+    function createFeltWool(hex) {
+      const c = document.createElement('canvas');
+      c.width = 32;
+      c.height = 32;
+      const g = c.getContext('2d');
+      g.fillStyle = hex;
+      g.fillRect(0, 0, 32, 32);
+      const img = g.getImageData(0, 0, 32, 32);
+      const d = img.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const n = (Math.random() - 0.5) * 22;
+        d[i] = Math.max(0, Math.min(255, d[i] + n));
+        d[i + 1] = Math.max(0, Math.min(255, d[i + 1] + n * 0.85));
+        d[i + 2] = Math.max(0, Math.min(255, d[i + 2] + n * 0.6));
+      }
+      g.putImageData(img, 0, 0);
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(6, 6);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
     function build3DFpsPlayerHands() {
       if (fpsHandsGroup && fpsHandsGroup.parent) {
         fpsHandsGroup.parent.remove(fpsHandsGroup);
       }
       fpsHandsGroup = new THREE.Group();
-      const gloveMat = pbrMat(0xd6c3a8, 0.78, 0.04);
-      const sleeveMat = pbrMat(0x1e3a8a, 0.8, 0.03);
-      const furMap = createFiberMap('#f8fafc', 'rgba(80,80,90,0.35)', 500);
-      const furCuffMat = pbrMat(0xf8fafc, 0.9, 0.0, furMap, 0.06);
+      const gloveMat = pbrMat(0xffffff, 0.96, 0.0, createFeltWool('#5a4638'), 0.02);
+      const sleeveMat = pbrMat(0x3a2a22, 0.88, 0.02);
+      const furCuffMat = pbrMat(0xb7aa9c, 0.92, 0.0);
 
       // 相机本地：+X 右、+Y 上、-Z 前方。手套指尖朝 -Z。
       function buildCamHand(side) {
@@ -2929,11 +3036,34 @@
         map: snowTex,
         bumpMap: snowTex,
         bumpScale: 0.14,
-        color: 0xeef4fa,
-        roughness: 0.86,
-        metalness: 0.05
+        color: 0x8d9aaa,
+        roughness: 0.96,
+        metalness: 0.0
       });
-      const snowGround = new THREE.Mesh(new THREE.PlaneGeometry(96, 96, 32, 32), snowGroundMat);
+      const snowGroundGeo = new THREE.PlaneGeometry(96, 96, 64, 64);
+      const snowPos = snowGroundGeo.attributes.position;
+      const snowColors = new Float32Array(snowPos.count * 3);
+      for (let i = 0; i < snowPos.count; i++) {
+        const x = snowPos.getX(i);
+        const y = snowPos.getY(i);
+        // 摊子脚下踩实，四周才鼓起雪包。摊前留一条踩暗的路。
+        const packed = Math.exp(-(x * x) / 30 - ((y - 5.1) * (y - 5.1)) / 38);
+        const path = Math.exp(-(x * x) / 10) * Math.exp(-((y + 1.1) * (y + 1.1)) / 26);
+        const side = Math.exp(-Math.pow(Math.max(0, Math.abs(x) - 6.2), 2) / 30) * Math.exp(-((y - 3.2) * (y - 3.2)) / 70);
+        const far = Math.min(1, Math.max(0, (Math.abs(x) - 9) / 8));
+        const h = (Math.sin(x * 0.17) * Math.cos(y * 0.13) * (0.18 + far * 0.42)
+          + Math.sin(x * 0.55 + y * 0.31) * far * 0.16
+          + Math.sin(x * 0.85 + y * 0.55) * 0.05) * (1 - 0.9 * packed);
+        snowPos.setZ(i, h - packed * 0.02 - path * 0.015 - side * 0.02);
+        const shade = 1 - Math.min(0.45, packed * 0.2 + path * 0.35 + side * 0.36);
+        snowColors[i * 3] = shade;
+        snowColors[i * 3 + 1] = shade * 0.97;
+        snowColors[i * 3 + 2] = Math.min(1, shade * 1.04);
+      }
+      snowGroundGeo.setAttribute('color', new THREE.BufferAttribute(snowColors, 3));
+      snowGroundMat.vertexColors = true;
+      snowGroundGeo.computeVertexNormals();
+      const snowGround = new THREE.Mesh(snowGroundGeo, snowGroundMat);
       snowGround.rotation.x = -Math.PI * 0.5;
       snowGround.position.y = -0.04;
       snowGround.receiveShadow = true;
@@ -2943,9 +3073,10 @@
       const snowMoundMat = new THREE.MeshStandardMaterial({
         map: snowTex,
         bumpMap: snowTex,
-        bumpScale: 0.08,
-        color: 0xf8fafc,
-        roughness: 0.85
+        bumpScale: 0.04,
+        color: 0x6e7c8c,
+        roughness: 0.96,
+        side: THREE.DoubleSide
       });
       [
         { x: -7.5, z: -2.5, sx: 2.2, sy: 0.45, sz: 1.8 },
@@ -2954,18 +3085,33 @@
         { x: 8.2, z: -8.5, sx: 2.8, sy: 0.60, sz: 2.4 },
         { x: -4.2, z: -12.2, sx: 2.4, sy: 0.50, sz: 1.6 },
         { x: 4.5, z: -12.4, sx: 2.5, sy: 0.52, sz: 1.7 }
-      ].forEach((m) => {
-        const mound = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), snowMoundMat);
+      ].forEach((m, idx) => {
+        const pileGeo = new THREE.SphereGeometry(1, 14, 10);
+        const pilePos = pileGeo.attributes.position;
+        for (let i = 0; i < pilePos.count; i++) {
+          const px = pilePos.getX(i);
+          const py = pilePos.getY(i);
+          const pz = pilePos.getZ(i);
+          if (py < -0.05) {
+            pilePos.setY(i, -0.08);
+            continue;
+          }
+          const n = Math.sin(px * 3.4 + pz * 2.6 + idx) * 0.16 + Math.sin(px * 7.5 + py * 5.0 + idx * 2) * 0.06;
+          pilePos.setXYZ(i, px * (1 + n), py * (0.72 + n * 0.25), pz * (1 + n * 0.8));
+        }
+        pileGeo.computeVertexNormals();
+        const mound = new THREE.Mesh(pileGeo, snowMoundMat);
         mound.scale.set(m.sx, m.sy, m.sz);
-        mound.position.set(m.x, -0.08, m.z);
+        mound.position.set(m.x, -0.32, m.z);
         mound.receiveShadow = true;
         scene.add(mound);
       });
 
       // 2. 摊位底层厚实原木地台 + 上层 PBR 织物大红毡毯
+      const stallWoodTex = loadPhotoMap('assets/world/wood-planks.jpg', 4, 2);
       const woodBaseMesh = new THREE.Mesh(
         new THREE.BoxGeometry(STALL_HALF_W * 2 + 0.45, 0.09, STALL_DEPTH + 0.45),
-        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.88 })
+        new THREE.MeshStandardMaterial({ map: stallWoodTex, roughness: 0.86, metalness: 0.02 })
       );
       woodBaseMesh.position.set(0, -0.01, -STALL_DEPTH * 0.5);
       woodBaseMesh.receiveShadow = true;
@@ -2975,9 +3121,10 @@
       const carpetMat = new THREE.MeshStandardMaterial({
         map: carpetTex,
         bumpMap: carpetTex,
-        bumpScale: 0.025,
-        roughness: 0.78,
-        metalness: 0.04
+        bumpScale: 0.02,
+        color: 0xffffff,
+        roughness: 0.94,
+        metalness: 0.0
       });
       const carpetMesh = new THREE.Mesh(new THREE.BoxGeometry(STALL_HALF_W * 2, 0.08, STALL_DEPTH), carpetMat);
       carpetMesh.position.set(0, 0.02, -STALL_DEPTH * 0.5);
@@ -2985,28 +3132,130 @@
       scene.add(carpetMesh);
 
       // 近端红白警戒木桩与麻绳
-      const poleMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.35, metalness: 0.25 });
-      const goldCapMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, metalness: 0.65, roughness: 0.25 });
+      const goldCapMat = new THREE.MeshStandardMaterial({ color: 0xb08950, metalness: 0.32, roughness: 0.58 });
+      const postWood = new THREE.MeshStandardMaterial({
+        map: loadPhotoMap('assets/world/wood-planks.jpg', 1, 3),
+        color: 0xc4b49a,
+        roughness: 0.9
+      });
       [-STALL_HALF_W - 0.35, STALL_HALF_W + 0.35].forEach((px) => {
-        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.92, 16), poleMat);
-        post.position.set(px, 0.46, 0.18);
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 0.96, 12), postWood);
+        post.position.set(px, 0.48, 0.18);
         post.castShadow = true;
         scene.add(post);
-
-        const capBall = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 16), goldCapMat);
-        capBall.position.set(px, 0.96, 0.18);
-        scene.add(capBall);
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.05, 12), postWood);
+        cap.position.set(px, 0.98, 0.18);
+        scene.add(cap);
       });
+      const ropeCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-STALL_HALF_W - 0.35, 0.82, 0.18),
+        new THREE.Vector3(0, 0.58, 0.22),
+        new THREE.Vector3(STALL_HALF_W + 0.35, 0.82, 0.18)
+      ]);
       const ropeMesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.035, 0.035, (STALL_HALF_W + 0.35) * 2, 16),
-        new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.65 })
+        new THREE.TubeGeometry(ropeCurve, 24, 0.016, 7, false),
+        new THREE.MeshStandardMaterial({ color: 0x8d7348, roughness: 0.96 })
       );
-      ropeMesh.rotation.z = Math.PI * 0.5;
-      ropeMesh.position.set(0, 0.70, 0.18);
+      ropeMesh.castShadow = true;
       scene.add(ropeMesh);
 
+      // 摊顶旧帆布：前低后高，中间下垂，不挡匾额和灯笼
+      const canvasPaint = document.createElement('canvas');
+      canvasPaint.width = 512;
+      canvasPaint.height = 512;
+      const canvasG = canvasPaint.getContext('2d');
+      canvasG.fillStyle = '#8a7054';
+      canvasG.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 1800; i++) {
+        const tone = 92 + Math.random() * 46;
+        canvasG.fillStyle = `rgba(${tone + 16}, ${tone}, ${tone - 18}, 0.22)`;
+        canvasG.fillRect(Math.random() * 512, Math.random() * 512, 1 + Math.random() * 2, 6 + Math.random() * 10);
+      }
+      canvasG.strokeStyle = '#5a4330';
+      canvasG.lineWidth = 4;
+      for (let x = 128; x < 512; x += 128) {
+        canvasG.beginPath();
+        canvasG.moveTo(x, 0);
+        canvasG.lineTo(x, 512);
+        canvasG.stroke();
+      }
+      canvasG.fillStyle = '#e4d0b0';
+      for (let x = 128; x < 512; x += 128) {
+        for (let y = 4; y < 512; y += 10) {
+          canvasG.fillRect(x - 1, y, 2, 3);
+        }
+      }
+      const canvasTex = new THREE.CanvasTexture(canvasPaint);
+      canvasTex.wrapS = THREE.RepeatWrapping;
+      canvasTex.wrapT = THREE.RepeatWrapping;
+      canvasTex.encoding = THREE.sRGBEncoding;
+      const canvasMat = new THREE.MeshStandardMaterial({
+        map: canvasTex,
+        bumpMap: canvasTex,
+        bumpScale: 0.12,
+        color: 0xffffff,
+        roughness: 0.96,
+        side: THREE.DoubleSide
+      });
+      const canopyCols = 8;
+      const canopyRows = 10;
+      const canopyPos = [];
+      const canopyUv = [];
+      const canopyIdx = [];
+      const canopyX0 = -STALL_HALF_W + 0.2;
+      const canopyX1 = STALL_HALF_W - 0.2;
+      const canopyZ0 = -0.2;
+      const canopyZ1 = -STALL_DEPTH + 1.6;
+      for (let iz = 0; iz <= canopyRows; iz++) {
+        const tz = iz / canopyRows;
+        for (let ix = 0; ix <= canopyCols; ix++) {
+          const tx = ix / canopyCols;
+          const sag = Math.sin(Math.PI * tx) * (0.28 + tz * 0.16);
+          canopyPos.push(
+            canopyX0 + (canopyX1 - canopyX0) * tx,
+            2.85 + tz * 0.55 - sag,
+            canopyZ0 + (canopyZ1 - canopyZ0) * tz
+          );
+          canopyUv.push(tx * 2, tz * 1.4);
+        }
+      }
+      for (let iz = 0; iz < canopyRows; iz++) {
+        for (let ix = 0; ix < canopyCols; ix++) {
+          const a = iz * (canopyCols + 1) + ix;
+          const b = a + 1;
+          const c = a + canopyCols + 1;
+          canopyIdx.push(a, c, b, b, c, c + 1);
+        }
+      }
+      const canopyGeo = new THREE.BufferGeometry();
+      canopyGeo.setAttribute('position', new THREE.Float32BufferAttribute(canopyPos, 3));
+      canopyGeo.setAttribute('uv', new THREE.Float32BufferAttribute(canopyUv, 2));
+      canopyGeo.setIndex(canopyIdx);
+      canopyGeo.computeVertexNormals();
+      const canopy = new THREE.Mesh(canopyGeo, canvasMat);
+      canopy.receiveShadow = true;
+      scene.add(canopy);
+      [[canopyX0, canopyZ0, 2.85], [canopyX1, canopyZ0, 2.85], [canopyX0, canopyZ1, 3.4], [canopyX1, canopyZ1, 3.4]].forEach((pole) => {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.075, pole[2], 8), postWood);
+        post.position.set(pole[0], pole[2] * 0.5, pole[1]);
+        post.castShadow = true;
+        scene.add(post);
+      });
+      stallLamps = [];
+      [[-2.4, 2.05, -2.6], [2.4, 2.05, -2.6], [0, 2.15, -6.2]].forEach((p) => {
+        const lamp = new THREE.PointLight(0xffb15a, 6, 9, 2);
+        lamp.position.set(p[0], p[1], p[2]);
+        scene.add(lamp);
+        stallLamps.push(lamp);
+      });
+
       // 3. 北方民俗飞檐牌坊门头 + 竖幅春联 + 16 根高透光 3D 冰溜子 + 3D 冰糖葫芦草靶
-      const bambooMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.55 });
+      const bambooMat = new THREE.MeshStandardMaterial({
+        map: loadPhotoMap('assets/world/wood-planks.jpg', 1, 4),
+        color: 0xffffff,
+        roughness: 0.86,
+        metalness: 0.02
+      });
       const archZ = -STALL_DEPTH - 0.30;
       const archHalfX = STALL_HALF_W + 0.45;
 
@@ -3041,15 +3290,16 @@
         // 3D 冰糖葫芦草靶子（带透明糖衣光泽）
         const strawTarget = new THREE.Mesh(
           new THREE.CylinderGeometry(0.25, 0.22, 1.25, 16),
-          new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.88 })
+          new THREE.MeshStandardMaterial({ color: 0xb08948, roughness: 0.92 })
         );
         strawTarget.position.set(px + (sideIdx === 0 ? -0.28 : 0.28), 2.6, archZ + 0.16);
         scene.add(strawTarget);
 
         const hawMat = new THREE.MeshStandardMaterial({
-          color: 0xdc2626,
-          roughness: 0.08,
-          metalness: 0.15
+          map: loadPhotoMap('assets/world/hawthorn-glaze.jpg', 1, 1),
+          color: 0xffffff,
+          roughness: 0.34,
+          metalness: 0.02
         });
         [-0.48, -0.24, 0.24, 0.48].forEach((ang) => {
           const stickGroup = new THREE.Group();
@@ -3077,25 +3327,21 @@
       bannerMesh.castShadow = true;
       scene.add(bannerMesh);
 
-      // 牌坊上方积雪屋檐
+      // 牌坊上方薄雪檐，平铺在匾额上，不再用旋转方柱切过天空
       const eaveSnow = new THREE.Mesh(
-        new THREE.CylinderGeometry(bannerWidth * 0.52, bannerWidth * 0.56, 0.36, 4),
+        new THREE.BoxGeometry(bannerWidth + 0.35, 0.1, 0.62),
         snowMoundMat
       );
-      eaveSnow.rotation.y = Math.PI * 0.25;
-      eaveSnow.scale.set(1.38, 1, 0.18);
-      eaveSnow.position.set(0, 5.45, archZ + 0.12);
+      eaveSnow.position.set(0, 5.36, archZ + 0.08);
       scene.add(eaveSnow);
 
       // 牌坊下沿悬挂的 16 根高透光 3D 晶莹冰溜子 (Icicles)
       const icicleMat = new THREE.MeshStandardMaterial({
-        color: 0xe0f2fe,
-        emissive: 0x38bdf8,
-        emissiveIntensity: 0.18,
-        roughness: 0.06,
-        metalness: 0.35,
+        color: 0xe8eef4,
+        roughness: 0.12,
+        metalness: 0.04,
         transparent: true,
-        opacity: 0.84
+        opacity: 0.72
       });
       for (let ic = 0; ic < 16; ic++) {
         const ix = -archHalfX + 0.35 + (ic / 15) * (archHalfX * 2 - 0.7);
@@ -3109,12 +3355,25 @@
       // 4 盏随北风三维摆动的 3D 大红灯笼 + 暖光点光源
       lanternPivots = [];
       lanternLights = [];
+      const lanternSilk = loadPhotoMap('assets/world/lantern-silk.jpg', 2, 1);
       const lanternBodyMat = new THREE.MeshStandardMaterial({
-        color: 0xef4444,
-        emissive: 0xdc2626,
-        emissiveIntensity: 0.72,
-        roughness: 0.32
+        map: lanternSilk,
+        color: 0xffffff,
+        emissive: 0xff7a3c,
+        emissiveMap: lanternSilk,
+        emissiveIntensity: 0.32,
+        roughness: 0.55,
+        side: THREE.DoubleSide
       });
+      const lanternGeo = new THREE.LatheGeometry([
+        new THREE.Vector2(0.1, 0),
+        new THREE.Vector2(0.26, 0.08),
+        new THREE.Vector2(0.38, 0.22),
+        new THREE.Vector2(0.4, 0.36),
+        new THREE.Vector2(0.32, 0.5),
+        new THREE.Vector2(0.16, 0.6),
+        new THREE.Vector2(0.1, 0.64)
+      ], 28);
 
       for (let i = 0; i < 4; i++) {
         const lx = -archHalfX + ((i + 0.5) / 4) * (archHalfX * 2);
@@ -3125,19 +3384,15 @@
         cord.position.y = -0.17;
         pivot.add(cord);
 
-        const lanternSphere = new THREE.Mesh(new THREE.SphereGeometry(0.39, 22, 18), lanternBodyMat);
-        lanternSphere.scale.set(1.16, 0.88, 1.16);
-        lanternSphere.position.y = -0.52;
-        pivot.add(lanternSphere);
-
-        // 灯笼金色竖向骨架条
-        for (let rib = 0; rib < 4; rib++) {
-          const ribRing = new THREE.Mesh(new THREE.TorusGeometry(0.39, 0.012, 8, 24), goldCapMat);
-          ribRing.rotation.y = (rib / 4) * Math.PI;
-          ribRing.scale.set(1.16, 0.88, 1.16);
-          ribRing.position.y = -0.52;
-          pivot.add(ribRing);
-        }
+        const lanternBody = new THREE.Mesh(lanternGeo, lanternBodyMat);
+        lanternBody.position.y = -0.86;
+        pivot.add(lanternBody);
+        [0.2, 0.4].forEach((hy) => {
+          const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.012, 8, 28), goldCapMat);
+          hoop.rotation.x = Math.PI * 0.5;
+          hoop.position.y = -0.86 + hy;
+          pivot.add(hoop);
+        });
 
         const topCap = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.08, 16), goldCapMat);
         topCap.position.y = -0.22;
@@ -3163,43 +3418,139 @@
 
       // 4. 左下角 3D 红泥炭火盆 (brazierGroup)
       brazierGroup = new THREE.Group();
-      brazierGroup.position.set(-STALL_HALF_W - 0.85, 0, -1.2);
+      brazierGroup.position.set(-STALL_HALF_W - 0.85, 0.0, -1.2);
 
       const potMesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.68, 0.48, 0.62, 16),
-        new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.82 })
+        new THREE.LatheGeometry([
+          new THREE.Vector2(0.0, 0.08),
+          new THREE.Vector2(0.34, 0.1),
+          new THREE.Vector2(0.58, 0.18),
+          new THREE.Vector2(0.7, 0.28),
+          new THREE.Vector2(0.74, 0.36)
+        ], 48),
+        new THREE.MeshBasicMaterial({ color: 0x100e0c, side: THREE.FrontSide })
       );
-      potMesh.position.y = 0.31;
       potMesh.castShadow = true;
       brazierGroup.add(potMesh);
+      const liner = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.7, 0.52, 0.22, 28, 1, true),
+        new THREE.MeshBasicMaterial({ color: 0x14110e, side: THREE.BackSide })
+      );
+      liner.position.y = 0.24;
+      brazierGroup.add(liner);
 
       const rimTorus = new THREE.Mesh(
-        new THREE.TorusGeometry(0.68, 0.06, 12, 24),
-        new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.55 })
+        new THREE.TorusGeometry(0.72, 0.035, 12, 48),
+        new THREE.MeshBasicMaterial({ color: 0x1c1814 })
       );
       rimTorus.rotation.x = Math.PI * 0.5;
-      rimTorus.position.y = 0.62;
+      rimTorus.position.y = 0.36;
       brazierGroup.add(rimTorus);
-
-      const coalBed = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.6, 0.6, 0.12, 16),
-        new THREE.MeshStandardMaterial({ color: 0x991b1b, emissive: 0xdc2626, emissiveIntensity: 0.85 })
+      const ashCanvas = document.createElement('canvas');
+      ashCanvas.width = 256;
+      ashCanvas.height = 256;
+      const ashCtx = ashCanvas.getContext('2d');
+      ashCtx.fillStyle = '#1a1612';
+      ashCtx.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 36; i++) {
+        const g = 22 + Math.random() * 18;
+        ashCtx.fillStyle = `rgba(${g + 4}, ${g}, ${g - 2}, 0.55)`;
+        ashCtx.beginPath();
+        ashCtx.ellipse(Math.random() * 256, Math.random() * 256, 18 + Math.random() * 40, 12 + Math.random() * 28, Math.random() * 3, 0, Math.PI * 2);
+        ashCtx.fill();
+      }
+      const ashMap = new THREE.CanvasTexture(ashCanvas);
+      ashMap.encoding = THREE.sRGBEncoding;
+      const ash = new THREE.Mesh(
+        new THREE.CircleGeometry(0.62, 24),
+        new THREE.MeshBasicMaterial({ map: ashMap, color: 0xffffff })
       );
-      coalBed.position.y = 0.58;
-      brazierGroup.add(coalBed);
+      ash.rotation.x = -Math.PI / 2;
+      ash.position.y = 0.2;
+      brazierGroup.add(ash);
+      const snowNest = new THREE.Mesh(new THREE.SphereGeometry(0.92, 16, 10), snowMoundMat);
+      snowNest.scale.set(1.12, 0.18, 1.12);
+      snowNest.position.y = -0.02;
+      brazierGroup.add(snowNest);
+
+      const coalMat = new THREE.MeshBasicMaterial({ color: 0x0c0b0a });
+      const crackCanvas = document.createElement('canvas');
+      crackCanvas.width = 8;
+      crackCanvas.height = 8;
+      const crackCtx = crackCanvas.getContext('2d');
+      crackCtx.fillStyle = '#d24516';
+      crackCtx.fillRect(0, 0, 8, 8);
+      const crackMap = new THREE.CanvasTexture(crackCanvas);
+      crackMap.encoding = THREE.sRGBEncoding;
+      const crackMat = new THREE.MeshBasicMaterial({ map: crackMap, color: 0xffffff });
+      for (let i = 0; i < 32; i++) {
+        const geo = new THREE.IcosahedronGeometry(0.058 + (i % 5) * 0.012, 0);
+        const pos = geo.attributes.position;
+        for (let v = 0; v < pos.count; v++) {
+          const x = pos.getX(v);
+          const y = pos.getY(v);
+          const z = pos.getZ(v);
+          const n = 0.72 + Math.abs(Math.sin(i * 2.7 + x * 11) * Math.cos(z * 9 + i)) * 0.5;
+          pos.setXYZ(v, x * n, y * 0.46, z * n);
+        }
+        geo.computeVertexNormals();
+        const coal = new THREE.Mesh(geo, coalMat);
+        const a = i * 2.399;
+        const rad = (i % 9) * 0.052;
+        coal.position.set(Math.cos(a) * rad, 0.24 + (i % 4) * 0.03, Math.sin(a) * rad);
+        coal.rotation.set(i * 0.8, i * 1.3, i * 0.45);
+        brazierGroup.add(coal);
+      }
+      for (let i = 0; i < 7; i++) {
+        const a = i * 0.95 + 0.3;
+        const seam = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.004, 0.01), crackMat);
+        seam.position.set(Math.cos(a) * (0.06 + (i % 3) * 0.05), 0.245, Math.sin(a) * (0.06 + (i % 3) * 0.05));
+        seam.rotation.y = a;
+        brazierGroup.add(seam);
+      }
 
       brazierFlames = [];
-      for (let f = 0; f < 5; f++) {
-        const flameCone = new THREE.Mesh(
-          new THREE.ConeGeometry(0.18, 0.65, 10),
-          new THREE.MeshBasicMaterial({ color: f % 2 === 0 ? 0xf97316 : 0xfacc15, transparent: true, opacity: 0.88 })
-        );
-        const ang = (f / 5) * Math.PI * 2;
-        const rad = f === 0 ? 0 : 0.22;
-        flameCone.position.set(Math.cos(ang) * rad, 0.85, Math.sin(ang) * rad);
-        brazierGroup.add(flameCone);
-        brazierFlames.push(flameCone);
+      const flameTex = document.createElement('canvas');
+      flameTex.width = 64;
+      flameTex.height = 160;
+      const flameCtx = flameTex.getContext('2d');
+      function flameTongue(cx, top, width, height) {
+        const g = flameCtx.createLinearGradient(cx, top + height, cx, top);
+        g.addColorStop(0, 'rgba(90, 16, 0, 0)');
+        g.addColorStop(0.18, 'rgba(190, 42, 6, 0.9)');
+        g.addColorStop(0.5, 'rgba(255, 120, 20, 0.75)');
+        g.addColorStop(0.78, 'rgba(255, 214, 120, 0.35)');
+        g.addColorStop(1, 'rgba(255, 244, 210, 0)');
+        flameCtx.fillStyle = g;
+        flameCtx.beginPath();
+        flameCtx.moveTo(cx, top);
+        flameCtx.bezierCurveTo(cx + width, top + height * 0.35, cx + width * 0.45, top + height * 0.72, cx + width * 0.12, top + height);
+        flameCtx.lineTo(cx - width * 0.08, top + height);
+        flameCtx.bezierCurveTo(cx - width * 0.7, top + height * 0.6, cx - width * 0.35, top + height * 0.28, cx, top);
+        flameCtx.fill();
       }
+      flameTongue(34, 4, 16, 150);
+      flameTongue(24, 36, 10, 110);
+      flameTongue(44, 48, 8, 96);
+      const flameMap = new THREE.CanvasTexture(flameTex);
+      flameMap.encoding = THREE.sRGBEncoding;
+      const flameMat = new THREE.MeshBasicMaterial({
+        map: flameMap,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide
+      });
+      [[0.04, 0.4, 0.0, 0.07, 0.16]].forEach((spec, idx) => {
+        const flame = new THREE.Group();
+        flame.position.set(spec[0], spec[1], spec[2]);
+        for (let k = 0; k < 2; k++) {
+          const card = new THREE.Mesh(new THREE.PlaneGeometry(spec[3], spec[4]), flameMat);
+          card.rotation.y = k * Math.PI * 0.5 + idx * 0.4;
+          flame.add(card);
+        }
+        brazierGroup.add(flame);
+        brazierFlames.push(flame);
+      });
 
       brazierLight = new THREE.PointLight(0xff6600, 1.45, 9.5);
       brazierLight.position.set(0, 1.2, 0);
@@ -3212,11 +3563,11 @@
       stoveGroup.position.set(STALL_HALF_W + 1.15, 0, -2.6);
 
       const barrelMat = new THREE.MeshStandardMaterial({
-        color: 0x3f3f46,
-        metalness: 0.68,
-        roughness: 0.48
+        color: 0x2c2c30,
+        metalness: 0.42,
+        roughness: 0.72
       });
-      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 1.42, 24), barrelMat);
+      const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.58, 1.42, 28), barrelMat);
       barrel.position.y = 0.71;
       barrel.castShadow = true;
       stoveGroup.add(barrel);
@@ -3230,11 +3581,17 @@
       });
 
       // 底部透红炉门
-      const firebox = new THREE.Mesh(
-        new THREE.BoxGeometry(0.36, 0.28, 0.12),
-        new THREE.MeshBasicMaterial({ color: 0xf97316 })
+      const doorFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(0.34, 0.28, 0.05),
+        new THREE.MeshStandardMaterial({ color: 0x1a1816, roughness: 0.7, metalness: 0.25 })
       );
-      firebox.position.set(0, 0.26, 0.54);
+      doorFrame.position.set(0, 0.34, 0.56);
+      stoveGroup.add(doorFrame);
+      const firebox = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.18, 0.12),
+        new THREE.MeshBasicMaterial({ color: 0xff6a1a })
+      );
+      firebox.position.set(0, 0.34, 0.59);
       stoveGroup.add(firebox);
 
       // 铁桶小烟囱与桶顶热乎烤红薯
@@ -3242,12 +3599,21 @@
       chimney.position.set(0.32, 1.65, -0.22);
       stoveGroup.add(chimney);
 
-      const potatoMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.6 });
-      [-0.22, 0.02, 0.24].forEach((px, idx) => {
-        const sweetPotato = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 12), potatoMat);
-        sweetPotato.scale.set(1.45, 0.75, 0.85);
-        sweetPotato.position.set(px, 1.46, 0.12 - (idx % 2) * 0.2);
+      const potatoMat = new THREE.MeshStandardMaterial({ color: 0x6a3a1c, roughness: 0.9 });
+      const tuber = new THREE.LatheGeometry([
+        new THREE.Vector2(0.0, 0.0),
+        new THREE.Vector2(0.05, 0.02),
+        new THREE.Vector2(0.09, 0.08),
+        new THREE.Vector2(0.07, 0.16),
+        new THREE.Vector2(0.03, 0.22),
+        new THREE.Vector2(0.0, 0.24)
+      ], 10);
+      [-0.2, 0.02, 0.22].forEach((px, idx) => {
+        const sweetPotato = new THREE.Mesh(tuber, potatoMat);
+        sweetPotato.scale.set(1.8, 1.8, 1.8);
+        sweetPotato.rotation.z = 1.15 + idx * 0.4;
         sweetPotato.rotation.y = idx * 0.8;
+        sweetPotato.position.set(px, 1.5, 0.06 - (idx % 2) * 0.14);
         stoveGroup.add(sweetPotato);
       });
 
@@ -3269,199 +3635,355 @@
 
       // 6. 写实北方农家宅院：青砖墙、灰瓦硬山顶、木门窗棂、院墙与暖窗光
       const brickTex = createBrickWallTexture();
-      brickTex.repeat.set(2.4, 1.6);
-      const roofTileTex = (() => {
-        const c = document.createElement('canvas');
-        c.width = 256;
-        c.height = 256;
-        const g = c.getContext('2d');
-        g.fillStyle = '#4b5563';
-        g.fillRect(0, 0, 256, 256);
-        for (let y = 0; y < 256; y += 14) {
-          g.fillStyle = y % 28 === 0 ? '#374151' : '#6b7280';
-          g.fillRect(0, y, 256, 10);
-          g.fillStyle = '#1f2937';
-          for (let x = (y % 28 === 0 ? 0 : 16); x < 256; x += 32) {
-            g.fillRect(x, y, 18, 10);
-          }
-        }
-        const tex = new THREE.CanvasTexture(c);
-        tex.wrapS = THREE.RepeatWrapping;
-        tex.wrapT = THREE.RepeatWrapping;
-        tex.repeat.set(3, 2);
-        return tex;
-      })();
-      const woodTex = (() => {
-        const c = document.createElement('canvas');
-        c.width = 128;
-        c.height = 128;
-        const g = c.getContext('2d');
-        g.fillStyle = '#6b3f24';
-        g.fillRect(0, 0, 128, 128);
-        for (let i = 0; i < 18; i++) {
-          g.strokeStyle = `rgba(40,20,10,${0.18 + (i % 3) * 0.08})`;
-          g.beginPath();
-          g.moveTo(i * 7, 0);
-          g.bezierCurveTo(i * 7 + 4, 40, i * 7 - 3, 80, i * 7 + 2, 128);
-          g.stroke();
-        }
-        const tex = new THREE.CanvasTexture(c);
-        tex.wrapS = THREE.RepeatWrapping;
-        tex.wrapT = THREE.RepeatWrapping;
-        return tex;
-      })();
+      brickTex.repeat.set(1, 1);
+      const roofTileTex = loadPhotoMap('assets/world/roof-tiles.jpg', 2, 1.5);
+      const woodTex = loadPhotoMap('assets/world/wood-planks.jpg', 1, 1);
       const houseMat = new THREE.MeshStandardMaterial({
         map: brickTex,
         bumpMap: brickTex,
-        bumpScale: 0.08,
-        roughness: 0.9,
-        color: 0xd6d3d1
+        bumpScale: 0.035,
+        roughness: 0.92,
+        color: 0xffffff
       });
       const roofMat = new THREE.MeshStandardMaterial({
         map: roofTileTex,
         bumpMap: roofTileTex,
-        bumpScale: 0.06,
-        roughness: 0.82,
-        color: 0x9ca3af
+        bumpScale: 0.12,
+        roughness: 0.88,
+        color: 0xffffff,
+        side: THREE.DoubleSide
       });
       const woodMat = new THREE.MeshStandardMaterial({
         map: woodTex,
-        roughness: 0.78,
-        color: 0xa16207
+        roughness: 0.82,
+        color: 0xffffff
       });
+      const paperCanvas = document.createElement('canvas');
+      paperCanvas.width = 160;
+      paperCanvas.height = 200;
+      const paperG = paperCanvas.getContext('2d');
+      paperG.fillStyle = '#5c3d24';
+      paperG.fillRect(0, 0, 160, 200);
+      for (let i = 0; i < 220; i++) {
+        const px = (i * 47) % 160;
+        const py = (i * 29) % 200;
+        paperG.fillStyle = 'rgba(90, 60, 32, 0.35)';
+        paperG.fillRect(px, py, 7, 2);
+      }
+      const lamp = paperG.createRadialGradient(86, 108, 4, 80, 96, 108);
+      lamp.addColorStop(0, '#fff1c8');
+      lamp.addColorStop(0.28, '#f0b15a');
+      lamp.addColorStop(0.62, '#a56a32');
+      lamp.addColorStop(1, 'rgba(92, 61, 36, 0)');
+      paperG.fillStyle = lamp;
+      paperG.fillRect(0, 0, 160, 200);
+      const windowPaper = new THREE.CanvasTexture(paperCanvas);
+      windowPaper.encoding = THREE.sRGBEncoding;
+      windowPaper.wrapS = THREE.RepeatWrapping;
+      windowPaper.wrapT = THREE.RepeatWrapping;
       const windowGlowMat = new THREE.MeshStandardMaterial({
-        color: 0xfde68a,
-        emissive: 0xf59e0b,
-        emissiveIntensity: 0.85,
-        roughness: 0.4
+        map: windowPaper,
+        color: 0xffffff,
+        emissive: 0xffc48a,
+        emissiveIntensity: 0.08,
+        roughness: 0.86
       });
+      const windowCavityMat = new THREE.MeshStandardMaterial({ color: 0x1c140e, roughness: 1 });
 
       function buildRealisticFarmHouse(cfg) {
         const hGroup = new THREE.Group();
         hGroup.position.set(cfg.x, 0, cfg.z);
         hGroup.rotation.y = cfg.ry;
+        const stoneMat = new THREE.MeshStandardMaterial({ color: 0x6a645e, roughness: 0.96 });
+        const wallBase = 0.24;
+        const wallH = cfg.h;
+        const wallTop = wallBase + wallH;
+        const t = 0.2;
+        const rise = cfg.d * 0.34;
 
-        const foundation = new THREE.Mesh(
-          new THREE.BoxGeometry(cfg.w * 1.06, 0.28, cfg.d * 1.06),
-          new THREE.MeshStandardMaterial({ color: 0x57534e, roughness: 0.95 })
-        );
-        foundation.position.y = 0.14;
-        foundation.receiveShadow = true;
-        hGroup.add(foundation);
-
-        const wall = new THREE.Mesh(new THREE.BoxGeometry(cfg.w, cfg.h, cfg.d), houseMat);
-        wall.position.y = cfg.h * 0.5 + 0.2;
-        wall.castShadow = true;
-        wall.receiveShadow = true;
-        hGroup.add(wall);
-
-        // 侧厢短墙，增加宅院厚度
-        const wing = new THREE.Mesh(new THREE.BoxGeometry(cfg.w * 0.42, cfg.h * 0.82, cfg.d * 0.55), houseMat);
-        wing.position.set(cfg.w * 0.55, cfg.h * 0.45 + 0.2, -cfg.d * 0.05);
-        wing.castShadow = true;
-        hGroup.add(wing);
-
-        // 硬山灰瓦屋顶：主坡 + 屋脊 + 前后檐口
-        const roofW = cfg.w * 1.18;
-        const roofD = cfg.d * 1.22;
-        const slopeL = new THREE.Mesh(new THREE.BoxGeometry(roofW, 0.14, roofD * 0.6), roofMat);
-        slopeL.position.set(0, cfg.h + 0.55, -roofD * 0.18);
-        slopeL.rotation.x = 0.42;
-        slopeL.castShadow = true;
-        hGroup.add(slopeL);
-        const slopeR = slopeL.clone();
-        slopeR.position.z = roofD * 0.18;
-        slopeR.rotation.x = -0.42;
-        hGroup.add(slopeR);
-        const ridge = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, roofW * 0.94, 12), roofMat);
-        ridge.rotation.z = Math.PI * 0.5;
-        ridge.position.y = cfg.h + 0.95;
-        hGroup.add(ridge);
-        const eaveFront = new THREE.Mesh(new THREE.BoxGeometry(roofW * 0.98, 0.08, 0.28), woodMat);
-        eaveFront.position.set(0, cfg.h + 0.42, cfg.d * 0.52);
-        hGroup.add(eaveFront);
-        const snowCap = new THREE.Mesh(new THREE.BoxGeometry(roofW * 0.92, 0.1, 0.4), snowMoundMat);
-        snowCap.position.y = cfg.h + 1.02;
-        hGroup.add(snowCap);
-
-        // 木门与窗棂
-        const door = new THREE.Mesh(new THREE.BoxGeometry(0.72, 1.45, 0.08), woodMat);
-        door.position.set(0, 0.92, cfg.d * 0.5 + 0.04);
-        hGroup.add(door);
-        const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.62, 0.06), woodMat);
-        doorFrame.position.set(0, 1.0, cfg.d * 0.5 + 0.02);
-        hGroup.add(doorFrame);
-
-        [-cfg.w * 0.28, cfg.w * 0.28].forEach((wx) => {
-          const frame = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.78, 0.06), woodMat);
-          frame.position.set(wx, cfg.h * 0.58 + 0.2, cfg.d * 0.5 + 0.03);
-          hGroup.add(frame);
-          const pane = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.55), windowGlowMat);
-          pane.position.set(wx, cfg.h * 0.58 + 0.2, cfg.d * 0.5 + 0.07);
-          hGroup.add(pane);
-          for (let i = -1; i <= 1; i++) {
-            const mullion = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.55, 0.04), woodMat);
-            mullion.position.set(wx + i * 0.18, cfg.h * 0.58 + 0.2, cfg.d * 0.5 + 0.06);
-            hGroup.add(mullion);
+        function scaleBoxUvs(geo, w, h, d, tile) {
+          const uv = geo.attributes.uv;
+          const faces = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
+          for (let f = 0; f < 6; f++) {
+            const su = Math.max(faces[f][0] / tile, 0.08);
+            const sv = Math.max(faces[f][1] / tile, 0.08);
+            for (let k = 0; k < 4; k++) {
+              const i = f * 4 + k;
+              uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
+            }
           }
-        });
-        // 山墙侧窗
-        const sidePane = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.5), windowGlowMat);
-        sidePane.position.set(-cfg.w * 0.5 - 0.02, cfg.h * 0.55 + 0.2, 0);
-        sidePane.rotation.y = Math.PI * 0.5;
-        hGroup.add(sidePane);
-
-        // 院墙矮段
-        if (cfg.yard) {
-          const yard = new THREE.Mesh(new THREE.BoxGeometry(cfg.w * 1.35, 0.95, 0.22), houseMat);
-          yard.position.set(0, 0.48, cfg.d * 0.5 + 1.15);
-          yard.castShadow = true;
-          hGroup.add(yard);
-          const gate = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.15, 0.12), woodMat);
-          gate.position.set(0, 0.58, cfg.d * 0.5 + 1.2);
-          hGroup.add(gate);
+        }
+        function addBox(w, h, d, x, y, z, mat) {
+          const geo = new THREE.BoxGeometry(Math.max(w, 0.02), Math.max(h, 0.02), Math.max(d, 0.02));
+          if (mat === houseMat) scaleBoxUvs(geo, w, h, d, 1.55);
+          else if (mat === woodMat) scaleBoxUvs(geo, w, h, d, 0.72);
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.set(x, y, z);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          hGroup.add(mesh);
+          return mesh;
         }
 
-        // 烟囱
-        const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.7, 0.28), houseMat);
-        chimney.position.set(cfg.w * 0.28, cfg.h + 0.95, -cfg.d * 0.1);
-        hGroup.add(chimney);
+        addBox(cfg.w * 1.1, 0.26, cfg.d * 1.12, 0, 0.13, 0, stoneMat);
+        addBox(cfg.w - t, wallH, t, 0, wallBase + wallH * 0.5, -cfg.d * 0.5 + t * 0.5, houseMat);
+        addBox(t, wallH, cfg.d, -cfg.w * 0.5 + t * 0.5, wallBase + wallH * 0.5, 0, houseMat);
+        addBox(t, wallH, cfg.d, cfg.w * 0.5 - t * 0.5, wallBase + wallH * 0.5, 0, houseMat);
+
+        // 前檐拆成墙垛，门窗是凹进去的洞，不再贴在整面盒子上
+        const doorW = 0.74;
+        const winW = 0.7;
+        const pier = 0.26;
+        const sideW = (cfg.w - doorW - winW * 2 - pier * 2) / 2;
+        const cols = [sideW, winW, pier, doorW, pier, winW, sideW];
+        const kinds = ['wall', 'win', 'wall', 'door', 'wall', 'win', 'wall'];
+        const fz = cfg.d * 0.5 - t * 0.5;
+        const winBottom = 1.02;
+        const winTop = 1.74;
+        const doorTop = 1.6;
+        let cursorX = -cfg.w / 2;
+        cols.forEach((cw, i) => {
+          const cx = cursorX + cw / 2;
+          cursorX += cw;
+          if (kinds[i] === 'wall') {
+            addBox(cw, wallH, t, cx, wallBase + wallH * 0.5, fz, houseMat);
+            return;
+          }
+          if (kinds[i] === 'win') {
+            addBox(cw, winBottom, t, cx, wallBase + winBottom * 0.5, fz, houseMat);
+            const above = wallH - winTop;
+            addBox(cw, above, t, cx, wallBase + winTop + above * 0.5, fz, houseMat);
+            const winH = winTop - winBottom;
+            const winY = wallBase + (winBottom + winTop) * 0.5;
+            const cavity = new THREE.Mesh(new THREE.PlaneGeometry(cw - 0.08, winH - 0.04), windowCavityMat);
+            cavity.position.set(cx, winY, fz - 0.16);
+            hGroup.add(cavity);
+            const paper = windowPaper.clone();
+            paper.offset.set(Math.abs(cx * 1.7) % 1, Math.abs(cfg.x * 0.13) % 1);
+            paper.needsUpdate = true;
+            const paneMat = windowGlowMat.clone();
+            paneMat.map = paper;
+            const pane = new THREE.Mesh(new THREE.PlaneGeometry(cw - 0.12, winH - 0.1), paneMat);
+            pane.position.set(cx, winY, fz - 0.07);
+            hGroup.add(pane);
+            addBox(cw + 0.04, 0.06, 0.07, cx, wallBase + winTop, fz + 0.05, woodMat);
+            addBox(cw + 0.04, 0.06, 0.07, cx, wallBase + winBottom, fz + 0.05, woodMat);
+            [-cw / 2, cw / 2].forEach((jx) => {
+              addBox(0.05, winH, 0.07, cx + jx, wallBase + (winBottom + winTop) * 0.5, fz + 0.05, woodMat);
+            });
+            [-0.16, 0.16].forEach((mx) => {
+              addBox(0.035, winH - 0.08, 0.04, cx + mx, wallBase + (winBottom + winTop) * 0.5, fz + 0.02, woodMat);
+            });
+            addBox(cw - 0.12, 0.04, 0.04, cx, wallBase + (winBottom + winTop) * 0.5, fz + 0.03, woodMat);
+            return;
+          }
+          const headH = wallH - doorTop;
+          addBox(cw, headH, t, cx, wallBase + doorTop + headH * 0.5, fz, houseMat);
+          const doorH = doorTop - 0.06;
+          const doorY = wallBase + doorH * 0.5;
+          addBox(cw - 0.1, doorH, 0.05, cx, doorY, fz - 0.1, woodMat);
+          [-cw / 2, cw / 2].forEach((jx) => {
+            addBox(0.07, doorTop, 0.1, cx + jx, wallBase + doorTop * 0.5, fz + 0.02, woodMat);
+          });
+          addBox(cw + 0.16, 0.08, 0.12, cx, wallBase + doorTop, fz + 0.04, woodMat);
+          addBox(0.04, doorH - 0.08, 0.03, cx, doorY, fz - 0.06, woodMat);
+          addBox(cw - 0.22, 0.045, 0.03, cx, doorY, fz - 0.06, woodMat);
+          [[-1, 1], [1, 1], [-1, -1], [1, -1]].forEach((cell) => {
+            addBox(cw * 0.3, doorH * 0.36, 0.025, cx + cell[0] * cw * 0.18, doorY + cell[1] * doorH * 0.2, fz - 0.055, woodMat);
+          });
+        });
+        addBox(doorW + 0.36, 0.08, 0.32, 0, 0.08, cfg.d * 0.5 + 0.16, stoneMat);
+
+        // 两侧山墙三角，把坡顶接到墙上
+        [-1, 1].forEach((sx) => {
+          const shape = new THREE.Shape();
+          const hd = cfg.d * 0.5;
+          shape.moveTo(-hd, 0);
+          shape.lineTo(hd, 0);
+          shape.lineTo(0, rise);
+          shape.closePath();
+          const gable = new THREE.Mesh(
+            new THREE.ExtrudeGeometry(shape, { depth: t, bevelEnabled: false }),
+            houseMat
+          );
+          gable.rotation.y = Math.PI * 0.5;
+          gable.position.set(sx > 0 ? cfg.w * 0.5 - t : -cfg.w * 0.5, wallTop, 0);
+          gable.castShadow = true;
+          gable.receiveShadow = true;
+          hGroup.add(gable);
+        });
+
+        const hw = cfg.w * 0.5 + 0.28;
+        const hd = cfg.d * 0.5 + 0.26;
+        const y0 = wallTop + 0.02;
+        const yR = wallTop + rise;
+        function addSlope(pts, mat, lift) {
+          const order = [0, 1, 2, 0, 2, 3];
+          const positions = [];
+          const uvs = [[0, 0], [2.2, 0], [2.2, 1.4], [0, 1.4]];
+          const uvOut = [];
+          order.forEach((idx) => {
+            positions.push(pts[idx][0], pts[idx][1] + lift, pts[idx][2]);
+            uvOut.push(uvs[idx][0], uvs[idx][1]);
+          });
+          const geo = new THREE.BufferGeometry();
+          geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+          geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvOut, 2));
+          geo.computeVertexNormals();
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          hGroup.add(mesh);
+        }
+        const front = [[-hw, y0, hd], [hw, y0, hd], [hw, yR, 0], [-hw, yR, 0]];
+        const back = [[hw, y0, -hd], [-hw, y0, -hd], [-hw, yR, 0], [hw, yR, 0]];
+        addSlope(front, roofMat, 0);
+        addSlope(back, roofMat, 0);
+        const soffitMat = new THREE.MeshStandardMaterial({
+          map: woodTex,
+          color: 0x3a2c22,
+          roughness: 0.92,
+          side: THREE.DoubleSide
+        });
+        function thicken(pts) {
+          return pts.map((p, i) => [p[0] * 0.985, p[1] - (i < 2 ? 0.16 : 0.045), p[2] * 0.985]);
+        }
+        addSlope(thicken(front), soffitMat, 0);
+        addSlope(thicken(back), soffitMat, 0);
+        addBox(hw * 2, 0.1, 0.1, 0, y0 - 0.02, hd + 0.02, soffitMat);
+        addBox(hw * 2, 0.1, 0.1, 0, y0 - 0.02, -hd - 0.02, soffitMat);
+        const snowFront = front.map((p, i) => i < 2 ? [p[0] * 0.96, y0 + rise * 0.22, hd * 0.78] : [p[0] * 0.96, yR + 0.02, 0]);
+        const snowBack = back.map((p, i) => i < 2 ? [p[0] * 0.96, y0 + rise * 0.22, -hd * 0.78] : [p[0] * 0.96, yR + 0.02, 0]);
+        addSlope(snowFront, snowMoundMat, 0.03);
+        addSlope(snowBack, snowMoundMat, 0.03);
+        addBox(cfg.w * 0.92, 0.1, 0.16, 0, yR + 0.04, 0, roofMat);
+
+        addBox(0.32, 0.85, 0.32, cfg.w * 0.24, yR + 0.12, -cfg.d * 0.2, houseMat);
+        for (let i = -4; i <= 4; i++) {
+          const rafter = addBox(0.04, 0.045, 0.46, (i / 4) * cfg.w * 0.42, wallTop + 0.06, cfg.d * 0.5 + 0.16, woodMat);
+          rafter.rotation.x = 0.42;
+        }
+        const drift = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), snowMoundMat);
+        drift.scale.set(cfg.w * 0.4, 0.1, 0.26);
+        drift.position.set(0.15, 0.02, cfg.d * 0.5 + 0.2);
+        hGroup.add(drift);
+
+        const roomD = cfg.d * 0.34;
+        const roomH = wallH * 0.68;
+        const roomZ = -cfg.d * 0.5 - roomD * 0.45;
+        addBox(cfg.w * 0.58, roomH, roomD, -cfg.w * 0.08, wallBase + roomH * 0.5, roomZ, houseMat);
+        const shed = addBox(cfg.w * 0.64, 0.08, roomD + 0.2, -cfg.w * 0.08, wallBase + roomH + 0.06, roomZ, roofMat);
+        shed.rotation.x = -0.16;
+
+        if (cfg.yard) {
+          const yardZ = cfg.d * 0.5 + 1.35;
+          addBox(cfg.w * 0.42, 1.05, 0.18, -cfg.w * 0.38, 0.52, yardZ, houseMat);
+          addBox(cfg.w * 0.42, 1.05, 0.18, cfg.w * 0.38, 0.52, yardZ, houseMat);
+          addBox(0.86, 1.25, 0.08, 0, 0.62, yardZ, woodMat);
+          addBox(cfg.w * 0.46, 0.08, 0.28, -cfg.w * 0.38, 1.08, yardZ, roofMat);
+          addBox(cfg.w * 0.46, 0.08, 0.28, cfg.w * 0.38, 1.08, yardZ, roofMat);
+        }
 
         const glow = new THREE.PointLight(0xfbbf24, 0.45, 6.5);
         glow.position.set(0, cfg.h * 0.55, cfg.d * 0.35);
         hGroup.add(glow);
 
+        if (cfg.woodpile) {
+          for (let i = 0; i < 6; i++) {
+            const log = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.085, 0.72, 8), woodMat);
+            log.rotation.z = Math.PI * 0.5;
+            log.rotation.y = (i % 3) * 0.15;
+            log.position.set(cfg.w * 0.5 + 0.55, 0.1 + (i % 3) * 0.13, 0.2 + Math.floor(i / 3) * 0.16);
+            log.castShadow = true;
+            hGroup.add(log);
+          }
+        }
+
         scene.add(hGroup);
       }
 
       [
-        { x: -9.4, z: -13.6, w: 4.6, h: 2.75, d: 3.4, ry: 0.2, yard: true },
-        { x: -4.6, z: -15.8, w: 3.8, h: 2.45, d: 3.0, ry: 0.06, yard: false },
-        { x: 5.0, z: -15.5, w: 4.1, h: 2.6, d: 3.1, ry: -0.1, yard: true },
-        { x: 9.8, z: -13.2, w: 3.9, h: 2.5, d: 2.9, ry: -0.26, yard: false }
+        { x: -9.4, z: -13.6, w: 4.6, h: 2.75, d: 3.4, ry: 0.2, yard: true, woodpile: true },
+        { x: -4.6, z: -15.8, w: 3.8, h: 2.45, d: 3.0, ry: 0.06, yard: false, woodpile: false },
+        { x: 5.0, z: -15.5, w: 4.1, h: 2.6, d: 3.1, ry: -0.1, yard: true, woodpile: true },
+        { x: 9.8, z: -13.2, w: 3.9, h: 2.5, d: 2.9, ry: -0.26, yard: false, woodpile: false }
       ].forEach(buildRealisticFarmHouse);
 
-      // 两侧覆雪松树林
-      const pineMat = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.85 });
-      [-8.5, -7.2, 7.5, 8.8].forEach((tx, idx) => {
+      // 河南冬夜以落叶枯枝为主，只留两棵压暗的松
+      const barkCanvas = document.createElement('canvas');
+      barkCanvas.width = 128;
+      barkCanvas.height = 256;
+      const barkG = barkCanvas.getContext('2d');
+      barkG.fillStyle = '#2a221c';
+      barkG.fillRect(0, 0, 128, 256);
+      for (let i = 0; i < 36; i++) {
+        barkG.strokeStyle = i % 2 ? 'rgba(78,60,44,0.7)' : 'rgba(10,7,5,0.65)';
+        barkG.lineWidth = 1 + (i % 3);
+        barkG.beginPath();
+        const bx = (i * 3.7) % 128;
+        barkG.moveTo(bx, 0);
+        barkG.bezierCurveTo(bx + 7, 70, bx - 6, 150, bx + 2, 256);
+        barkG.stroke();
+      }
+      const barkTex = new THREE.CanvasTexture(barkCanvas);
+      barkTex.wrapS = THREE.RepeatWrapping;
+      barkTex.wrapT = THREE.RepeatWrapping;
+      barkTex.encoding = THREE.sRGBEncoding;
+      const barkMat = new THREE.MeshStandardMaterial({ map: barkTex, color: 0xffffff, roughness: 0.96 });
+      const twigTex = loadCutout('assets/world/bare-crown.jpg');
+      const needleTex = loadCutout('assets/world/pine-bough.jpg');
+      const twigMat = new THREE.MeshStandardMaterial({
+        map: twigTex,
+        alphaTest: 0.45,
+        roughness: 0.92,
+        metalness: 0,
+        side: THREE.DoubleSide,
+        color: 0xffffff
+      });
+      const needleMat = twigMat.clone();
+      needleMat.map = needleTex;
+      function addBareTree(x, z, height) {
         const tree = new THREE.Group();
-        tree.position.set(tx, 0, -5.8 - (idx % 2) * 3.8);
-        const trunk = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.16, 0.22, 0.9, 10),
-          new THREE.MeshStandardMaterial({ color: 0x451a03 })
-        );
-        trunk.position.y = 0.45;
-        tree.add(trunk);
-        for (let layer = 0; layer < 3; layer++) {
-          const cone = new THREE.Mesh(new THREE.ConeGeometry(1.05 - layer * 0.24, 1.25, 12), pineMat);
-          cone.position.y = 1.15 + layer * 0.72;
-          cone.castShadow = true;
-          tree.add(cone);
-
-          const snowCap = new THREE.Mesh(new THREE.ConeGeometry(0.92 - layer * 0.22, 0.45, 12), snowMoundMat);
-          snowCap.position.y = 1.48 + layer * 0.72;
-          tree.add(snowCap);
+        tree.position.set(x, 0, z);
+        tree.rotation.y = x * 0.4;
+        const h = height * 1.05;
+        for (let k = 0; k < 3; k++) {
+          const card = new THREE.Mesh(new THREE.PlaneGeometry(h * 0.92, h), twigMat);
+          card.position.y = h * 0.45;
+          card.rotation.y = (k * Math.PI) / 3;
+          tree.add(card);
         }
+        scene.add(tree);
+      }
+      [
+        [-7.4, -4.2, 3.4],
+        [-9.2, -7.6, 4.1],
+        [7.6, -4.8, 3.6],
+        [9.4, -8.2, 4.4],
+        [-5.8, -11.5, 3.8],
+        [6.1, -11.2, 3.2]
+      ].forEach(([x, z, h]) => addBareTree(x, z, h));
+      [[-8.8, -6.4], [8.6, -6.8]].forEach(([tx, tz]) => {
+        const tree = new THREE.Group();
+        tree.position.set(tx, 0, tz);
+        const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.12, 0.85, 7), barkMat);
+        trunk.position.y = 0.4;
+        trunk.castShadow = true;
+        tree.add(trunk);
+        [
+          { y: 0.95, n: 5, size: 1.25, lift: 0.55 },
+          { y: 1.55, n: 4, size: 1.0, lift: 0.4 },
+          { y: 2.1, n: 3, size: 0.72, lift: 0.25 }
+        ].forEach((layer, layerIdx) => {
+          for (let i = 0; i < layer.n; i++) {
+            const ang = layerIdx * 0.4 + (i / layer.n) * Math.PI * 2;
+            const card = new THREE.Mesh(new THREE.PlaneGeometry(layer.size * 1.35, layer.size), needleMat);
+            card.position.set(Math.cos(ang) * 0.08, layer.y, Math.sin(ang) * 0.08);
+            card.rotation.y = ang;
+            card.rotation.x = layer.lift;
+            tree.add(card);
+          }
+        });
         scene.add(tree);
       });
 
@@ -3509,9 +4031,28 @@
         positions[i * 3 + 2] = -Math.random() * 20 + 4;
       }
       snowGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const flakeCanvas = document.createElement('canvas');
+      flakeCanvas.width = 32;
+      flakeCanvas.height = 32;
+      const flakeG = flakeCanvas.getContext('2d');
+      const flakeGrad = flakeG.createRadialGradient(16, 16, 1, 16, 16, 15);
+      flakeGrad.addColorStop(0, 'rgba(255,255,255,0.95)');
+      flakeGrad.addColorStop(0.45, 'rgba(255,255,255,0.45)');
+      flakeGrad.addColorStop(1, 'rgba(255,255,255,0)');
+      flakeG.fillStyle = flakeGrad;
+      flakeG.fillRect(0, 0, 32, 32);
+      const flakeMap = new THREE.CanvasTexture(flakeCanvas);
       snowPoints = new THREE.Points(
         snowGeo,
-        new THREE.PointsMaterial({ color: 0xffffff, size: 0.11, transparent: true, opacity: 0.85 })
+        new THREE.PointsMaterial({
+          color: 0xf4f7fb,
+          map: flakeMap,
+          size: 0.055,
+          transparent: true,
+          opacity: 0.75,
+          depthWrite: false,
+          sizeAttenuation: true
+        })
       );
       scene.add(snowPoints);
     }
@@ -3524,45 +4065,59 @@
       c.width = 512;
       c.height = 256;
       const g = c.getContext('2d');
-      g.fillStyle = '#f8fafc';
+      g.fillStyle = '#f4efe6';
       g.fillRect(0, 0, 512, 256);
-
-      // 经典搪瓷缸顶部与底部深蓝/大红滚边
-      g.fillStyle = '#1e3a8a';
-      g.fillRect(0, 0, 512, 20);
-      g.fillRect(0, 238, 512, 18);
-
-      // 正面大红牡丹花与“双喜/为人民服务”红字印章
-      g.fillStyle = '#dc2626';
-      g.beginPath();
-      g.arc(256, 128, 44, 0, Math.PI * 2);
-      g.fill();
-      g.fillStyle = '#f43f5e';
-      for (let k = 0; k < 6; k++) {
-        const ang = (k / 6) * Math.PI * 2;
-        g.beginPath();
-        g.arc(256 + Math.cos(ang) * 32, 128 + Math.sin(ang) * 32, 20, 0, Math.PI * 2);
-        g.fill();
+      const img = g.getImageData(0, 0, 512, 256);
+      const px = img.data;
+      for (let i = 0; i < px.length; i += 16) {
+        const n = (Math.random() - 0.45) * 18;
+        px[i] = Math.max(0, Math.min(255, px[i] + n));
+        px[i + 1] = Math.max(0, Math.min(255, px[i + 1] + n * 0.9));
+        px[i + 2] = Math.max(0, Math.min(255, px[i + 2] + n * 0.7));
       }
-      g.fillStyle = '#fde047';
+      g.putImageData(img, 0, 0);
+      g.fillStyle = '#1d3f86';
+      g.fillRect(0, 0, 512, 16);
+      g.fillRect(0, 240, 512, 16);
+      g.fillStyle = '#f7f3ea';
+      g.fillRect(0, 16, 512, 4);
+      g.fillRect(0, 236, 512, 4);
+      function petal(x, y, rot, len) {
+        g.save();
+        g.translate(x, y);
+        g.rotate(rot);
+        g.fillStyle = '#b4232c';
+        g.beginPath();
+        g.moveTo(0, 0);
+        g.bezierCurveTo(len * 0.35, -len * 0.45, len * 0.85, -len * 0.2, len, 0);
+        g.bezierCurveTo(len * 0.85, len * 0.2, len * 0.35, len * 0.45, 0, 0);
+        g.fill();
+        g.restore();
+      }
+      for (let k = 0; k < 8; k++) petal(256, 124, (k / 8) * Math.PI * 2, 52);
+      for (let k = 0; k < 6; k++) petal(256, 124, (k / 6) * Math.PI * 2 + 0.3, 30);
+      g.fillStyle = '#f2d48a';
       g.beginPath();
-      g.arc(256, 128, 12, 0, Math.PI * 2);
+      g.arc(256, 124, 10, 0, Math.PI * 2);
       g.fill();
-
-      // 两侧绿叶与红双喜
-      g.fillStyle = '#15803d';
+      g.fillStyle = '#2f6b3a';
       g.beginPath();
-      g.ellipse(196, 148, 22, 10, -0.5, 0, Math.PI * 2);
-      g.ellipse(316, 148, 22, 10, 0.5, 0, Math.PI * 2);
+      g.ellipse(188, 156, 26, 9, -0.6, 0, Math.PI * 2);
+      g.ellipse(324, 156, 26, 9, 0.6, 0, Math.PI * 2);
       g.fill();
-
-      g.fillStyle = '#b91c1c';
-      g.font = '900 32px "Noto Sans SC", sans-serif';
+      g.fillStyle = '#9f1d24';
+      g.font = '700 36px "Noto Sans SC", sans-serif';
       g.textAlign = 'center';
-      g.fillText('囍', 120, 138);
-      g.fillText('囍', 392, 138);
-
+      g.fillText('囍', 108, 140);
+      g.fillText('囍', 404, 140);
+      g.fillStyle = '#2a241c';
+      [[40, 48], [470, 60], [80, 210], [430, 200], [250, 30]].forEach((chip) => {
+        g.beginPath();
+        g.arc(chip[0], chip[1], 3 + (chip[0] % 3), 0, Math.PI * 2);
+        g.fill();
+      });
       const tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding;
       return tex;
     }
 
@@ -3571,10 +4126,19 @@
       c.width = 256;
       c.height = 256;
       const g = c.getContext('2d');
-      g.fillStyle = '#fef3c7';
+      g.fillStyle = '#e7d3a4';
       g.fillRect(0, 0, 256, 256);
-      g.strokeStyle = '#dc2626';
-      g.lineWidth = 14;
+      const skin = g.getImageData(0, 0, 256, 256);
+      const sd = skin.data;
+      for (let i = 0; i < sd.length; i += 16) {
+        const n = (Math.random() - 0.5) * 22;
+        sd[i] = Math.max(0, Math.min(255, sd[i] + n));
+        sd[i + 1] = Math.max(0, Math.min(255, sd[i + 1] + n * 0.85));
+        sd[i + 2] = Math.max(0, Math.min(255, sd[i + 2] + n * 0.6));
+      }
+      g.putImageData(skin, 0, 0);
+      g.strokeStyle = '#8f1d1d';
+      g.lineWidth = 10;
       g.beginPath();
       g.arc(128, 128, 108, 0, Math.PI * 2);
       g.stroke();
@@ -3583,7 +4147,9 @@
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       g.fillText('福', 128, 132);
-      return new THREE.CanvasTexture(c);
+      const faceMap = new THREE.CanvasTexture(c);
+      faceMap.encoding = THREE.sRGBEncoding;
+      return faceMap;
     }
 
     function createConsoleStickerTexture() {
@@ -3598,19 +4164,208 @@
       g.textAlign = 'center';
       g.textBaseline = 'middle';
       g.fillText('SUPER 99合一', 128, 64);
-      return new THREE.CanvasTexture(c);
+      const stickerMap = new THREE.CanvasTexture(c);
+      stickerMap.encoding = THREE.sRGBEncoding;
+      return stickerMap;
     }
 
     // 为每种年货玩具创建精细的 3D 曲面模型组
+    function createPrizeGrain(hex) {
+      const c = document.createElement('canvas');
+      c.width = 64;
+      c.height = 64;
+      const g = c.getContext('2d');
+      g.fillStyle = hex;
+      g.fillRect(0, 0, 64, 64);
+      const img = g.getImageData(0, 0, 64, 64);
+      const d = img.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const n = (Math.random() - 0.5) * 26;
+        d[i] = Math.max(0, Math.min(255, d[i] + n));
+        d[i + 1] = Math.max(0, Math.min(255, d[i + 1] + n * 0.9));
+        d[i + 2] = Math.max(0, Math.min(255, d[i + 2] + n * 0.75));
+      }
+      g.putImageData(img, 0, 0);
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
+    function paintDollFace(kind) {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 256;
+      const g = c.getContext('2d');
+      if (kind === 'cat') {
+        g.fillStyle = '#fff4e8';
+        g.beginPath();
+        g.arc(128, 128, 120, 0, Math.PI * 2);
+        g.fill();
+        g.strokeStyle = '#1c140f';
+        g.lineWidth = 8;
+        g.lineCap = 'round';
+        g.beginPath();
+        g.arc(86, 112, 22, Math.PI * 0.15, Math.PI * 0.85);
+        g.stroke();
+        g.beginPath();
+        g.arc(170, 112, 22, Math.PI * 0.15, Math.PI * 0.85);
+        g.stroke();
+        g.fillStyle = '#e07a86';
+        g.beginPath();
+        g.moveTo(128, 132);
+        g.lineTo(118, 148);
+        g.lineTo(138, 148);
+        g.fill();
+        g.strokeStyle = '#2a211c';
+        g.lineWidth = 4;
+        [-1, 1].forEach((s) => {
+          for (let i = 0; i < 3; i++) {
+            g.beginPath();
+            g.moveTo(128 + s * 18, 146 + i * 8);
+            g.lineTo(128 + s * 78, 138 + i * 14);
+            g.stroke();
+          }
+        });
+        g.beginPath();
+        g.moveTo(116, 168);
+        g.quadraticCurveTo(128, 180, 140, 168);
+        g.stroke();
+      } else {
+        g.fillStyle = '#f3c7a2';
+        g.fillRect(0, 0, 256, 256);
+        g.fillStyle = '#1a120e';
+        g.beginPath();
+        g.ellipse(128, 18, 78, 22, 0, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = '#2a211c';
+        g.beginPath();
+        g.ellipse(78, 118, 14, 16, 0, 0, Math.PI * 2);
+        g.ellipse(178, 118, 14, 16, 0, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = '#f8f1ea';
+        g.beginPath();
+        g.arc(74, 112, 4, 0, Math.PI * 2);
+        g.arc(174, 112, 4, 0, Math.PI * 2);
+        g.fill();
+        g.strokeStyle = '#6b3a32';
+        g.lineWidth = 5;
+        g.beginPath();
+        g.moveTo(100, 168);
+        g.quadraticCurveTo(128, 190, 156, 168);
+        g.stroke();
+        g.fillStyle = 'rgba(214, 96, 96, 0.45)';
+        g.beginPath();
+        g.ellipse(62, 150, 22, 12, 0, 0, Math.PI * 2);
+        g.ellipse(194, 150, 22, 12, 0, 0, Math.PI * 2);
+        g.fill();
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
+    let frozenPearSkinTex = null;
+    function frozenPearSkin() {
+      if (frozenPearSkinTex) return frozenPearSkinTex;
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 256;
+      const g = c.getContext('2d');
+      const base = g.createLinearGradient(0, 0, 0, 256);
+      base.addColorStop(0, '#6b4630');
+      base.addColorStop(0.4, '#4a2e1e');
+      base.addColorStop(1, '#2c1810');
+      g.fillStyle = base;
+      g.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 160; i++) {
+        g.fillStyle = `rgba(214, 176, 132, ${0.2 + Math.random() * 0.35})`;
+        g.beginPath();
+        g.ellipse(Math.random() * 256, Math.random() * 256, 1.4, 0.55, Math.random() * 3, 0, Math.PI * 2);
+        g.fill();
+      }
+      const frost = g.createRadialGradient(188, 64, 8, 188, 64, 96);
+      frost.addColorStop(0, 'rgba(226, 234, 238, 0.5)');
+      frost.addColorStop(1, 'rgba(226, 234, 238, 0)');
+      g.fillStyle = frost;
+      g.fillRect(0, 0, 256, 256);
+      const tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding;
+      frozenPearSkinTex = tex;
+      return tex;
+    }
+
+    let persimmonSkinTex = null;
+    function persimmonSkin() {
+      if (persimmonSkinTex) return persimmonSkinTex;
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 256;
+      const g = c.getContext('2d');
+      const base = g.createRadialGradient(120, 90, 16, 128, 150, 170);
+      base.addColorStop(0, '#ff9440');
+      base.addColorStop(0.5, '#e25a14');
+      base.addColorStop(1, '#8f3010');
+      g.fillStyle = base;
+      g.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 70; i++) {
+        g.fillStyle = 'rgba(80, 24, 6, 0.4)';
+        g.beginPath();
+        g.arc(Math.random() * 256, Math.random() * 256, 0.5 + Math.random() * 0.8, 0, Math.PI * 2);
+        g.fill();
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding;
+      persimmonSkinTex = tex;
+      return tex;
+    }
+
+    let goosePlumageTex = null;
+    function goosePlumage() {
+      if (goosePlumageTex) return goosePlumageTex;
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 256;
+      const g = c.getContext('2d');
+      g.fillStyle = '#f2eee6';
+      g.fillRect(0, 0, 256, 256);
+      for (let row = 0; row < 16; row++) {
+        for (let col = 0; col < 9; col++) {
+          const x = col * 34 + (row % 2) * 16;
+          const y = row * 18 + 6;
+          g.fillStyle = (row + col) % 4 === 0 ? '#e2dbd0' : '#f7f4ee';
+          g.beginPath();
+          g.ellipse(x, y, 20, 7, -0.35, 0, Math.PI * 2);
+          g.fill();
+          g.strokeStyle = 'rgba(120, 110, 96, 0.28)';
+          g.lineWidth = 1;
+          g.beginPath();
+          g.moveTo(x - 14, y + 1);
+          g.quadraticCurveTo(x, y - 3, x + 15, y + 1);
+          g.stroke();
+        }
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 1.4);
+      tex.encoding = THREE.sRGBEncoding;
+      goosePlumageTex = tex;
+      return tex;
+    }
+
     function create3DPrizeGroup(pr) {
       const group = new THREE.Group();
       const id = pr.prizeId;
 
-      // 底部精致车削木质圆托盘（带金边凹槽）
-      const woodTex = createQuiltedCoatTexture('#b45309', '#78350f');
+      // 底部木托：侧面是暗木边，朝上的一面是实拍木板
+      const plateTex = loadPhotoMap('assets/world/wood-planks.jpg', 1.2, 1.2);
       const pedestalMat = new THREE.MeshStandardMaterial({
-        color: pr.isMovingGoose ? 0xfef08a : 0xfde68a,
-        roughness: 0.58
+        map: plateTex,
+        color: pr.isMovingGoose ? 0xc4a888 : 0xffffff,
+        roughness: 0.84,
+        metalness: 0.02
       });
       const pedProfile = [
         new THREE.Vector2(0.0, 0.0),
@@ -3625,10 +4380,18 @@
       pedestal.castShadow = true;
       pedestal.receiveShadow = true;
       group.add(pedestal);
+      const plateTop = new THREE.Mesh(
+        new THREE.CircleGeometry(0.41, 28),
+        new THREE.MeshStandardMaterial({ map: plateTex, color: 0xffffff, roughness: 0.86 })
+      );
+      plateTop.rotation.x = -Math.PI * 0.5;
+      plateTop.position.y = 0.123;
+      plateTop.receiveShadow = true;
+      group.add(plateTop);
 
       const rimRing = new THREE.Mesh(
         new THREE.TorusGeometry(0.47, 0.024, 10, 28),
-        new THREE.MeshStandardMaterial({ color: pr.isMovingGoose ? 0xdc2626 : 0x92400e, roughness: 0.45 })
+        new THREE.MeshStandardMaterial({ color: pr.isMovingGoose ? 0x7f1d1d : 0x4a3424, roughness: 0.7 })
       );
       rimRing.rotation.x = Math.PI * 0.5;
       rimRing.position.y = 0.11;
@@ -3651,28 +4414,23 @@
           new THREE.Vector2(0.0, 0.56)
         ];
         const pearMat = new THREE.MeshStandardMaterial({
-          color: 0x17153b,
-          roughness: 0.12,
-          metalness: 0.18
+          map: frozenPearSkin(),
+          color: 0xffffff,
+          roughness: 0.58,
+          metalness: 0.02
         });
-        const pearMesh = new THREE.Mesh(new THREE.LatheGeometry(pearProfile, 24), pearMat);
+        const pearMesh = new THREE.Mesh(new THREE.LatheGeometry(pearProfile, 28), pearMat);
+        pearMesh.scale.set(1, 1.28, 1);
         pearMesh.castShadow = true;
         toyRoot.add(pearMesh);
 
-        // 表面挂霜冰晶点缀
-        const frostMat = new THREE.MeshStandardMaterial({ color: 0xe0f2fe, roughness: 0.2, transparent: true, opacity: 0.65 });
-        const frostCap = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 12), frostMat);
-        frostCap.scale.set(1.2, 0.35, 1.2);
-        frostCap.position.set(0.08, 0.40, 0.12);
-        toyRoot.add(frostCap);
-
         const stemCurve = new THREE.CatmullRomCurve3([
-          new THREE.Vector3(0, 0.54, 0),
-          new THREE.Vector3(0.04, 0.65, 0.02),
-          new THREE.Vector3(0.11, 0.70, 0.04)
+          new THREE.Vector3(0, 0.68, 0),
+          new THREE.Vector3(0.04, 0.8, 0.02),
+          new THREE.Vector3(0.12, 0.86, 0.04)
         ]);
         const stem = new THREE.Mesh(
-          new THREE.TubeGeometry(stemCurve, 10, 0.022, 8, false),
+          new THREE.TubeGeometry(stemCurve, 10, 0.03, 8, false),
           new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 })
         );
         toyRoot.add(stem);
@@ -3686,59 +4444,84 @@
           new THREE.Vector2(0.16, 0.40),
           new THREE.Vector2(0.0, 0.38)
         ];
-        const persMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.22, metalness: 0.08 });
+        const persMat = new THREE.MeshStandardMaterial({ map: persimmonSkin(), color: 0xffffff, roughness: 0.72, metalness: 0.0 });
         const persMesh = new THREE.Mesh(new THREE.LatheGeometry(persProfile, 24), persMat);
         persMesh.castShadow = true;
         toyRoot.add(persMesh);
 
-        const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.65 });
+        const leafMat = new THREE.MeshStandardMaterial({ color: 0x3f5c32, roughness: 0.84, side: THREE.DoubleSide });
+        const leafShape = new THREE.Shape();
+        leafShape.moveTo(0, 0);
+        leafShape.quadraticCurveTo(0.08, 0.04, 0.02, 0.15);
+        leafShape.quadraticCurveTo(-0.02, 0.08, -0.07, 0.04);
+        leafShape.quadraticCurveTo(-0.03, 0.01, 0, 0);
+        const leafGeo = new THREE.ShapeGeometry(leafShape);
         for (let l = 0; l < 4; l++) {
-          const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.18, 6), leafMat);
-          leaf.rotation.x = Math.PI * 0.42;
-          leaf.rotation.z = (l / 4) * Math.PI * 2;
-          leaf.position.set(Math.sin((l / 4) * Math.PI * 2) * 0.10, 0.40, Math.cos((l / 4) * Math.PI * 2) * 0.10);
+          const leaf = new THREE.Mesh(leafGeo, leafMat);
+          const a = (l / 4) * Math.PI * 2;
+          leaf.rotation.x = -1.15;
+          leaf.rotation.y = a;
+          leaf.position.set(Math.sin(a) * 0.06, 0.4, Math.cos(a) * 0.06);
           toyRoot.add(leaf);
         }
       } else if (id === 'clay_frog' || id === 'tin_frog') {
         const isTin = id === 'tin_frog';
         const frogMat = new THREE.MeshStandardMaterial({
-          color: isTin ? 0x15803d : 0x22c55e,
-          roughness: isTin ? 0.22 : 0.58,
-          metalness: isTin ? 0.55 : 0.05
+          map: loadPhotoMap('assets/world/clay-green.jpg', 1, 1),
+          color: 0xffffff,
+          roughness: isTin ? 0.48 : 0.9,
+          metalness: isTin ? 0.28 : 0.0
         });
-        const bellyMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.35 });
+        const bellyMat = new THREE.MeshStandardMaterial({ map: createPrizeGrain('#d2c2a4'), color: 0xffffff, roughness: 0.88 });
 
-        const body = new THREE.Mesh(new THREE.SphereGeometry(0.27, 22, 18), frogMat);
-        body.scale.set(1.08, 0.72, 1.25);
-        body.position.y = 0.22;
+        const bodyProfile = [
+          new THREE.Vector2(0.0, 0.0),
+          new THREE.Vector2(0.18, 0.02),
+          new THREE.Vector2(0.34, 0.1),
+          new THREE.Vector2(0.32, 0.24),
+          new THREE.Vector2(0.14, 0.32),
+          new THREE.Vector2(0.0, 0.34)
+        ];
+        const body = new THREE.Mesh(new THREE.LatheGeometry(bodyProfile, 22), frogMat);
+        body.scale.set(1.08, 0.82, 1.02);
+        body.rotation.x = 0.15;
+        body.position.set(0, 0.04, 0);
         body.castShadow = true;
         toyRoot.add(body);
 
-        const belly = new THREE.Mesh(new THREE.SphereGeometry(0.22, 18, 14), bellyMat);
-        belly.scale.set(1.0, 0.5, 1.1);
-        belly.position.set(0, 0.13, 0.04);
+        const belly = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 10), bellyMat);
+        belly.scale.set(1.15, 0.4, 1.15);
+        belly.position.set(0, 0.09, 0.1);
         toyRoot.add(belly);
 
-        // 立体蛙腿折叠造型
-        [-0.24, 0.24].forEach((lx) => {
-          const thigh = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 12), frogMat);
-          thigh.scale.set(0.7, 0.85, 1.45);
-          thigh.position.set(lx, 0.14, -0.06);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12), frogMat);
+        head.scale.set(1.2, 0.78, 1.05);
+        head.position.set(0, 0.38, 0.14);
+        toyRoot.add(head);
+
+        [-0.2, 0.2].forEach((lx) => {
+          const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.048, 0.22, 8), frogMat);
+          thigh.position.set(lx * 1.85, 0.07, 0.02);
+          thigh.rotation.z = lx > 0 ? -1.15 : 1.15;
           toyRoot.add(thigh);
+          const foot = new THREE.Mesh(new THREE.SphereGeometry(0.038, 8, 6), frogMat);
+          foot.scale.set(1.8, 0.32, 1.15);
+          foot.position.set(lx * 2.35, 0.035, 0.06);
+          toyRoot.add(foot);
         });
 
-        [-0.13, 0.13].forEach((ex) => {
+        [-0.06, 0.06].forEach((ex) => {
           const eyeWhite = new THREE.Mesh(
-            new THREE.SphereGeometry(0.082, 14, 14),
-            new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 })
+            new THREE.SphereGeometry(0.016, 10, 8),
+            new THREE.MeshStandardMaterial({ color: 0xf4efe6, roughness: 0.55 })
           );
-          eyeWhite.position.set(ex, 0.40, 0.16);
+          eyeWhite.position.set(ex, 0.42, 0.22);
           toyRoot.add(eyeWhite);
           const pupil = new THREE.Mesh(
-            new THREE.SphereGeometry(0.042, 10, 10),
+            new THREE.SphereGeometry(0.007, 8, 6),
             new THREE.MeshBasicMaterial({ color: 0x0f172a })
           );
-          pupil.position.set(ex, 0.41, 0.23);
+          pupil.position.set(ex, 0.428, 0.232);
           toyRoot.add(pupil);
         });
 
@@ -3762,51 +4545,66 @@
         }
       } else if (id === 'roly_poly') {
         // 车削葫芦形大红福娃不倒翁 + 虎耳小帽
+        const rolyMat = new THREE.MeshStandardMaterial({
+          map: loadPhotoMap('assets/world/lacquer-red.jpg', 2, 2),
+          color: 0xffffff,
+          roughness: 0.48,
+          metalness: 0.02
+        });
         const rolyProfile = [
           new THREE.Vector2(0.0, 0.0),
-          new THREE.Vector2(0.24, 0.05),
-          new THREE.Vector2(0.30, 0.22),
-          new THREE.Vector2(0.24, 0.39),
-          new THREE.Vector2(0.15, 0.45),
-          new THREE.Vector2(0.0, 0.46)
+          new THREE.Vector2(0.2, 0.03),
+          new THREE.Vector2(0.32, 0.14),
+          new THREE.Vector2(0.28, 0.28),
+          new THREE.Vector2(0.16, 0.36),
+          new THREE.Vector2(0.0, 0.38)
         ];
-        const base = new THREE.Mesh(
-          new THREE.LatheGeometry(rolyProfile, 24),
-          new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.25 })
-        );
+        const base = new THREE.Mesh(new THREE.LatheGeometry(rolyProfile, 24), rolyMat);
         base.castShadow = true;
         toyRoot.add(base);
 
         const goldBelt = new THREE.Mesh(
-          new THREE.TorusGeometry(0.21, 0.03, 10, 24),
-          new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.6, roughness: 0.3 })
+          new THREE.TorusGeometry(0.29, 0.02, 8, 24),
+          new THREE.MeshStandardMaterial({ color: 0xc4a15a, metalness: 0.28, roughness: 0.5 })
         );
         goldBelt.rotation.x = Math.PI * 0.5;
-        goldBelt.position.y = 0.42;
+        goldBelt.position.y = 0.18;
         toyRoot.add(goldBelt);
 
-        const head = new THREE.Mesh(
-          new THREE.SphereGeometry(0.19, 20, 20),
-          new THREE.MeshStandardMaterial({ color: 0xfed7aa, roughness: 0.45 })
-        );
-        head.position.y = 0.60;
+        const skinPaint = document.createElement('canvas');
+        skinPaint.width = 8;
+        skinPaint.height = 8;
+        const skinG = skinPaint.getContext('2d');
+        skinG.fillStyle = '#f3c7a2';
+        skinG.fillRect(0, 0, 8, 8);
+        const skinMap = new THREE.CanvasTexture(skinPaint);
+        skinMap.encoding = THREE.sRGBEncoding;
+        const skinMat = new THREE.MeshBasicMaterial({ map: skinMap });
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 20, 16), skinMat);
+        head.position.set(0, 0.5, 0.02);
         toyRoot.add(head);
+        const face = new THREE.Mesh(
+          new THREE.CircleGeometry(0.11, 22),
+          new THREE.MeshBasicMaterial({ map: paintDollFace('roly') })
+        );
+        face.position.set(0, 0.5, 0.175);
+        toyRoot.add(face);
 
-        // 两个冲天红髻小抓鬏
-        [-0.14, 0.14].forEach((bx) => {
-          const bun = new THREE.Mesh(
-            new THREE.SphereGeometry(0.065, 12, 12),
-            new THREE.MeshStandardMaterial({ color: 0x0f172a })
-          );
-          bun.position.set(bx, 0.76, 0);
-          toyRoot.add(bun);
+        const cap = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), rolyMat);
+        cap.scale.set(1.05, 0.55, 1);
+        cap.position.set(0, 0.6, -0.01);
+        toyRoot.add(cap);
+        [-0.07, 0.07].forEach((bx) => {
+          const ear = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.07, 8), rolyMat);
+          ear.position.set(bx, 0.68, 0);
+          toyRoot.add(ear);
         });
       } else if (id === 'enamel_mug') {
         // 印有“牡丹红双喜”环绕贴图的陶瓷釉面搪瓷大茶缸
         const mugTex = createEnamelMugTexture();
         const mugBody = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.25, 0.24, 0.56, 28, 1, false),
-          new THREE.MeshStandardMaterial({ map: mugTex, roughness: 0.16, metalness: 0.08 })
+          new THREE.CylinderGeometry(0.25, 0.24, 0.56, 28, 1, true),
+          new THREE.MeshStandardMaterial({ map: mugTex, roughness: 0.46, metalness: 0.02, side: THREE.DoubleSide })
         );
         mugBody.position.y = 0.28;
         mugBody.rotation.y = -Math.PI * 0.5;
@@ -3821,6 +4619,13 @@
         lipRing.rotation.x = Math.PI * 0.5;
         lipRing.position.y = 0.56;
         toyRoot.add(lipRing);
+        const tea = new THREE.Mesh(
+          new THREE.CircleGeometry(0.21, 24),
+          new THREE.MeshStandardMaterial({ color: 0x4a3428, roughness: 0.42, metalness: 0.08 })
+        );
+        tea.rotation.x = -Math.PI * 0.5;
+        tea.position.y = 0.545;
+        toyRoot.add(tea);
 
         const handleCurve = new THREE.CatmullRomCurve3([
           new THREE.Vector3(0.23, 0.46, 0),
@@ -3834,116 +4639,231 @@
         );
         toyRoot.add(handle);
       } else if (id === 'rattle_drum') {
-        const stick = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.036, 0.032, 0.44, 12),
-          new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.5 })
-        );
-        stick.position.y = 0.22;
+        const wood = new THREE.MeshStandardMaterial({
+          map: loadPhotoMap('assets/world/wood-planks.jpg', 1, 2),
+          color: 0xffffff,
+          roughness: 0.84
+        });
+        const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.034, 0.42, 12), wood);
+        stick.position.y = 0.2;
         toyRoot.add(stick);
 
         const faceTex = createRattleDrumFaceTexture();
-        const drumMat = [
-          new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4 }),
-          new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.5 }),
-          new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.5 })
-        ];
-        const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.14, 24), drumMat);
+        const hoopMat = new THREE.MeshStandardMaterial({
+          map: loadPhotoMap('assets/world/lacquer-red.jpg', 2, 1),
+          color: 0xffffff,
+          roughness: 0.4
+        });
+        const drum = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.21, 0.21, 0.16, 28),
+          [
+            hoopMat,
+            new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.74 }),
+            new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.74 })
+          ]
+        );
         drum.rotation.x = Math.PI * 0.5;
-        drum.position.y = 0.53;
+        drum.position.y = 0.52;
         drum.castShadow = true;
         toyRoot.add(drum);
-
-        // 两侧拨浪小弹珠
-        [-0.28, 0.28].forEach((bx) => {
-          const bead = new THREE.Mesh(
-            new THREE.SphereGeometry(0.045, 10, 10),
-            new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.5 })
+        [-0.082, 0.082].forEach((z) => {
+          const rim = new THREE.Mesh(new THREE.TorusGeometry(0.21, 0.016, 8, 28), wood);
+          rim.position.set(0, 0.52, z);
+          toyRoot.add(rim);
+        });
+        [-1, 1].forEach((side) => {
+          const cord = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.004, 0.004, 0.18, 6),
+            new THREE.MeshStandardMaterial({ color: 0x2a2118, roughness: 0.8 })
           );
-          bead.position.set(bx, 0.45, 0);
+          cord.position.set(side * 0.2, 0.4, 0);
+          cord.rotation.z = side * 0.5;
+          toyRoot.add(cord);
+          const bead = new THREE.Mesh(new THREE.SphereGeometry(0.038, 12, 10), wood);
+          bead.position.set(side * 0.25, 0.31, 0.02);
           toyRoot.add(bead);
         });
       } else if (id === 'lucky_cat') {
         const goldMat = new THREE.MeshStandardMaterial({
-          color: 0xfacc15,
-          metalness: 0.72,
-          roughness: 0.18
+          color: 0xf7f1e8,
+          metalness: 0.02,
+          roughness: 0.34
         });
         const catProfile = [
-          new THREE.Vector2(0.0, 0.0),
-          new THREE.Vector2(0.28, 0.04),
-          new THREE.Vector2(0.30, 0.20),
-          new THREE.Vector2(0.24, 0.44),
-          new THREE.Vector2(0.22, 0.62),
-          new THREE.Vector2(0.14, 0.72),
-          new THREE.Vector2(0.0, 0.75)
+          new THREE.Vector2(0.0, 0.02),
+          new THREE.Vector2(0.22, 0.04),
+          new THREE.Vector2(0.34, 0.14),
+          new THREE.Vector2(0.30, 0.32),
+          new THREE.Vector2(0.18, 0.46),
+          new THREE.Vector2(0.0, 0.50)
         ];
         const bodyMesh = new THREE.Mesh(new THREE.LatheGeometry(catProfile, 24), goldMat);
         bodyMesh.castShadow = true;
         toyRoot.add(bodyMesh);
 
-        // 红色铃铛项圈
+        const bib = new THREE.Mesh(
+          new THREE.CircleGeometry(0.12, 16),
+          new THREE.MeshStandardMaterial({ color: 0x9f2d2d, roughness: 0.62 })
+        );
+        bib.position.set(0, 0.28, 0.3);
+        toyRoot.add(bib);
+
         const collar = new THREE.Mesh(
-          new THREE.TorusGeometry(0.22, 0.032, 10, 24),
-          new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.4 })
+          new THREE.TorusGeometry(0.16, 0.018, 8, 20),
+          new THREE.MeshStandardMaterial({ color: 0x9f2d2d, roughness: 0.5 })
         );
         collar.rotation.x = Math.PI * 0.5;
-        collar.position.y = 0.44;
+        collar.position.y = 0.5;
         toyRoot.add(collar);
 
-        [-0.14, 0.14].forEach((ex) => {
-          const ear = new THREE.Mesh(new THREE.ConeGeometry(0.085, 0.19, 10), goldMat);
-          ear.position.set(ex, 0.77, 0);
-          toyRoot.add(ear);
-        });
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 20, 16), goldMat);
+        head.scale.set(1.05, 0.92, 0.95);
+        head.position.set(0, 0.62, 0.04);
+        toyRoot.add(head);
 
-        const wavingPaw = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.34, 12), goldMat);
-        wavingPaw.position.set(-0.28, 0.48, 0.1);
+        [-0.09, 0.09].forEach((ex) => {
+          const ear = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.14, 10), goldMat);
+          ear.position.set(ex, 0.74, -0.01);
+          toyRoot.add(ear);
+          const inner = new THREE.Mesh(
+            new THREE.ConeGeometry(0.026, 0.07, 8),
+            new THREE.MeshStandardMaterial({ color: 0xe7b4b8, roughness: 0.7 })
+          );
+          inner.position.set(ex, 0.73, 0.02);
+          toyRoot.add(inner);
+        });
+        const catFace = new THREE.Mesh(
+          new THREE.CircleGeometry(0.1, 22),
+          new THREE.MeshStandardMaterial({ map: paintDollFace('cat'), roughness: 0.48, metalness: 0.02 })
+        );
+        catFace.position.set(0, 0.63, 0.2);
+        toyRoot.add(catFace);
+
+        const wavingPaw = new THREE.Group();
+        wavingPaw.position.set(-0.24, 0.5, 0.12);
+        const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.05, 0.2, 10), goldMat);
+        arm.position.y = -0.04;
+        wavingPaw.add(arm);
+        const paw = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 10), goldMat);
+        paw.scale.set(1.05, 0.78, 0.72);
+        paw.position.y = 0.1;
+        wavingPaw.add(paw);
+        const pad = new THREE.Mesh(
+          new THREE.SphereGeometry(0.026, 8, 6),
+          new THREE.MeshStandardMaterial({ color: 0xe7a0a8, roughness: 0.55 })
+        );
+        pad.position.set(0, 0.12, 0.04);
+        wavingPaw.add(pad);
         toyRoot.add(wavingPaw);
         group.userData.wavingPaw = wavingPaw;
       } else if (id === 'fc_console') {
-        const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.32 });
-        const redMat = new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.35 });
-        const goldMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.55, roughness: 0.25 });
-
-        const baseBox = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.20, 0.48), whiteMat);
-        baseBox.position.y = 0.10;
-        baseBox.castShadow = true;
-        toyRoot.add(baseBox);
-
-        const redTrim = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.09, 0.50), redMat);
-        redTrim.position.y = 0.045;
-        toyRoot.add(redTrim);
-
-        // 两侧立体红白手柄卡槽
-        [-0.34, 0.34].forEach((cx) => {
-          const pad = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.14, 0.26), redMat);
-          pad.position.set(cx, 0.12, 0.02);
-          toyRoot.add(pad);
+        function roundedShell(w, d, r) {
+          const s = new THREE.Shape();
+          const x = -w * 0.5;
+          const y = -d * 0.5;
+          s.moveTo(x + r, y);
+          s.lineTo(x + w - r, y);
+          s.quadraticCurveTo(x + w, y, x + w, y + r);
+          s.lineTo(x + w, y + d - r);
+          s.quadraticCurveTo(x + w, y + d, x + w - r, y + d);
+          s.lineTo(x + r, y + d);
+          s.quadraticCurveTo(x, y + d, x, y + d - r);
+          s.lineTo(x, y + r);
+          s.quadraticCurveTo(x, y, x + r, y);
+          return s;
+        }
+        const shellMat = new THREE.MeshStandardMaterial({
+          map: createPrizeGrain('#e4e0d6'),
+          color: 0xffffff,
+          roughness: 0.4,
+          metalness: 0.05
         });
-
-        // 开关与复位滑块按键
-        [-0.15, -0.05].forEach((bx) => {
-          const btn = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.04, 0.08), goldMat);
-          btn.position.set(bx, 0.21, 0.14);
-          toyRoot.add(btn);
+        const redMat = new THREE.MeshStandardMaterial({
+          map: createPrizeGrain('#8a221c'),
+          color: 0xffffff,
+          roughness: 0.44,
+          metalness: 0.04
         });
-
-        // 亮黄 99 合 1 游戏卡带
-        const cart = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.22, 0.09), goldMat);
-        cart.position.set(0, 0.29, -0.04);
+        const cartMat = new THREE.MeshStandardMaterial({
+          map: createPrizeGrain('#c49218'),
+          color: 0xffffff,
+          roughness: 0.46,
+          metalness: 0.06
+        });
+        const skirt = new THREE.Mesh(
+          new THREE.ExtrudeGeometry(roundedShell(0.62, 0.44, 0.07), {
+            depth: 0.05,
+            bevelEnabled: true,
+            bevelThickness: 0.008,
+            bevelSize: 0.008,
+            bevelSegments: 2,
+            curveSegments: 6
+          }),
+          redMat
+        );
+        skirt.rotation.x = -Math.PI * 0.5;
+        skirt.position.y = 0.02;
+        skirt.castShadow = true;
+        toyRoot.add(skirt);
+        const shell = new THREE.Mesh(
+          new THREE.ExtrudeGeometry(roundedShell(0.56, 0.38, 0.06), {
+            depth: 0.09,
+            bevelEnabled: true,
+            bevelThickness: 0.01,
+            bevelSize: 0.01,
+            bevelSegments: 2,
+            curveSegments: 6
+          }),
+          shellMat
+        );
+        shell.rotation.x = -Math.PI * 0.5;
+        shell.position.y = 0.07;
+        shell.castShadow = true;
+        toyRoot.add(shell);
+        const slot = new THREE.Mesh(
+          new THREE.BoxGeometry(0.2, 0.012, 0.05),
+          new THREE.MeshBasicMaterial({ color: 0x14120f })
+        );
+        slot.position.set(0, 0.168, -0.02);
+        toyRoot.add(slot);
+        const cart = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 0.04), cartMat);
+        cart.position.set(0, 0.25, -0.02);
+        cart.castShadow = true;
         toyRoot.add(cart);
-
         const sticker = new THREE.Mesh(
-          new THREE.PlaneGeometry(0.24, 0.13),
+          new THREE.PlaneGeometry(0.15, 0.09),
           new THREE.MeshBasicMaterial({ map: createConsoleStickerTexture() })
         );
-        sticker.position.set(0, 0.30, 0.008);
+        sticker.position.set(0, 0.25, 0.002);
         toyRoot.add(sticker);
+        [-0.16, 0.16].forEach((px) => {
+          const port = new THREE.Mesh(
+            new THREE.BoxGeometry(0.07, 0.028, 0.012),
+            new THREE.MeshBasicMaterial({ color: 0x1a1816 })
+          );
+          port.position.set(px, 0.09, 0.2);
+          toyRoot.add(port);
+        });
+        const power = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.016, 0.016, 0.012, 12),
+          new THREE.MeshStandardMaterial({ map: createPrizeGrain('#8d2a24'), color: 0xffffff, roughness: 0.4 })
+        );
+        power.position.set(-0.12, 0.172, 0.08);
+        toyRoot.add(power);
+        const reset = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.014, 0.014, 0.01, 12),
+          new THREE.MeshStandardMaterial({ map: createPrizeGrain('#6d6a64'), color: 0xffffff, roughness: 0.45 })
+        );
+        reset.position.set(-0.06, 0.17, 0.08);
+        toyRoot.add(reset);
       } else if (id === 'white_goose') {
         // 压轴 Boss：贝塞尔样条曲线 S 型曲颈 + 车削流线型身躯 + 多层羽翼扇动 3D 大白鹅
-        const whiteFeatherMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.42 });
-        const wingFeatherMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.48 });
-        const orangeBeakMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.38 });
+        const whiteFeatherMat = new THREE.MeshStandardMaterial({ map: goosePlumage(), color: 0xffffff, roughness: 0.84 });
+        const orangeBeakMat = new THREE.MeshStandardMaterial({
+          map: createPrizeGrain('#d06a28'),
+          color: 0xffffff,
+          roughness: 0.62
+        });
 
         const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.34, 10), orangeBeakMat);
         legL.position.set(-0.13, 0.17, 0);
@@ -3957,65 +4877,65 @@
         // 车削饱满鹅身 + 上翘尾羽
         const bodyProfile = [
           new THREE.Vector2(0.0, 0.0),
-          new THREE.Vector2(0.24, 0.08),
-          new THREE.Vector2(0.36, 0.28),
-          new THREE.Vector2(0.34, 0.52),
-          new THREE.Vector2(0.18, 0.72),
-          new THREE.Vector2(0.0, 0.76)
+          new THREE.Vector2(0.1, 0.06),
+          new THREE.Vector2(0.2, 0.18),
+          new THREE.Vector2(0.26, 0.36),
+          new THREE.Vector2(0.24, 0.52),
+          new THREE.Vector2(0.14, 0.66),
+          new THREE.Vector2(0.0, 0.72)
         ];
-        const bodyMesh = new THREE.Mesh(new THREE.LatheGeometry(bodyProfile, 24), whiteFeatherMat);
+        const bodyMesh = new THREE.Mesh(new THREE.LatheGeometry(bodyProfile, 28), whiteFeatherMat);
+        bodyMesh.scale.set(1.02, 1.05, 0.86);
         bodyMesh.rotation.x = Math.PI * 0.42;
-        bodyMesh.position.set(0, 0.46, -0.34);
+        bodyMesh.position.set(0, 0.28, -0.2);
         bodyMesh.castShadow = true;
         toyRoot.add(bodyMesh);
 
-        // 左右多层扇动翅膀 Pivot
-        const wingL = new THREE.Group();
-        wingL.position.set(-0.32, 0.48, -0.02);
-        const wingMeshL = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), wingFeatherMat);
-        wingMeshL.scale.set(0.22, 0.65, 1.35);
-        wingL.add(wingMeshL);
-        toyRoot.add(wingL);
-
-        const wingR = new THREE.Group();
-        wingR.position.set(0.32, 0.48, -0.02);
-        const wingMeshR = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), wingFeatherMat);
-        wingMeshR.scale.set(0.22, 0.65, 1.35);
-        wingR.add(wingMeshR);
-        toyRoot.add(wingR);
-        group.userData.gooseWingL = wingL;
-        group.userData.gooseWingR = wingR;
-
         // S 型贝塞尔曲颈（套圈核心靶点！）
         const neckGroup = new THREE.Group();
-        neckGroup.position.set(0, 0.54, 0.20);
+        neckGroup.position.set(0, 0.46, 0.16);
 
         const neckCurve = new THREE.CatmullRomCurve3([
           new THREE.Vector3(0, 0.0, 0.0),
-          new THREE.Vector3(0, 0.25, 0.14),
-          new THREE.Vector3(0, 0.52, -0.04),
-          new THREE.Vector3(0, 0.75, 0.08)
+          new THREE.Vector3(0, 0.16, 0.1),
+          new THREE.Vector3(0, 0.34, 0.16),
+          new THREE.Vector3(0, 0.5, 0.24)
         ]);
         const neckTube = new THREE.Mesh(
-          new THREE.TubeGeometry(neckCurve, 20, 0.095, 14, false),
+          new THREE.TubeGeometry(neckCurve, 24, 0.046, 12, false),
           whiteFeatherMat
         );
         neckTube.castShadow = true;
         neckGroup.add(neckTube);
 
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.145, 18, 18), whiteFeatherMat);
-        head.position.set(0, 0.77, 0.10);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 18, 16), whiteFeatherMat);
+        head.scale.set(0.92, 0.78, 1.08);
+        head.position.set(0, 0.52, 0.26);
         neckGroup.add(head);
 
-        const knob = new THREE.Mesh(new THREE.SphereGeometry(0.068, 12, 12), orangeBeakMat);
-        knob.position.set(0, 0.86, 0.20);
+        const knob = new THREE.Mesh(new THREE.SphereGeometry(0.038, 12, 10), orangeBeakMat);
+        knob.position.set(0, 0.56, 0.34);
         neckGroup.add(knob);
 
-        const beak = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.25, 12), orangeBeakMat);
+        const beak = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.22, 12), orangeBeakMat);
         beak.rotation.x = Math.PI * 0.5;
-        beak.scale.set(1.1, 1.0, 0.55);
-        beak.position.set(0, 0.75, 0.30);
+        beak.scale.set(0.72, 1.2, 0.32);
+        beak.position.set(0, 0.5, 0.38);
         neckGroup.add(beak);
+        [-1, 1].forEach((side) => {
+          const eye = new THREE.Mesh(
+            new THREE.SphereGeometry(0.016, 8, 8),
+            new THREE.MeshBasicMaterial({ color: 0x1c140e })
+          );
+          eye.position.set(side * 0.062, 0.55, 0.34);
+          neckGroup.add(eye);
+        });
+        [-1, 1].forEach((side) => {
+          const foot = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), orangeBeakMat);
+          foot.scale.set(1.35, 0.22, 1.7);
+          foot.position.set(side * 0.13, 0.02, 0.08);
+          toyRoot.add(foot);
+        });
 
         toyRoot.add(neckGroup);
         group.userData.gooseNeck = neckGroup;
@@ -4031,6 +4951,7 @@
     function apply3DSkyAndLighting() {
       if (!scene || !hemiLight || !dirLight) return;
       if (state.skyMode === 'morning') {
+        if (skyDome) skyDome.visible = false;
         scene.background = new THREE.Color(0x7dd3fc);
         scene.fog = new THREE.FogExp2(0xcbd5e1, 0.022);
         hemiLight.color.setHex(0xffffff);
@@ -4038,26 +4959,90 @@
         hemiLight.intensity = 0.95;
         dirLight.color.setHex(0xfffbeb);
         dirLight.intensity = 1.15;
+        renderer.toneMappingExposure = 1.0;
         lanternLights.forEach((l) => { l.intensity = 0.55; });
+        stallLamps.forEach((l) => { l.intensity = 2; });
+        if (charFillLight) charFillLight.intensity = 0.28;
       } else if (state.skyMode === 'dusk') {
-        scene.background = new THREE.Color(0x1e1b4b);
-        scene.fog = new THREE.FogExp2(0x312e81, 0.025);
-        hemiLight.color.setHex(0xfde68a);
-        hemiLight.groundColor.setHex(0x1e1b4b);
-        hemiLight.intensity = 0.68;
-        dirLight.color.setHex(0xf97316);
-        dirLight.intensity = 1.1;
-        lanternLights.forEach((l) => { l.intensity = 1.25; });
+        // 暖色放在天球赤道上方，才会出现在屋脊后面，而不是被地面裁掉
+        // 镜头几乎平视，看得见的天只在纹理中部。深蓝占满上半，暖色只留在地平线。
+        applySkyDome([
+          [0.0, '#070d18'],
+          [0.3, '#101a30'],
+          [0.42, '#1a3050'],
+          [0.48, '#31445f'],
+          [0.52, '#c4895a'],
+          [0.58, '#5c6a78'],
+          [1.0, '#141210']
+        ], true);
+        scene.fog = new THREE.FogExp2(0x5c6a78, 0.011);
+        hemiLight.color.setHex(0xd5e2f2);
+        hemiLight.groundColor.setHex(0x3a3228);
+        hemiLight.intensity = 0.22;
+        dirLight.color.setHex(0xffe0b8);
+        dirLight.intensity = 0.26;
+        renderer.toneMappingExposure = 0.8;
+        lanternLights.forEach((l) => { l.intensity = 1.35; });
+        stallLamps.forEach((l) => { l.intensity = 6; });
+        if (charFillLight) charFillLight.intensity = 0.08;
       } else {
-        scene.background = new THREE.Color(0x020617);
-        scene.fog = new THREE.FogExp2(0x0f172a, 0.028);
-        hemiLight.color.setHex(0x38bdf8);
-        hemiLight.groundColor.setHex(0x020617);
-        hemiLight.intensity = 0.42;
-        dirLight.color.setHex(0x93c5fd);
-        dirLight.intensity = 0.55;
-        lanternLights.forEach((l) => { l.intensity = 1.65; });
+        applySkyDome(['#070d18', '#152033', '#2c3a52', '#4a4038', '#241c18', '#100e0c'], true);
+        scene.fog = new THREE.FogExp2(0x2a3344, 0.013);
+        hemiLight.color.setHex(0xb7c6dc);
+        hemiLight.groundColor.setHex(0x241c16);
+        hemiLight.intensity = 0.32;
+        dirLight.color.setHex(0xd5e2f4);
+        dirLight.intensity = 0.34;
+        renderer.toneMappingExposure = 0.74;
+        lanternLights.forEach((l) => { l.intensity = 1.45; });
+        stallLamps.forEach((l) => { l.intensity = 7; });
+        if (charFillLight) charFillLight.intensity = 0.06;
       }
+    }
+
+    function applySkyDome(stops, clouds) {
+      if (!skyDome) {
+        skyDome = new THREE.Mesh(
+          new THREE.SphereGeometry(90, 48, 32),
+          new THREE.MeshBasicMaterial({ side: THREE.BackSide, depthWrite: false, fog: false })
+        );
+        skyDome.frustumCulled = false;
+        skyDome.name = 'skyDome';
+        skyDome.rotation.y = Math.PI;
+        scene.add(skyDome);
+      }
+      if (skyDome.material.map) skyDome.material.map.dispose();
+      skyDome.material.map = createGradientSkyTexture(stops, clouds);
+      skyDome.material.needsUpdate = true;
+      skyDome.visible = true;
+      scene.background = null;
+    }
+
+    function createGradientSkyTexture(stops, clouds) {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 512;
+      const g = c.getContext('2d');
+      const grad = g.createLinearGradient(0, 0, 0, 512);
+      stops.forEach((stop, i) => {
+        if (Array.isArray(stop)) grad.addColorStop(stop[0], stop[1]);
+        else grad.addColorStop(i / (stops.length - 1), stop);
+      });
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 512, 512);
+      if (clouds) {
+        for (let i = 0; i < 16; i++) {
+          g.fillStyle = `rgba(255, 214, 176, ${0.04 + (i % 4) * 0.02})`;
+          g.beginPath();
+          g.ellipse((i * 83) % 512, 230 + (i % 4) * 8, 70 + (i % 3) * 24, 6 + (i % 3) * 2, 0, 0, Math.PI * 2);
+          g.fill();
+        }
+        g.fillStyle = 'rgba(255,255,255,0.75)';
+        for (let i = 0; i < 80; i++) g.fillRect((i * 97) % 512, 140 + (i * 13) % 100, 1, 1);
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
     }
 
     function getBaseCameraTarget(preset) {
@@ -4175,20 +5160,20 @@
       dirLight.shadow.camera.bottom = -9;
       scene.add(dirLight);
 
-      const charFill = new THREE.DirectionalLight(0xfff1de, 0.72);
-      charFill.position.set(-2.2, 3.8, 6.2);
-      scene.add(charFill);
-      const charRim = new THREE.DirectionalLight(0xb7d4ff, 0.55);
+      charFillLight = new THREE.DirectionalLight(0xfff1de, 0.28);
+      charFillLight.position.set(-2.2, 3.8, 6.2);
+      scene.add(charFillLight);
+      const charRim = new THREE.DirectionalLight(0xb7d4ff, 0.16);
       charRim.position.set(3.1, 5.2, -7.6);
       scene.add(charRim);
       // 脸部专用柔光，推近写实皮肤细节
-      const faceKey = new THREE.PointLight(0xffe4c8, 0.85, 8.5);
+      const faceKey = new THREE.PointLight(0xffe4c8, 0.4, 8.5);
       faceKey.position.set(0.35, 2.15, -8.2);
       scene.add(faceKey);
-      const faceFill = new THREE.PointLight(0xcfe0ff, 0.4, 7.5);
+      const faceFill = new THREE.PointLight(0xcfe0ff, 0.16, 7.5);
       faceFill.position.set(-1.1, 1.85, -9.4);
       scene.add(faceFill);
-      renderer.toneMappingExposure = 1.22;
+      renderer.toneMappingExposure = 1.05;
 
       build3DMarketEnvironment();
       build3DStallOwnerNpc();
@@ -5386,7 +6371,7 @@
           }
           if (pr.prizeId === 'white_goose') {
             const dirSign = state.gooseState.vx >= 0 ? 1 : -1;
-            toyRoot.rotation.y = dirSign * 0.35;
+            toyRoot.rotation.y = dirSign * Math.PI * 0.5;
             if (grp.userData.gooseLegL && grp.userData.gooseLegR) {
               const step = Math.sin(state.time * 0.25) * 0.45;
               grp.userData.gooseLegL.rotation.x = step;
@@ -5649,8 +6634,8 @@
           ctx.roundRect(pos.x - tagW * 0.5, pos.y, tagW, tagH, 5 * s);
           ctx.fill();
 
-          ctx.fillStyle = '#fde68a';
-          ctx.font = `bold ${Math.max(9, Math.round(10.5 * s))}px "Noto Sans SC", sans-serif`;
+          ctx.fillStyle = '#e6edf3';
+          ctx.font = `500 ${Math.max(9, Math.round(10.5 * s))}px "Inter", "Noto Sans SC", sans-serif`;
           ctx.textAlign = 'center';
           ctx.fillText(`${catalogItem.name.slice(0, 4)} ¥${catalogItem.sellValue}`, pos.x, pos.y + 12 * s);
 
@@ -5667,33 +6652,32 @@
       // 2. 绘制 3D 摊主老王头顶的可点击买圈铭牌与河南话气泡
       const npcHeadScreen = worldToScreen(new THREE.Vector3(0, 1.85, -STALL_DEPTH - 0.55));
       ctx.save();
-      const pulseBorder = Math.sin(state.time * 0.12) > 0 ? '#fde047' : '#f97316';
-      ctx.fillStyle = 'rgba(127, 29, 29, 0.92)';
-      ctx.strokeStyle = pulseBorder;
-      ctx.lineWidth = 2;
+      ctx.fillStyle = 'rgba(22, 27, 34, 0.94)';
+      ctx.strokeStyle = '#30363d';
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(npcHeadScreen.x - 64, npcHeadScreen.y - 26, 128, 24, 12);
+      ctx.roundRect(npcHeadScreen.x - 52, npcHeadScreen.y - 26, 104, 24, 6);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = '#fef08a';
-      ctx.font = 'bold 12px "Noto Sans SC", sans-serif';
+      ctx.fillStyle = '#e6edf3';
+      ctx.font = '500 12px "Inter", "Noto Sans SC", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('🛒 点 3D 老王买圈/砍价', npcHeadScreen.x, npcHeadScreen.y - 10);
+      ctx.fillText('点老王买圈', npcHeadScreen.x, npcHeadScreen.y - 10);
 
       if (state.npcBubbleTimer > 0) {
         const bubbleW = Math.min(360, state.width * 0.72);
         const bx = Math.max(16, Math.min(state.width - bubbleW - 16, npcHeadScreen.x + 70));
         const by = Math.max(12, npcHeadScreen.y - 28);
-        ctx.fillStyle = '#fffbeb';
-        ctx.strokeStyle = '#d97706';
-        ctx.lineWidth = 2;
+        ctx.fillStyle = '#161b22';
+        ctx.strokeStyle = '#30363d';
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.roundRect(bx, by, bubbleW, 38, 12);
+        ctx.roundRect(bx, by, bubbleW, 38, 6);
         ctx.fill();
         ctx.stroke();
 
-        ctx.fillStyle = '#78350f';
-        ctx.font = 'bold 12px "Noto Sans SC", sans-serif';
+        ctx.fillStyle = '#e6edf3';
+        ctx.font = '500 12px "Inter", "Noto Sans SC", sans-serif';
         ctx.textAlign = 'left';
         ctx.fillText(state.npcBubbleText, bx + 12, by + 23, bubbleW - 24);
       }
@@ -5701,14 +6685,17 @@
       // 3. 左下角 3D 炭火盆标签
       if (brazierGroup) {
         const brzScreen = worldToScreen(new THREE.Vector3(brazierGroup.position.x, 0.15, brazierGroup.position.z));
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillStyle = 'rgba(22, 27, 34, 0.94)';
+        ctx.strokeStyle = '#30363d';
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.roundRect(brzScreen.x - 46, brzScreen.y + 8, 92, 20, 8);
+        ctx.roundRect(brzScreen.x - 36, brzScreen.y + 8, 72, 20, 6);
         ctx.fill();
-        ctx.fillStyle = '#fdba74';
-        ctx.font = 'bold 11px "Noto Sans SC", sans-serif';
+        ctx.stroke();
+        ctx.fillStyle = '#8b949e';
+        ctx.font = '500 11px "Inter", "Noto Sans SC", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('🔥 3D火盆 (点我烤手)', brzScreen.x, brzScreen.y + 22);
+        ctx.fillText('火盆 · 烤手', brzScreen.x, brzScreen.y + 22);
       }
 
       // 4. 绘制烟花礼花、鞭炮彩带、碰撞火星与飘字
