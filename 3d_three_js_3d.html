@@ -1830,43 +1830,48 @@
       return next;
     }
 
-    function paintQuiltedCloth(ctx, w, h, base, stitch, wear) {
-      ctx.fillStyle = base;
-      ctx.fillRect(0, 0, w, h);
-      const img = ctx.getImageData(0, 0, w, h);
-      const d = img.data;
-      for (let i = 0; i < d.length; i += 4) {
-        const n = (Math.random() - 0.5) * 18;
-        d[i] = Math.max(0, Math.min(255, d[i] + n));
-        d[i + 1] = Math.max(0, Math.min(255, d[i + 1] + n * 0.9));
-        d[i + 2] = Math.max(0, Math.min(255, d[i + 2] + n * 0.7));
-      }
-      ctx.putImageData(img, 0, 0);
-      ctx.strokeStyle = stitch;
-      ctx.lineWidth = 2;
-      const step = Math.max(22, Math.floor(h / 14));
-      for (let y = step; y < h; y += step) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.quadraticCurveTo(w * 0.5, y + 3, w, y);
-        ctx.stroke();
-      }
-      ctx.fillStyle = wear;
-      for (let i = 0; i < 80; i++) {
-        ctx.fillRect((i * 53) % w, (i * 29) % h, 6, 2);
-      }
-    }
+    const cottonTex = {
+      farmer: loadPhotoMap('assets/world/cotton-brown.jpg', 1, 1),
+      auntie: loadPhotoMap('assets/world/cotton-red.jpg', 1, 1),
+      kid: loadPhotoMap('assets/world/cotton-orange.jpg', 1, 1)
+    };
 
-    function paintFarmerJacket(ctx, w, h) {
-      paintQuiltedCloth(ctx, w, h, '#5c4033', 'rgba(30,18,12,0.45)', 'rgba(90,60,40,0.25)');
-    }
-
-    function paintAuntieJacket(ctx, w, h) {
-      paintQuiltedCloth(ctx, w, h, '#8f2d2d', 'rgba(60,12,12,0.4)', 'rgba(255,220,200,0.12)');
-    }
-
-    function paintKidJacket(ctx, w, h) {
-      paintQuiltedCloth(ctx, w, h, '#d4652f', 'rgba(90,40,10,0.4)', 'rgba(255,230,200,0.16)');
+    // 西装 UV 会把横绗缝拉成胸口 V 字。改在蒙皮之后按世界坐标贴棉衣，绗缝跟着身体走。
+    function applyWorldCotton(mat, tex) {
+      mat.color.setHex(0xffffff);
+      mat.roughness = 0.92;
+      mat.metalness = 0.02;
+      mat.onBeforeCompile = (shader) => {
+        shader.uniforms.cottonMap = { value: tex };
+        shader.vertexShader = shader.vertexShader
+          .replace(
+            '#include <common>',
+            '#include <common>\nvarying vec3 vCottonWorldPos;\nvarying vec3 vCottonWorldNormal;'
+          )
+          .replace(
+            '#include <skinning_vertex>',
+            '#include <skinning_vertex>\nvCottonWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvCottonWorldNormal = mat3(modelMatrix) * objectNormal;'
+          );
+        shader.fragmentShader = shader.fragmentShader
+          .replace(
+            '#include <common>',
+            '#include <common>\nvarying vec3 vCottonWorldPos;\nvarying vec3 vCottonWorldNormal;\nuniform sampler2D cottonMap;\nvec3 cottonToLinear(vec3 c){return mix(pow(c*0.9478672986+vec3(0.0521327014),vec3(2.4)),c*0.0773993808,vec3(lessThanEqual(c,vec3(0.04045))));}'
+          )
+          .replace(
+            '#include <map_fragment>',
+            [
+              'vec3 cottonBlend = abs(normalize(vCottonWorldNormal));',
+              'cottonBlend = pow(cottonBlend, vec3(4.0));',
+              'cottonBlend /= cottonBlend.x + cottonBlend.y + cottonBlend.z + 1e-5;',
+              'float cottonScale = 1.15;',
+              'vec3 cottonX = cottonToLinear(texture2D(cottonMap, vCottonWorldPos.zy * cottonScale).rgb);',
+              'vec3 cottonY = cottonToLinear(texture2D(cottonMap, vCottonWorldPos.xz * cottonScale).rgb);',
+              'vec3 cottonZ = cottonToLinear(texture2D(cottonMap, vCottonWorldPos.xy * cottonScale).rgb);',
+              'diffuseColor.rgb *= cottonX * cottonBlend.x + cottonY * cottonBlend.y + cottonZ * cottonBlend.z;'
+            ].join('\n')
+          );
+      };
+      mat.needsUpdate = true;
     }
 
     function tintSkinMap(texture, rgbMul) {
@@ -1931,6 +1936,7 @@
     function loadRoleSkin(url, mat) {
       if (skinTexCache[url]) {
         mat.map = skinTexCache[url];
+        mat.map.userData = mat.map.userData || {};
         mat.map.userData.skipEyeFix = true;
         mat.map.userData.eyesFixed = true;
         mat.needsUpdate = true;
@@ -1939,6 +1945,7 @@
       skinTexLoader.load(url, (tex) => {
         tex.encoding = THREE.sRGBEncoding;
         tex.flipY = false;
+        tex.userData = tex.userData || {};
         tex.userData.skipEyeFix = true;
         tex.userData.eyesFixed = true;
         skinTexCache[url] = tex;
@@ -2167,11 +2174,7 @@
             mat.metalness = 0.02;
             mat.needsUpdate = true;
           } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
-            mat.map = cloneCanvasTextureFrom(mat.map, paintFarmerJacket);
-            mat.color.setHex(0xffffff);
-            mat.roughness = 0.92;
-            mat.metalness = 0.02;
-            mat.needsUpdate = true;
+            applyWorldCotton(mat, cottonTex.farmer);
           } else if (name.indexOf('shoe') !== -1) {
             mat.color.setHex(0x3f2a1d);
             mat.roughness = 0.88;
@@ -2202,9 +2205,7 @@
             mat.roughness = 0.52;
             mat.metalness = 0.02;
           } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
-            mat.map = cloneCanvasTextureFrom(mat.map, paintAuntieJacket);
-            mat.color.setHex(0xffffff);
-            mat.roughness = 0.9;
+            applyWorldCotton(mat, cottonTex.auntie);
           } else if (name.indexOf('shoe') !== -1) {
             mat.color.setHex(0x111827);
           }
@@ -2234,8 +2235,7 @@
             mat.roughness = 0.5;
             mat.metalness = 0.02;
           } else if (name.indexOf('casual') !== -1 || name.indexOf('suit') !== -1) {
-            mat.map = cloneCanvasTextureFrom(mat.map, paintKidJacket);
-            mat.color.setHex(0xffffff);
+            applyWorldCotton(mat, cottonTex.kid);
           } else if (name.indexOf('shoe') !== -1) {
             mat.color.setHex(0x3f2a1d);
           }
