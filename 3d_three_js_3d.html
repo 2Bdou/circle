@@ -4119,11 +4119,12 @@
       const group = new THREE.Group();
       const id = pr.prizeId;
 
-      // 底部精致车削木质圆托盘（带金边凹槽）
-      const woodTex = createQuiltedCoatTexture('#b45309', '#78350f');
+      // 底部木托：侧面是暗木边，朝上的一面是实拍木板
+      const plateTex = loadPhotoMap('assets/world/wood-planks.jpg', 1.2, 1.2);
       const pedestalMat = new THREE.MeshStandardMaterial({
-        color: pr.isMovingGoose ? 0x5c3d28 : 0x4a3020,
-        roughness: 0.86,
+        map: plateTex,
+        color: pr.isMovingGoose ? 0x8a6248 : 0xc4a888,
+        roughness: 0.84,
         metalness: 0.02
       });
       const pedProfile = [
@@ -4139,6 +4140,14 @@
       pedestal.castShadow = true;
       pedestal.receiveShadow = true;
       group.add(pedestal);
+      const plateTop = new THREE.Mesh(
+        new THREE.CircleGeometry(0.41, 28),
+        new THREE.MeshStandardMaterial({ map: plateTex, color: 0xfff6ea, roughness: 0.78 })
+      );
+      plateTop.rotation.x = -Math.PI * 0.5;
+      plateTop.position.y = 0.123;
+      plateTop.receiveShadow = true;
+      group.add(plateTop);
 
       const rimRing = new THREE.Mesh(
         new THREE.TorusGeometry(0.47, 0.024, 10, 28),
