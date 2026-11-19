@@ -3056,15 +3056,24 @@
       });
       const snowGroundGeo = new THREE.PlaneGeometry(96, 96, 64, 64);
       const snowPos = snowGroundGeo.attributes.position;
+      const snowColors = new Float32Array(snowPos.count * 3);
       for (let i = 0; i < snowPos.count; i++) {
         const x = snowPos.getX(i);
         const y = snowPos.getY(i);
-        // 摊子脚下踩实，四周才鼓起雪包
+        // 摊子脚下踩实，四周才鼓起雪包。摊前留一条踩暗的路。
         const packed = Math.exp(-(x * x) / 30 - ((y - 5.1) * (y - 5.1)) / 38);
+        const path = Math.exp(-(x * x) / 10) * Math.exp(-((y + 1.1) * (y + 1.1)) / 26);
+        const side = Math.exp(-Math.pow(Math.max(0, Math.abs(x) - 6.2), 2) / 30) * Math.exp(-((y - 3.2) * (y - 3.2)) / 70);
         const h = (Math.sin(x * 0.23) * Math.cos(y * 0.19) * 0.22
           + Math.sin(x * 0.85 + y * 0.55) * 0.07) * (1 - 0.82 * packed);
-        snowPos.setZ(i, h - packed * 0.02);
+        snowPos.setZ(i, h - packed * 0.02 - path * 0.015 - side * 0.02);
+        const shade = 1 - Math.min(0.45, packed * 0.2 + path * 0.35 + side * 0.36);
+        snowColors[i * 3] = shade;
+        snowColors[i * 3 + 1] = shade * 0.97;
+        snowColors[i * 3 + 2] = Math.min(1, shade * 1.04);
       }
+      snowGroundGeo.setAttribute('color', new THREE.BufferAttribute(snowColors, 3));
+      snowGroundMat.vertexColors = true;
       snowGroundGeo.computeVertexNormals();
       const snowGround = new THREE.Mesh(snowGroundGeo, snowGroundMat);
       snowGround.rotation.x = -Math.PI * 0.5;
@@ -3077,8 +3086,8 @@
         map: snowTex,
         bumpMap: snowTex,
         bumpScale: 0.04,
-        color: 0x8d9aaa,
-        roughness: 0.92,
+        color: 0x6e7c8c,
+        roughness: 0.96,
         side: THREE.DoubleSide
       });
       [
@@ -4279,16 +4288,16 @@
 
         [-0.06, 0.06].forEach((ex) => {
           const eyeWhite = new THREE.Mesh(
-            new THREE.SphereGeometry(0.032, 12, 10),
-            new THREE.MeshStandardMaterial({ color: 0xf4efe6, roughness: 0.7 })
+            new THREE.SphereGeometry(0.016, 10, 8),
+            new THREE.MeshStandardMaterial({ color: 0xf4efe6, roughness: 0.55 })
           );
-          eyeWhite.position.set(ex, 0.36, 0.14);
+          eyeWhite.position.set(ex, 0.33, 0.11);
           toyRoot.add(eyeWhite);
           const pupil = new THREE.Mesh(
-            new THREE.SphereGeometry(0.014, 8, 8),
+            new THREE.SphereGeometry(0.007, 8, 6),
             new THREE.MeshBasicMaterial({ color: 0x0f172a })
           );
-          pupil.position.set(ex, 0.37, 0.165);
+          pupil.position.set(ex, 0.338, 0.122);
           toyRoot.add(pupil);
         });
 
