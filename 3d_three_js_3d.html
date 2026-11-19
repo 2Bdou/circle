@@ -1322,39 +1322,18 @@
     let stoveSteamPuffs = [];
 
     // 1. 程序化雪地凹凸贴图（车辙、脚印与积雪微起伏）
-    function createSnowPBRTextures() {
-      const c = document.createElement('canvas');
-      c.width = 512;
-      c.height = 512;
-      const g = c.getContext('2d');
-      const img = g.createImageData(512, 512);
-      const d = img.data;
-      for (let y = 0; y < 512; y++) {
-        for (let x = 0; x < 512; x++) {
-          const n = Math.sin(x * 0.17) * Math.cos(y * 0.13) * 0.5
-            + Math.sin(x * 0.71 + y * 0.33) * 0.28
-            + (Math.random() - 0.5) * 0.22;
-          const shade = 214 + n * 36;
-          const i = (y * 512 + x) * 4;
-          d[i] = shade;
-          d[i + 1] = shade + 4;
-          d[i + 2] = shade + 12;
-          d[i + 3] = 255;
-        }
-      }
-      g.putImageData(img, 0, 0);
-      g.strokeStyle = 'rgba(90, 108, 128, 0.28)';
-      g.lineWidth = 7;
-      g.beginPath();
-      g.moveTo(48, 0);
-      g.quadraticCurveTo(110, 240, 60, 512);
-      g.stroke();
-      const tex = new THREE.CanvasTexture(c);
+    function loadPhotoMap(url, rx, ry) {
+      const tex = new THREE.TextureLoader().load(url);
       tex.wrapS = THREE.RepeatWrapping;
       tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(10, 10);
+      tex.repeat.set(rx, ry);
       tex.encoding = THREE.sRGBEncoding;
+      tex.anisotropy = 8;
       return tex;
+    }
+
+    function createSnowPBRTextures() {
+      return loadPhotoMap('assets/world/snow-ground.jpg', 8, 8);
     }
 
     // 2. 程序化红毡毯编织纹理与凹凸贴图
@@ -1388,19 +1367,19 @@
       }
 
       // 烫金双层国风回纹边框与四角祥云
-      g.strokeStyle = '#fbbf24';
-      g.lineWidth = 18;
-      g.strokeRect(20, 20, 984, 984);
-      g.strokeStyle = '#fde047';
-      g.lineWidth = 5;
+      g.strokeStyle = 'rgba(120, 78, 36, 0.55)';
+      g.lineWidth = 8;
+      g.strokeRect(24, 24, 976, 976);
+      g.strokeStyle = 'rgba(90, 52, 28, 0.35)';
+      g.lineWidth = 3;
       g.strokeRect(46, 46, 932, 932);
 
       // 4 排奖品距离金色刻度横线与档位文字
       const rowLabels = ['1.5m 近排冻货区', '2.8m 中排铁皮区', '4.2m 远排大奖区', '5.2m 镇摊白鹅轨'];
       [0.24, 0.48, 0.72, 0.90].forEach((rz, idx) => {
         const y = (1 - rz) * 1024;
-        g.strokeStyle = idx === 3 ? 'rgba(254, 240, 138, 0.85)' : 'rgba(251, 191, 36, 0.48)';
-        g.lineWidth = idx === 3 ? 9 : 4;
+        g.strokeStyle = idx === 3 ? 'rgba(196, 154, 74, 0.7)' : 'rgba(140, 96, 42, 0.35)';
+        g.lineWidth = idx === 3 ? 5 : 2;
         g.setLineDash([22, 14]);
         g.beginPath();
         g.moveTo(54, y);
@@ -1408,7 +1387,7 @@
         g.stroke();
         g.setLineDash([]);
 
-        g.fillStyle = 'rgba(254, 240, 138, 0.55)';
+        g.fillStyle = 'rgba(90, 48, 32, 0.72)';
         g.font = 'bold 24px "Noto Sans SC", sans-serif';
         g.fillText(rowLabels[idx], 70, y - 10);
       });
@@ -1420,32 +1399,7 @@
 
     // 3. 程序化北方青砖墙面贴图
     function createBrickWallTexture() {
-      const c = document.createElement('canvas');
-      c.width = 512;
-      c.height = 512;
-      const g = c.getContext('2d');
-      g.fillStyle = '#5c6168';
-      g.fillRect(0, 0, 512, 512);
-      const rows = 16;
-      const cols = 8;
-      const bh = 512 / rows;
-      const bw = 512 / cols;
-      for (let r = 0; r < rows; r++) {
-        const offset = (r % 2) * (bw * 0.5);
-        for (let col = -1; col <= cols; col++) {
-          const n = 86 + ((r * 17 + col * 13) % 26);
-          g.fillStyle = `rgb(${n - 6},${n},${n + 8})`;
-          g.fillRect(col * bw + offset + 2, r * bh + 2, bw - 4, bh - 5);
-          g.fillStyle = 'rgba(255,255,255,0.04)';
-          g.fillRect(col * bw + offset + 3, r * bh + 3, bw - 8, 2);
-        }
-      }
-      const tex = new THREE.CanvasTexture(c);
-      tex.wrapS = THREE.RepeatWrapping;
-      tex.wrapT = THREE.RepeatWrapping;
-      tex.encoding = THREE.sRGBEncoding;
-      tex.repeat.set(2, 2);
-      return tex;
+      return loadPhotoMap('assets/world/brick-wall.jpg', 1.4, 1.1);
     }
 
     // 4. 生成门头横幅与左右春联贴图
@@ -2923,8 +2877,8 @@
       const snowGroundMat = new THREE.MeshStandardMaterial({
         map: snowTex,
         bumpMap: snowTex,
-        bumpScale: 0.14,
-        color: 0xeef4fa,
+        bumpScale: 0.05,
+        color: 0xc5d0da,
         roughness: 0.86,
         metalness: 0.05
       });
@@ -2948,8 +2902,8 @@
       const snowMoundMat = new THREE.MeshStandardMaterial({
         map: snowTex,
         bumpMap: snowTex,
-        bumpScale: 0.08,
-        color: 0xf8fafc,
+        bumpScale: 0.04,
+        color: 0xd5dee6,
         roughness: 0.85
       });
       [
@@ -2968,35 +2922,7 @@
       });
 
       // 2. 摊位底层厚实原木地台 + 上层 PBR 织物大红毡毯
-      const stallWoodTex = (() => {
-        const c = document.createElement('canvas');
-        c.width = 256;
-        c.height = 256;
-        const g = c.getContext('2d');
-        const img = g.createImageData(256, 256);
-        const d = img.data;
-        for (let y = 0; y < 256; y++) {
-          const plank = Math.floor(y / 32);
-          const seam = (y % 32) < 2;
-          for (let x = 0; x < 256; x++) {
-            const grain = Math.sin(x * 0.35 + plank * 1.7) * 16 + Math.sin(y * 0.08) * 6;
-            const n = (Math.random() - 0.5) * 8;
-            const i = (y * 256 + x) * 4;
-            const base = seam ? 42 : 108 + (plank % 3) * 8;
-            d[i] = base + grain + n;
-            d[i + 1] = base * 0.62 + grain * 0.55 + n;
-            d[i + 2] = base * 0.32 + grain * 0.25 + n;
-            d[i + 3] = 255;
-          }
-        }
-        g.putImageData(img, 0, 0);
-        const tex = new THREE.CanvasTexture(c);
-        tex.wrapS = THREE.RepeatWrapping;
-        tex.wrapT = THREE.RepeatWrapping;
-        tex.repeat.set(4, 2);
-        tex.encoding = THREE.sRGBEncoding;
-        return tex;
-      })();
+      const stallWoodTex = loadPhotoMap('assets/world/wood-planks.jpg', 4, 2);
       const woodBaseMesh = new THREE.Mesh(
         new THREE.BoxGeometry(STALL_HALF_W * 2 + 0.45, 0.09, STALL_DEPTH + 0.45),
         new THREE.MeshStandardMaterial({ map: stallWoodTex, roughness: 0.86, metalness: 0.02 })
@@ -3040,7 +2966,12 @@
       scene.add(ropeMesh);
 
       // 3. 北方民俗飞檐牌坊门头 + 竖幅春联 + 16 根高透光 3D 冰溜子 + 3D 冰糖葫芦草靶
-      const bambooMat = new THREE.MeshStandardMaterial({ color: 0x6b4f3a, roughness: 0.78, metalness: 0.02 });
+      const bambooMat = new THREE.MeshStandardMaterial({
+        map: loadPhotoMap('assets/world/wood-planks.jpg', 1, 4),
+        color: 0xffffff,
+        roughness: 0.86,
+        metalness: 0.02
+      });
       const archZ = -STALL_DEPTH - 0.30;
       const archHalfX = STALL_HALF_W + 0.45;
 
@@ -3299,68 +3230,12 @@
 
       // 6. 写实北方农家宅院：青砖墙、灰瓦硬山顶、木门窗棂、院墙与暖窗光
       const brickTex = createBrickWallTexture();
-      brickTex.repeat.set(2.4, 1.6);
-      const roofTileTex = (() => {
-        const c = document.createElement('canvas');
-        c.width = 256;
-        c.height = 256;
-        const g = c.getContext('2d');
-        g.fillStyle = '#3a4048';
-        g.fillRect(0, 0, 256, 256);
-        const tileH = 18;
-        const tileW = 28;
-        for (let row = 0; row < 16; row++) {
-          const y = row * tileH;
-          const shift = (row % 2) * (tileW * 0.5);
-          for (let col = -1; col < 12; col++) {
-            const x = col * tileW + shift;
-            const shade = 78 + ((row * 5 + col * 3) % 18);
-            g.fillStyle = `rgb(${shade},${shade + 2},${shade + 6})`;
-            g.beginPath();
-            g.moveTo(x + 2, y + tileH - 2);
-            g.quadraticCurveTo(x + tileW * 0.5, y + 2, x + tileW - 2, y + tileH - 2);
-            g.lineTo(x + 2, y + tileH - 2);
-            g.fill();
-            g.strokeStyle = 'rgba(20,24,28,0.55)';
-            g.lineWidth = 1.2;
-            g.stroke();
-          }
-        }
-        const tex = new THREE.CanvasTexture(c);
-        tex.wrapS = THREE.RepeatWrapping;
-        tex.wrapT = THREE.RepeatWrapping;
-        tex.repeat.set(3, 2);
-        tex.encoding = THREE.sRGBEncoding;
-        return tex;
-      })();
-      const woodTex = (() => {
-        const c = document.createElement('canvas');
-        c.width = 128;
-        c.height = 128;
-        const g = c.getContext('2d');
-        const woodImg = g.createImageData(128, 128);
-        const wd = woodImg.data;
-        for (let y = 0; y < 128; y++) {
-          for (let x = 0; x < 128; x++) {
-            const grain = Math.sin(x * 0.45 + Math.sin(y * 0.2) * 3) * 18;
-            const n = (Math.random() - 0.5) * 10;
-            const i = (y * 128 + x) * 4;
-            wd[i] = 92 + grain + n;
-            wd[i + 1] = 62 + grain * 0.6 + n;
-            wd[i + 2] = 38 + grain * 0.3 + n;
-            wd[i + 3] = 255;
-          }
-        }
-        g.putImageData(woodImg, 0, 0);
-        const tex = new THREE.CanvasTexture(c);
-        tex.wrapS = THREE.RepeatWrapping;
-        tex.wrapT = THREE.RepeatWrapping;
-        return tex;
-      })();
+      const roofTileTex = loadPhotoMap('assets/world/roof-tiles.jpg', 2, 1.5);
+      const woodTex = loadPhotoMap('assets/world/wood-planks.jpg', 2, 1.2);
       const houseMat = new THREE.MeshStandardMaterial({
         map: brickTex,
         bumpMap: brickTex,
-        bumpScale: 0.08,
+        bumpScale: 0.035,
         roughness: 0.92,
         color: 0xffffff
       });
