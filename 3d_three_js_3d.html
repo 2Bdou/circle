@@ -488,15 +488,9 @@
       <div class="space-y-1">
         <label class="block text-slate-300 font-semibold">1. 3D 集市光照与天色：</label>
         <div class="grid grid-cols-3 gap-1.5">
-          <button type="button" data-sky="morning" class="sky-mode-btn px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-medium">
-            🌨️ 瑞雪清晨
-          </button>
-          <button type="button" data-sky="dusk" class="sky-mode-btn px-2 py-1.5 rounded bg-amber-600 text-slate-950 border border-amber-300 font-bold">
-            🏮 腊月黄昏
-          </button>
-          <button type="button" data-sky="night" class="sky-mode-btn px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-medium">
-            🌙 夜市灯会
-          </button>
+          <button type="button" data-sky="morning" class="sky-mode-btn ui-btn">瑞雪清晨</button>
+          <button type="button" data-sky="dusk" class="sky-mode-btn ui-btn ui-btn-active">腊月黄昏</button>
+          <button type="button" data-sky="night" class="sky-mode-btn ui-btn">夜市灯会</button>
         </div>
       </div>
 
@@ -504,15 +498,9 @@
       <div class="space-y-1">
         <label class="block text-slate-300 font-semibold">2. 3D 摄像机机位视角：</label>
         <div class="grid grid-cols-3 gap-1.5">
-          <button type="button" data-cam="default" class="cam-mode-btn px-2 py-1 rounded bg-amber-500 text-slate-950 font-bold border border-amber-300 text-xs">
-            👁️ 经典平视
-          </button>
-          <button type="button" data-cam="high" class="cam-mode-btn px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-600 text-xs">
-            🦅 全景高机位
-          </button>
-          <button type="button" data-cam="low" class="cam-mode-btn px-2 py-1 rounded bg-slate-800 text-slate-200 border border-slate-600 text-xs">
-            🎯 沉浸低机位
-          </button>
+          <button type="button" data-cam="default" class="cam-mode-btn ui-btn ui-btn-active">经典平视</button>
+          <button type="button" data-cam="high" class="cam-mode-btn ui-btn">全景高机位</button>
+          <button type="button" data-cam="low" class="cam-mode-btn ui-btn">沉浸低机位</button>
         </div>
       </div>
 
@@ -549,21 +537,13 @@
       <div class="pt-2 border-t border-slate-800 space-y-1.5">
         <div class="flex items-center justify-between">
           <span class="text-slate-300 font-semibold">测试用压岁钱补贴：</span>
-          <button id="btnAddDebugMoney" type="button" class="px-2.5 py-1 rounded bg-red-700 hover:bg-red-600 text-amber-200 font-bold border border-amber-400/50">
-            🧧 +50 元压岁钱
-          </button>
+          <button id="btnAddDebugMoney" type="button" class="ui-btn">+50 元</button>
         </div>
         <div class="grid grid-cols-2 gap-1.5 pt-1">
-          <button id="btnRestockStall" type="button" class="px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold border border-amber-400/40 text-xs">
-            🔄 补满摊位奖品
-          </button>
-          <button id="btnDebugCatchGoose" type="button" class="px-2 py-1.5 rounded bg-emerald-800 hover:bg-emerald-700 text-emerald-100 font-bold border border-emerald-400/40 text-xs">
-            🦢 测试套中白鹅
-          </button>
+          <button id="btnRestockStall" type="button" class="ui-btn">补满摊位</button>
+          <button id="btnDebugCatchGoose" type="button" class="ui-btn">测试套中白鹅</button>
         </div>
-        <button id="btnDebugRimBounce" type="button" class="w-full px-2 py-1.5 rounded bg-amber-900/80 hover:bg-amber-800 text-amber-200 font-bold border border-amber-400/50 text-xs">
-          💥 物理演示：模拟磕碰玩具边缘弹飞
-        </button>
+        <button id="btnDebugRimBounce" type="button" class="ui-btn ui-btn-block">演示磕边弹飞</button>
       </div>
     </aside>
 
@@ -2244,19 +2224,12 @@
         const len = child.position.length();
         if (len < 0.02) return;
         const mesh = new THREE.Mesh(
-          new THREE.CylinderGeometry(rChild, rParent, len * (cover || 0.98), 12),
+          new THREE.CylinderGeometry(rChild, rParent, len * (cover || 0.98), 16),
           mat
         );
         mesh.castShadow = true;
         mesh.position.y = len * 0.48;
         bone.add(mesh);
-        const joint = new THREE.Mesh(
-          new THREE.SphereGeometry(Math.min(rParent, rChild) * 0.9, 8, 6),
-          mat
-        );
-        joint.scale.y = 0.62;
-        joint.position.y = len * 0.97;
-        bone.add(joint);
       }
       tube('upperarm_l', 'lowerarm_l', 0.09, 0.072, coatMat);
       tube('upperarm_r', 'lowerarm_r', 0.09, 0.072, coatMat);
@@ -2282,12 +2255,19 @@
         coat.position.z = 0.02;
         coat.castShadow = true;
         waist.add(coat);
+        const buttonMat = new THREE.MeshBasicMaterial({ color: 0x2a2118 });
+        for (let i = 0; i < 4; i++) {
+          const button = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.006, 8), buttonMat);
+          button.rotation.x = Math.PI / 2;
+          button.position.set(0.02, 0.06 + i * 0.07, 0.2);
+          coat.add(button);
+        }
       }
       const headBone = model.getObjectByName('head');
       if (neck && headBone) {
         const len = Math.max(0.08, headBone.position.length());
-        const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.07, len * 1.05, 12), coatMat);
-        collar.position.set(0, len * 0.36, 0);
+        const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.082, len * 0.5, 14), coatMat);
+        collar.position.set(0, len * 0.18, 0);
         collar.castShadow = true;
         neck.add(collar);
       }
@@ -2296,11 +2276,11 @@
         const bone = model.getObjectByName(boneName);
         if (!bone) return;
         const side = boneName.charAt(boneName.length - 1) === 'l' ? -1 : 1;
-        const palm = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.056, 0.24, 10), coatMat);
+        const palm = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.056, 0.24, 12), coatMat);
         palm.position.set(0, 0.13, 0.035);
         palm.castShadow = true;
         bone.add(palm);
-        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.064, 10, 8), coatMat);
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.064, 12, 8), coatMat);
         tip.position.set(0, 0.23, 0.04);
         bone.add(tip);
         const thumb = new THREE.Mesh(new THREE.SphereGeometry(0.042, 8, 6), coatMat);
@@ -3434,21 +3414,21 @@
           new THREE.Vector2(0.58, 0.18),
           new THREE.Vector2(0.7, 0.28),
           new THREE.Vector2(0.74, 0.36)
-        ], 32),
-        new THREE.MeshStandardMaterial({ color: 0x12100e, roughness: 0.88, metalness: 0.22, side: THREE.FrontSide })
+        ], 48),
+        new THREE.MeshBasicMaterial({ color: 0x100e0c, side: THREE.FrontSide })
       );
       potMesh.castShadow = true;
       brazierGroup.add(potMesh);
       const liner = new THREE.Mesh(
         new THREE.CylinderGeometry(0.7, 0.52, 0.22, 28, 1, true),
-        new THREE.MeshStandardMaterial({ color: 0x1a1612, roughness: 0.94, side: THREE.BackSide })
+        new THREE.MeshBasicMaterial({ color: 0x14110e, side: THREE.BackSide })
       );
       liner.position.y = 0.24;
       brazierGroup.add(liner);
 
       const rimTorus = new THREE.Mesh(
-        new THREE.TorusGeometry(0.72, 0.045, 10, 28),
-        new THREE.MeshStandardMaterial({ color: 0x1a1612, roughness: 0.86, metalness: 0.18 })
+        new THREE.TorusGeometry(0.72, 0.035, 12, 48),
+        new THREE.MeshBasicMaterial({ color: 0x1c1814 })
       );
       rimTorus.rotation.x = Math.PI * 0.5;
       rimTorus.position.y = 0.36;
@@ -3457,26 +3437,20 @@
       ashCanvas.width = 256;
       ashCanvas.height = 256;
       const ashCtx = ashCanvas.getContext('2d');
-      ashCtx.fillStyle = '#2c261f';
+      ashCtx.fillStyle = '#1a1612';
       ashCtx.fillRect(0, 0, 256, 256);
-      for (let i = 0; i < 80; i++) {
-        ashCtx.fillStyle = `rgba(18, 14, 10, ${0.35 + Math.random() * 0.4})`;
+      for (let i = 0; i < 36; i++) {
+        const g = 22 + Math.random() * 18;
+        ashCtx.fillStyle = `rgba(${g + 4}, ${g}, ${g - 2}, 0.55)`;
         ashCtx.beginPath();
-        ashCtx.ellipse(Math.random() * 256, Math.random() * 256, 8 + Math.random() * 22, 5 + Math.random() * 14, Math.random() * 3, 0, Math.PI * 2);
-        ashCtx.fill();
-      }
-      for (let i = 0; i < 240; i++) {
-        const g = 70 + Math.random() * 55;
-        ashCtx.fillStyle = `rgba(${g + 8}, ${g}, ${g - 10}, ${0.25 + Math.random() * 0.4})`;
-        ashCtx.beginPath();
-        ashCtx.arc(Math.random() * 256, Math.random() * 256, 1 + Math.random() * 4, 0, Math.PI * 2);
+        ashCtx.ellipse(Math.random() * 256, Math.random() * 256, 18 + Math.random() * 40, 12 + Math.random() * 28, Math.random() * 3, 0, Math.PI * 2);
         ashCtx.fill();
       }
       const ashMap = new THREE.CanvasTexture(ashCanvas);
       ashMap.encoding = THREE.sRGBEncoding;
       const ash = new THREE.Mesh(
         new THREE.CircleGeometry(0.62, 24),
-        new THREE.MeshStandardMaterial({ map: ashMap, color: 0xffffff, roughness: 1 })
+        new THREE.MeshBasicMaterial({ map: ashMap, color: 0xffffff })
       );
       ash.rotation.x = -Math.PI / 2;
       ash.position.y = 0.2;
@@ -3486,34 +3460,40 @@
       snowNest.position.y = -0.02;
       brazierGroup.add(snowNest);
 
-      const coalMat = new THREE.MeshStandardMaterial({ color: 0x14110f, roughness: 0.96, metalness: 0.08 });
-      const crackMat = new THREE.MeshStandardMaterial({
-        color: 0xff7a32,
-        emissive: 0xff4a12,
-        emissiveIntensity: 0.85,
-        roughness: 0.7
-      });
-      for (let i = 0; i < 8; i++) {
-        const geo = new THREE.IcosahedronGeometry(0.07 + (i % 3) * 0.018, 1);
+      const coalMat = new THREE.MeshBasicMaterial({ color: 0x0c0b0a });
+      const crackCanvas = document.createElement('canvas');
+      crackCanvas.width = 8;
+      crackCanvas.height = 8;
+      const crackCtx = crackCanvas.getContext('2d');
+      crackCtx.fillStyle = '#d24516';
+      crackCtx.fillRect(0, 0, 8, 8);
+      const crackMap = new THREE.CanvasTexture(crackCanvas);
+      crackMap.encoding = THREE.sRGBEncoding;
+      const crackMat = new THREE.MeshBasicMaterial({ map: crackMap, color: 0xffffff });
+      for (let i = 0; i < 32; i++) {
+        const geo = new THREE.IcosahedronGeometry(0.058 + (i % 5) * 0.012, 0);
         const pos = geo.attributes.position;
         for (let v = 0; v < pos.count; v++) {
           const x = pos.getX(v);
           const y = pos.getY(v);
           const z = pos.getZ(v);
-          const n = 0.7 + Math.abs(Math.sin(x * 19 + i * 2.1) * Math.cos(z * 15 + y * 11)) * 0.5;
-          pos.setXYZ(v, x * n, y * 0.5, z * n * (0.85 + (i % 3) * 0.08));
+          const n = 0.72 + Math.abs(Math.sin(i * 2.7 + x * 11) * Math.cos(z * 9 + i)) * 0.5;
+          pos.setXYZ(v, x * n, y * 0.46, z * n);
         }
         geo.computeVertexNormals();
         const coal = new THREE.Mesh(geo, coalMat);
-        const a = (i / 8) * Math.PI * 2 + 0.35;
-        const rad = i < 2 ? 0.06 : 0.16 + (i % 3) * 0.08;
-        coal.position.set(Math.cos(a) * rad, 0.26, Math.sin(a) * rad);
-        coal.rotation.set(i * 0.8, i * 1.3, i * 0.5);
+        const a = i * 2.399;
+        const rad = (i % 9) * 0.052;
+        coal.position.set(Math.cos(a) * rad, 0.24 + (i % 4) * 0.03, Math.sin(a) * rad);
+        coal.rotation.set(i * 0.8, i * 1.3, i * 0.45);
         brazierGroup.add(coal);
-        const crack = new THREE.Mesh(new THREE.PlaneGeometry(0.07, 0.016), crackMat);
-        crack.position.set(0, 0.02, 0.03);
-        crack.rotation.x = -1.1;
-        coal.add(crack);
+      }
+      for (let i = 0; i < 7; i++) {
+        const a = i * 0.95 + 0.3;
+        const seam = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.004, 0.01), crackMat);
+        seam.position.set(Math.cos(a) * (0.06 + (i % 3) * 0.05), 0.245, Math.sin(a) * (0.06 + (i % 3) * 0.05));
+        seam.rotation.y = a;
+        brazierGroup.add(seam);
       }
 
       brazierFlames = [];
@@ -3547,7 +3527,7 @@
         depthWrite: false,
         side: THREE.DoubleSide
       });
-      [[0.02, 0.46, 0.02, 0.14, 0.32], [-0.06, 0.4, -0.04, 0.09, 0.2]].forEach((spec, idx) => {
+      [[0.04, 0.4, 0.0, 0.07, 0.16]].forEach((spec, idx) => {
         const flame = new THREE.Group();
         flame.position.set(spec[0], spec[1], spec[2]);
         for (let k = 0; k < 2; k++) {
@@ -6499,8 +6479,8 @@
           ctx.roundRect(pos.x - tagW * 0.5, pos.y, tagW, tagH, 5 * s);
           ctx.fill();
 
-          ctx.fillStyle = '#fde68a';
-          ctx.font = `bold ${Math.max(9, Math.round(10.5 * s))}px "Noto Sans SC", sans-serif`;
+          ctx.fillStyle = '#e6edf3';
+          ctx.font = `500 ${Math.max(9, Math.round(10.5 * s))}px "Inter", "Noto Sans SC", sans-serif`;
           ctx.textAlign = 'center';
           ctx.fillText(`${catalogItem.name.slice(0, 4)} ¥${catalogItem.sellValue}`, pos.x, pos.y + 12 * s);
 
@@ -6517,33 +6497,32 @@
       // 2. 绘制 3D 摊主老王头顶的可点击买圈铭牌与河南话气泡
       const npcHeadScreen = worldToScreen(new THREE.Vector3(0, 1.85, -STALL_DEPTH - 0.55));
       ctx.save();
-      const pulseBorder = Math.sin(state.time * 0.12) > 0 ? '#fde047' : '#f97316';
-      ctx.fillStyle = 'rgba(127, 29, 29, 0.92)';
-      ctx.strokeStyle = pulseBorder;
-      ctx.lineWidth = 2;
+      ctx.fillStyle = 'rgba(22, 27, 34, 0.94)';
+      ctx.strokeStyle = '#30363d';
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(npcHeadScreen.x - 64, npcHeadScreen.y - 26, 128, 24, 12);
+      ctx.roundRect(npcHeadScreen.x - 52, npcHeadScreen.y - 26, 104, 24, 6);
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = '#fef08a';
-      ctx.font = 'bold 12px "Noto Sans SC", sans-serif';
+      ctx.fillStyle = '#e6edf3';
+      ctx.font = '500 12px "Inter", "Noto Sans SC", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('🛒 点 3D 老王买圈/砍价', npcHeadScreen.x, npcHeadScreen.y - 10);
+      ctx.fillText('点老王买圈', npcHeadScreen.x, npcHeadScreen.y - 10);
 
       if (state.npcBubbleTimer > 0) {
         const bubbleW = Math.min(360, state.width * 0.72);
         const bx = Math.max(16, Math.min(state.width - bubbleW - 16, npcHeadScreen.x + 70));
         const by = Math.max(12, npcHeadScreen.y - 28);
-        ctx.fillStyle = '#fffbeb';
-        ctx.strokeStyle = '#d97706';
-        ctx.lineWidth = 2;
+        ctx.fillStyle = '#161b22';
+        ctx.strokeStyle = '#30363d';
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.roundRect(bx, by, bubbleW, 38, 12);
+        ctx.roundRect(bx, by, bubbleW, 38, 6);
         ctx.fill();
         ctx.stroke();
 
-        ctx.fillStyle = '#78350f';
-        ctx.font = 'bold 12px "Noto Sans SC", sans-serif';
+        ctx.fillStyle = '#e6edf3';
+        ctx.font = '500 12px "Inter", "Noto Sans SC", sans-serif';
         ctx.textAlign = 'left';
         ctx.fillText(state.npcBubbleText, bx + 12, by + 23, bubbleW - 24);
       }
@@ -6551,14 +6530,17 @@
       // 3. 左下角 3D 炭火盆标签
       if (brazierGroup) {
         const brzScreen = worldToScreen(new THREE.Vector3(brazierGroup.position.x, 0.15, brazierGroup.position.z));
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillStyle = 'rgba(22, 27, 34, 0.94)';
+        ctx.strokeStyle = '#30363d';
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.roundRect(brzScreen.x - 46, brzScreen.y + 8, 92, 20, 8);
+        ctx.roundRect(brzScreen.x - 36, brzScreen.y + 8, 72, 20, 6);
         ctx.fill();
-        ctx.fillStyle = '#fdba74';
-        ctx.font = 'bold 11px "Noto Sans SC", sans-serif';
+        ctx.stroke();
+        ctx.fillStyle = '#8b949e';
+        ctx.font = '500 11px "Inter", "Noto Sans SC", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('🔥 3D火盆 (点我烤手)', brzScreen.x, brzScreen.y + 22);
+        ctx.fillText('火盆 · 烤手', brzScreen.x, brzScreen.y + 22);
       }
 
       // 4. 绘制烟花礼花、鞭炮彩带、碰撞火星与飘字
