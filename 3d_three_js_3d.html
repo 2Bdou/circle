@@ -2061,6 +2061,66 @@
       return pack;
     }
 
+    function morphScanHeadGeometry(geometry, morph) {
+      // 同一扫描头按角色捏形，避免三人同脸
+      if (!geometry || !morph) return;
+      const pos = geometry.attributes.position;
+      if (!pos) return;
+      const box = new THREE.Box3().setFromBufferAttribute(pos);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const invY = 1 / Math.max(size.y, 0.001);
+      const invX = 1 / Math.max(size.x, 0.001);
+      const invZ = 1 / Math.max(size.z, 0.001);
+      for (let i = 0; i < pos.count; i++) {
+        let x = pos.getX(i) - center.x;
+        let y = pos.getY(i) - center.y;
+        let z = pos.getZ(i) - center.z;
+        const ny = y * invY;
+        const nx = x * invX;
+        const nz = z * invZ;
+        if (morph === 'farmer') {
+          // 方脸、下颌沉、眉弓鼓
+          if (ny < -0.05) {
+            x *= 1.06;
+            y -= size.y * 0.04 * (-ny);
+          }
+          if (ny > 0.15 && nz > 0.05) z += size.z * 0.04;
+          if (Math.abs(nx) > 0.35 && ny < 0.2) x *= 1.08;
+        } else if (morph === 'auntie') {
+          // 圆脸短下巴、颊鼓、颧收一点
+          x *= 1.12;
+          y *= 0.86;
+          if (ny < -0.1) {
+            y += size.y * 0.08 * (-ny);
+            z *= 0.92;
+          }
+          if (ny > -0.05 && ny < 0.35 && Math.abs(nx) > 0.15) {
+            x *= 1.1;
+            z += size.z * 0.05 * (1 - Math.abs(nx));
+          }
+          if (nz > 0.35 && Math.abs(nx) < 0.2 && ny > -0.05 && ny < 0.25) {
+            z *= 0.9; // 鼻梁略收
+          }
+        } else if (morph === 'kid') {
+          // 大圆头、短脸、鼓颊、小下巴
+          x *= 1.18;
+          y *= 0.9;
+          z *= 1.12;
+          if (ny < 0.15) {
+            const puff = 1 - Math.min(1, Math.hypot(nx, nz));
+            x *= 1 + 0.12 * puff;
+            z += size.z * 0.07 * puff;
+          }
+          if (ny < -0.15) y += size.y * 0.1 * (-ny);
+          if (nz > 0.3 && Math.abs(nx) < 0.25) z *= 0.88;
+        }
+        pos.setXYZ(i, x + center.x, y + center.y, z + center.z);
+      }
+      pos.needsUpdate = true;
+      geometry.computeVertexNormals();
+    }
+
     function attachPhotorealScanHead(model, opts) {
       // Lee Perry Smith 扫描头：近景写实脸（仅取网格，丢掉场景里的 Camera/Lamp）
       const options = opts || {};
@@ -2069,25 +2129,34 @@
       const localPos = options.position || { x: 0, y: 0.22, z: 0.06 };
       const yaw = options.yaw != null ? options.yaw : 0;
       const skinTint = options.tint != null ? options.tint : 0xffffff;
+      const morph = options.morph || null;
+      const scaleXYZ = options.scaleXYZ || { x: 1, y: 1, z: 1 };
+      const roughness = options.roughness != null ? options.roughness : 0.82;
+      const normalStrength = options.normalStrength != null ? options.normalStrength : 0.65;
       crushMakeHumanHeadGeometry(model);
       loadLpsGltf((gltf) => {
         const srcMesh = gltf.scene.getObjectByName('LeePerrySmith') || gltf.scene.children.find((c) => c.isMesh);
         let headMesh = null;
         if (srcMesh && srcMesh.isMesh) {
           headMesh = srcMesh.clone(true);
+          headMesh.geometry = srcMesh.geometry.clone();
         } else {
           gltf.scene.traverse((obj) => {
-            if (!headMesh && obj.isMesh) headMesh = obj.clone(true);
+            if (!headMesh && obj.isMesh) {
+              headMesh = obj.clone(true);
+              headMesh.geometry = obj.geometry.clone();
+            }
           });
         }
         if (!headMesh) return;
+        morphScanHeadGeometry(headMesh.geometry, morph);
         const tex = getLpsFaceTextures(faceUrl);
         // Map-SPEC 是高光图，不能直接当 roughnessMap（会油光），只用颜色+法线
         headMesh.material = new THREE.MeshStandardMaterial({
           map: tex.map,
           normalMap: tex.normal,
-          normalScale: new THREE.Vector2(0.65, 0.65),
-          roughness: 0.82,
+          normalScale: new THREE.Vector2(normalStrength, normalStrength),
+          roughness,
           metalness: 0.015,
           color: skinTint
         });
@@ -2103,9 +2172,10 @@
         // 几何中心归零；挂在 neck 上，抬到原头位置
         headMesh.position.set(-center.x, -center.y - size.y * 0.05, -center.z);
         wrap.add(headMesh);
-        wrap.scale.setScalar(s);
+        wrap.scale.set(s * scaleXYZ.x, s * scaleXYZ.y, s * scaleXYZ.z);
         wrap.position.set(localPos.x, localPos.y, localPos.z);
         wrap.rotation.y = yaw;
+        if (typeof options.onHead === 'function') options.onHead(wrap, headMesh, s);
         attachPropToNeck(model, wrap);
       });
     }
@@ -2136,24 +2206,27 @@
         });
       });
       attachPhotorealScanHead(model, {
-        faceUrl: 'assets/people/lps/farmer_face.jpg?v=8',
+        faceUrl: 'assets/people/lps/farmer_face.jpg?v=10',
         headHeight: 0.34,
         position: { x: 0, y: 0.175, z: 0.05 },
         yaw: 0,
-        tint: 0xffffff
+        tint: 0xf0c890,
+        morph: 'farmer',
+        scaleXYZ: { x: 1.06, y: 1.03, z: 1.05 },
+        roughness: 0.9,
+        normalStrength: 0.9,
+        onHead: (wrap, headMesh) => {
+          const towelMat = new THREE.MeshStandardMaterial({ color: 0xe8eef7, roughness: 0.9, side: THREE.DoubleSide });
+          const cap = new THREE.Mesh(new THREE.SphereGeometry(4.2, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.45), towelMat);
+          cap.position.set(0, 2.8, -1.6);
+          headMesh.add(cap);
+          const flap = new THREE.Mesh(new THREE.BoxGeometry(1.5, 3.4, 0.5), towelMat);
+          flap.position.set(3.2, 1.4, -1.8);
+          headMesh.add(flap);
+        }
       });
-      const towel = new THREE.Group();
-      towel.position.set(0, 0.33, -0.04);
-      const towelMat = new THREE.MeshStandardMaterial({ color: 0xdbeafe, roughness: 0.85 });
-      const band = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.035, 10, 22), towelMat);
-      band.rotation.x = Math.PI * 0.5;
-      towel.add(band);
-      const flap = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.03), towelMat);
-      flap.position.set(0.12, -0.05, 0.02);
-      towel.add(flap);
-      attachPropToNeck(model, towel);
       const scarf = new THREE.Mesh(
-        new THREE.TorusGeometry(0.16, 0.04, 10, 20),
+        new THREE.TorusGeometry(0.18, 0.05, 10, 20),
         new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 })
       );
       scarf.position.set(0, 1.42, 0.02);
@@ -2183,23 +2256,31 @@
         });
       });
       attachPhotorealScanHead(model, {
-        faceUrl: 'assets/people/lps/auntie_face.jpg?v=8',
-        headHeight: 0.33,
-        position: { x: 0, y: 0.165, z: 0.05 },
+        faceUrl: 'assets/people/lps/auntie_face.jpg?v=10',
+        headHeight: 0.31,
+        position: { x: 0, y: 0.16, z: 0.05 },
         yaw: 0,
-        tint: 0xfff1e6
+        tint: 0xffe4d4,
+        morph: 'auntie',
+        scaleXYZ: { x: 1.16, y: 0.86, z: 1.1 },
+        roughness: 0.7,
+        normalStrength: 0.35,
+        onHead: (wrap, headMesh) => {
+          const hairMat = new THREE.MeshStandardMaterial({ color: 0x14100c, roughness: 0.72, side: THREE.DoubleSide });
+          const scalp = new THREE.Mesh(new THREE.SphereGeometry(4.6, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.5), hairMat);
+          scalp.position.set(0, 2.6, -1.8);
+          headMesh.add(scalp);
+          const bun = new THREE.Mesh(new THREE.SphereGeometry(2.1, 14, 12), hairMat);
+          bun.position.set(0, 2.0, -4.2);
+          headMesh.add(bun);
+          const sideL = new THREE.Mesh(new THREE.SphereGeometry(2.2, 12, 10), hairMat);
+          sideL.scale.set(0.7, 1.45, 1.0);
+          sideL.position.set(-3.6, 0.4, -1.4);
+          const sideR = sideL.clone();
+          sideR.position.x = 3.6;
+          headMesh.add(sideL, sideR);
+        }
       });
-      const hair = new THREE.Group();
-      hair.position.set(0, 0.31, -0.05);
-      const bunMat = new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.75 });
-      const bun = new THREE.Mesh(new THREE.SphereGeometry(0.065, 14, 12), bunMat);
-      bun.position.set(0, 0.05, -0.08);
-      hair.add(bun);
-      const fringe = new THREE.Mesh(new THREE.SphereGeometry(0.09, 14, 10), bunMat);
-      fringe.scale.set(1.15, 0.3, 0.6);
-      fringe.position.set(0, 0.04, 0.03);
-      hair.add(fringe);
-      attachPropToNeck(model, hair);
     }
 
     function dressMarketKid(model) {
@@ -2223,25 +2304,33 @@
         });
       });
       attachPhotorealScanHead(model, {
-        faceUrl: 'assets/people/lps/kid_face.jpg?v=8',
-        headHeight: 0.46,
-        position: { x: 0, y: 0.155, z: 0.045 },
+        faceUrl: 'assets/people/lps/kid_face.jpg?v=10',
+        headHeight: 0.4,
+        position: { x: 0, y: 0.15, z: 0.045 },
         yaw: 0,
-        tint: 0xffe8d8
+        tint: 0xffd4b8,
+        morph: 'kid',
+        scaleXYZ: { x: 1.22, y: 1.1, z: 1.2 },
+        roughness: 0.68,
+        normalStrength: 0.22,
+        onHead: (wrap, headMesh) => {
+          const hatMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.7, side: THREE.DoubleSide });
+          const crown = new THREE.Mesh(new THREE.SphereGeometry(4.8, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.48), hatMat);
+          crown.position.set(0, 2.9, -1.5);
+          headMesh.add(crown);
+          const earL = new THREE.Mesh(new THREE.SphereGeometry(1.9, 12, 10), hatMat);
+          earL.position.set(-4.2, 0.2, -1.5);
+          const earR = earL.clone();
+          earR.position.x = 4.2;
+          headMesh.add(earL, earR);
+          const pom = new THREE.Mesh(
+            new THREE.SphereGeometry(1.15, 10, 8),
+            new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.9 })
+          );
+          pom.position.set(0, 5.0, -1.4);
+          headMesh.add(pom);
+        }
       });
-      const hat = new THREE.Group();
-      hat.position.set(0, 0.33, -0.02);
-      const hatMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.7 });
-      const earL = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 10), hatMat);
-      earL.position.set(-0.12, -0.01, 0);
-      const earR = earL.clone();
-      earR.position.x = 0.12;
-      hat.add(earL, earR);
-      const crown = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), hatMat);
-      crown.scale.set(1.05, 0.55, 1.05);
-      crown.position.set(0, 0.03, 0);
-      hat.add(crown);
-      attachPropToNeck(model, hat);
     }
 
     function mountRealHuman(gltf, anchor, yaw, scale, dressFn, nonUniformScale) {
@@ -2340,9 +2429,9 @@
 
           try {
             realHumans = {
-              owner: mountRealHuman(loaded[0], npcGroup, 0, 1, dressHenanFarmer, { x: 1.06, y: 0.98, z: 1.08 }),
-              auntie: mountRealHuman(loaded[1], crowdAuntieGroup, 0.42, 1, dressMarketAuntie, { x: 1.12, y: 0.92, z: 1.16 }),
-              kid: mountRealHuman(loaded[2], crowdKidGroup, -0.55, 0.58, dressMarketKid)
+              owner: mountRealHuman(loaded[0], npcGroup, 0, 1, dressHenanFarmer, { x: 1.08, y: 1.0, z: 1.1 }),
+              auntie: mountRealHuman(loaded[1], crowdAuntieGroup, 0.42, 1, dressMarketAuntie, { x: 1.22, y: 0.88, z: 1.2 }),
+              kid: mountRealHuman(loaded[2], crowdKidGroup, -0.55, 0.52, dressMarketKid)
             };
             // 第一人称只露手，不放玩家全身
             build3DFpsPlayerHands();
