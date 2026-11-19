@@ -3156,21 +3156,29 @@
 
       // 摊顶旧帆布：前低后高，中间下垂，不挡匾额和灯笼
       const canvasPaint = document.createElement('canvas');
-      canvasPaint.width = 256;
-      canvasPaint.height = 256;
+      canvasPaint.width = 512;
+      canvasPaint.height = 512;
       const canvasG = canvasPaint.getContext('2d');
-      canvasG.fillStyle = '#cbb892';
-      canvasG.fillRect(0, 0, 256, 256);
-      for (let i = 0; i < 256; i += 4) {
-        canvasG.strokeStyle = i % 8 === 0 ? 'rgba(72, 48, 24, 0.72)' : 'rgba(255, 236, 200, 0.28)';
+      canvasG.fillStyle = '#8a7054';
+      canvasG.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 1800; i++) {
+        const tone = 92 + Math.random() * 46;
+        canvasG.fillStyle = `rgba(${tone + 16}, ${tone}, ${tone - 18}, 0.22)`;
+        canvasG.fillRect(Math.random() * 512, Math.random() * 512, 1 + Math.random() * 2, 6 + Math.random() * 10);
+      }
+      canvasG.strokeStyle = '#5a4330';
+      canvasG.lineWidth = 4;
+      for (let x = 128; x < 512; x += 128) {
         canvasG.beginPath();
-        canvasG.moveTo(0, i);
-        canvasG.lineTo(256, i);
+        canvasG.moveTo(x, 0);
+        canvasG.lineTo(x, 512);
         canvasG.stroke();
-        canvasG.beginPath();
-        canvasG.moveTo(i, 0);
-        canvasG.lineTo(i, 256);
-        canvasG.stroke();
+      }
+      canvasG.fillStyle = '#e4d0b0';
+      for (let x = 128; x < 512; x += 128) {
+        for (let y = 4; y < 512; y += 10) {
+          canvasG.fillRect(x - 1, y, 2, 3);
+        }
       }
       const canvasTex = new THREE.CanvasTexture(canvasPaint);
       canvasTex.wrapS = THREE.RepeatWrapping;
@@ -3179,9 +3187,9 @@
       const canvasMat = new THREE.MeshStandardMaterial({
         map: canvasTex,
         bumpMap: canvasTex,
-        bumpScale: 0.18,
-        color: 0xfff3df,
-        roughness: 0.94,
+        bumpScale: 0.12,
+        color: 0xffffff,
+        roughness: 0.96,
         side: THREE.DoubleSide
       });
       const canopyCols = 8;
@@ -3197,13 +3205,13 @@
         const tz = iz / canopyRows;
         for (let ix = 0; ix <= canopyCols; ix++) {
           const tx = ix / canopyCols;
-          const sag = Math.sin(Math.PI * tx) * (0.18 + tz * 0.1);
+          const sag = Math.sin(Math.PI * tx) * (0.28 + tz * 0.16);
           canopyPos.push(
             canopyX0 + (canopyX1 - canopyX0) * tx,
             2.85 + tz * 0.55 - sag,
             canopyZ0 + (canopyZ1 - canopyZ0) * tz
           );
-          canopyUv.push(tx * 4, tz * 3);
+          canopyUv.push(tx * 2, tz * 1.4);
         }
       }
       for (let iz = 0; iz < canopyRows; iz++) {
