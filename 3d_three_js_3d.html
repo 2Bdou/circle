@@ -4753,17 +4753,28 @@
         mugBody.castShadow = true;
         toyRoot.add(mugBody);
 
-        // 蓝边卷唇口与深色茶水内胆
+        // 蓝边卷唇口与深色茶水内胆。灯下十六进制会漂成浅蓝，改用 sRGB 色块。
+        function enamelChip(css) {
+          const chip = document.createElement('canvas');
+          chip.width = 8;
+          chip.height = 8;
+          const chipG = chip.getContext('2d');
+          chipG.fillStyle = css;
+          chipG.fillRect(0, 0, 8, 8);
+          const chipTex = new THREE.CanvasTexture(chip);
+          chipTex.encoding = THREE.sRGBEncoding;
+          return chipTex;
+        }
         const lipRing = new THREE.Mesh(
-          new THREE.TorusGeometry(0.25, 0.025, 10, 28),
-          new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.2 })
+          new THREE.TorusGeometry(0.25, 0.025, 12, 32),
+          new THREE.MeshStandardMaterial({ map: enamelChip('#102454'), color: 0xffffff, roughness: 0.32, metalness: 0.04 })
         );
         lipRing.rotation.x = Math.PI * 0.5;
         lipRing.position.y = 0.56;
         toyRoot.add(lipRing);
         const tea = new THREE.Mesh(
           new THREE.CircleGeometry(0.21, 24),
-          new THREE.MeshStandardMaterial({ color: 0x4a3428, roughness: 0.42, metalness: 0.08 })
+          new THREE.MeshStandardMaterial({ map: enamelChip('#100c09'), color: 0xffffff, roughness: 0.72, metalness: 0.0 })
         );
         tea.rotation.x = -Math.PI * 0.5;
         tea.position.y = 0.545;
@@ -4776,8 +4787,8 @@
           new THREE.Vector3(0.23, 0.14, 0)
         ]);
         const handle = new THREE.Mesh(
-          new THREE.TubeGeometry(handleCurve, 16, 0.032, 10, false),
-          new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2 })
+          new THREE.TubeGeometry(handleCurve, 20, 0.032, 16, false),
+          new THREE.MeshStandardMaterial({ map: enamelChip('#f3eee6'), color: 0xffffff, roughness: 0.38, metalness: 0.02 })
         );
         toyRoot.add(handle);
       } else if (id === 'rattle_drum') {
