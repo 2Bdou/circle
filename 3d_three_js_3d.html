@@ -4487,7 +4487,7 @@
           roughness: 0.58,
           metalness: 0.02
         });
-        const pearMesh = new THREE.Mesh(new THREE.LatheGeometry(pearProfile, 28), pearMat);
+        const pearMesh = new THREE.Mesh(new THREE.LatheGeometry(pearProfile, 48), pearMat);
         pearMesh.scale.set(1, 1.28, 1);
         pearMesh.castShadow = true;
         toyRoot.add(pearMesh);
@@ -4513,11 +4513,19 @@
           new THREE.Vector2(0.0, 0.38)
         ];
         const persMat = new THREE.MeshStandardMaterial({ map: persimmonSkin(), color: 0xffffff, roughness: 0.72, metalness: 0.0 });
-        const persMesh = new THREE.Mesh(new THREE.LatheGeometry(persProfile, 24), persMat);
+        const persMesh = new THREE.Mesh(new THREE.LatheGeometry(persProfile, 48), persMat);
         persMesh.castShadow = true;
         toyRoot.add(persMesh);
 
-        const leafMat = new THREE.MeshStandardMaterial({ color: 0x3f5c32, roughness: 0.84, side: THREE.DoubleSide });
+        const leafCanvas = document.createElement('canvas');
+        leafCanvas.width = 4;
+        leafCanvas.height = 4;
+        const leafG = leafCanvas.getContext('2d');
+        leafG.fillStyle = '#2c4a28';
+        leafG.fillRect(0, 0, 4, 4);
+        const leafTex = new THREE.CanvasTexture(leafCanvas);
+        leafTex.encoding = THREE.sRGBEncoding;
+        const leafMat = new THREE.MeshStandardMaterial({ map: leafTex, color: 0xffffff, roughness: 0.84, side: THREE.DoubleSide });
         const leafShape = new THREE.Shape();
         leafShape.moveTo(0, 0);
         leafShape.quadraticCurveTo(0.08, 0.04, 0.02, 0.15);
