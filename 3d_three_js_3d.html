@@ -3098,9 +3098,9 @@
         side: THREE.DoubleSide
       });
       [
-        { x: -7.5, z: -2.5, sx: 2.2, sy: 0.45, sz: 1.8 },
+        { x: -7.5, z: -2.5, sx: 2.4, sy: 0.72, sz: 1.9 },
         { x: -7.8, z: -7.5, sx: 2.6, sy: 0.55, sz: 2.2 },
-        { x: 7.6, z: -3.2, sx: 2.1, sy: 0.42, sz: 1.9 },
+        { x: 7.6, z: -3.2, sx: 2.3, sy: 0.68, sz: 2.0 },
         { x: 8.2, z: -8.5, sx: 2.8, sy: 0.60, sz: 2.4 },
         { x: -4.2, z: -12.2, sx: 2.4, sy: 0.50, sz: 1.6 },
         { x: 4.5, z: -12.4, sx: 2.5, sy: 0.52, sz: 1.7 }
@@ -3925,10 +3925,47 @@
         addSlope(thicken(back), soffitMat, 0);
         addBox(hw * 2, 0.1, 0.1, 0, y0 - 0.02, hd + 0.02, soffitMat);
         addBox(hw * 2, 0.1, 0.1, 0, y0 - 0.02, -hd - 0.02, soffitMat);
-        const snowFront = front.map((p, i) => i < 2 ? [p[0] * 0.96, y0 + rise * 0.22, hd * 0.78] : [p[0] * 0.96, yR + 0.02, 0]);
-        const snowBack = back.map((p, i) => i < 2 ? [p[0] * 0.96, y0 + rise * 0.22, -hd * 0.78] : [p[0] * 0.96, yR + 0.02, 0]);
-        addSlope(snowFront, snowMoundMat, 0.03);
-        addSlope(snowBack, snowMoundMat, 0.03);
+        function addSnowBlanket(pts) {
+          const cols = 8;
+          const rows = 4;
+          const positions = [];
+          const uvs = [];
+          const index = [];
+          const mix = (a, b, t) => a + (b - a) * t;
+          for (let iz = 0; iz <= rows; iz++) {
+            const v = iz / rows;
+            const left = [0, 1, 2].map((k) => mix(pts[0][k], pts[3][k], v));
+            const right = [0, 1, 2].map((k) => mix(pts[1][k], pts[2][k], v));
+            for (let ix = 0; ix <= cols; ix++) {
+              const u = ix / cols;
+              const x = mix(left[0], right[0], u);
+              const y = mix(left[1], right[1], u);
+              const z = mix(left[2], right[2], u);
+              const lump = Math.sin(u * 8.5 + cfg.x * 0.4) * Math.cos(v * 5.5 + cfg.z * 0.3) * 0.035;
+              const edge = Math.min(u, 1 - u, v * 1.4, (1 - v) * 1.4);
+              const thick = 0.08 + lump - (edge < 0.15 ? 0.04 : 0);
+              positions.push(x * 0.97, y + thick, z * 0.97);
+              uvs.push(u * 2.2, v * 1.4);
+            }
+          }
+          for (let iz = 0; iz < rows; iz++) {
+            for (let ix = 0; ix < cols; ix++) {
+              const a = iz * (cols + 1) + ix;
+              index.push(a, a + cols + 1, a + 1, a + 1, a + cols + 1, a + cols + 2);
+            }
+          }
+          const geo = new THREE.BufferGeometry();
+          geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+          geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+          geo.setIndex(index);
+          geo.computeVertexNormals();
+          const mesh = new THREE.Mesh(geo, snowMoundMat);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          hGroup.add(mesh);
+        }
+        addSnowBlanket(front);
+        addSnowBlanket(back);
         addBox(cfg.w * 0.92, 0.1, 0.16, 0, yR + 0.04, 0, roofMat);
 
         addBox(0.32, 0.85, 0.32, cfg.w * 0.24, yR + 0.12, -cfg.d * 0.2, houseMat);
