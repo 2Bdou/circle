@@ -4826,10 +4826,28 @@
           toyRoot.add(bead);
         });
       } else if (id === 'lucky_cat') {
+        const glazeCanvas = document.createElement('canvas');
+        glazeCanvas.width = 128;
+        glazeCanvas.height = 128;
+        const glazeG = glazeCanvas.getContext('2d');
+        glazeG.fillStyle = '#f6eee4';
+        glazeG.fillRect(0, 0, 128, 128);
+        for (let i = 0; i < 90; i++) {
+          glazeG.fillStyle = i % 3 ? 'rgba(168, 122, 88, 0.55)' : 'rgba(255, 252, 246, 0.7)';
+          const x = (i * 19) % 128;
+          const y = (i * 47) % 128;
+          glazeG.fillRect(x, y, 2, 2);
+        }
+        const glazeTex = new THREE.CanvasTexture(glazeCanvas);
+        glazeTex.encoding = THREE.sRGBEncoding;
+        glazeTex.wrapS = THREE.RepeatWrapping;
+        glazeTex.wrapT = THREE.RepeatWrapping;
+        glazeTex.repeat.set(4, 3);
         const goldMat = new THREE.MeshStandardMaterial({
-          color: 0xf7f1e8,
-          metalness: 0.02,
-          roughness: 0.34
+          map: glazeTex,
+          color: 0xffffff,
+          metalness: 0.04,
+          roughness: 0.42
         });
         const catProfile = [
           new THREE.Vector2(0.0, 0.02),
