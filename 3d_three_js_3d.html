@@ -2574,7 +2574,9 @@
           side: THREE.FrontSide,
           depthWrite: true
         });
+        const eyeOff = opts.eyeOff || [0.35, -0.01, -0.14, 0.02];
         mat.onBeforeCompile = (shader) => {
+          shader.uniforms.uEyeOff = { value: new THREE.Vector4(eyeOff[0], eyeOff[1], eyeOff[2], eyeOff[3]) };
           shader.vertexShader = shader.vertexShader
             .replace('#include <common>', '#include <common>\nvarying float vNz;')
             .replace('#include <beginnormal_vertex>', '#include <beginnormal_vertex>\nvNz = normalize(objectNormal).z;');
@@ -2582,6 +2584,7 @@
             .replace('#include <common>', [
               '#include <common>',
               'varying float vNz;',
+              'uniform vec4 uEyeOff;',
               'float eyeCore(vec2 p, vec2 c) {',
               '  return 1.0 - smoothstep(0.012, 0.042, distance(p, c));',
               '}',
@@ -2600,8 +2603,8 @@
               'core *= facing;',
               'ring *= facing;',
               'float useLeft = distance(vec2(mx, my), leftC) < distance(vec2(mx, my), rightC) ? 1.0 : 0.0;',
-              'float smx = mx + (useLeft > 0.5 ? 0.35 : -0.14);',
-              'float smy = my + (useLeft > 0.5 ? -0.01 : 0.02);',
+              'float smx = mx + (useLeft > 0.5 ? uEyeOff.x : uEyeOff.z);',
+              'float smy = my + (useLeft > 0.5 ? uEyeOff.y : uEyeOff.w);',
               'vec4 skinTex = texture2D(map, vec2(0.75, 0.5));',
               'vec4 portraitTex = texture2D(map, vec2((smx + 1.55) / 6.2, (smy + 0.85) / 4.75));',
               'float pLum = dot(portraitTex.rgb, vec3(0.299, 0.587, 0.114));',
@@ -2774,7 +2777,8 @@
         aspect: 864 / 748,
         position: { x: 0, y: 0.14, z: 0.07 },
         yaw: 0,
-        skin: '#bf8667'
+        skin: '#bf8667',
+        eyeOff: [0.35, -0.01, -0.14, 0.02]
       });
     }
 
@@ -2805,7 +2809,8 @@
         aspect: 864 / 707,
         position: { x: 0, y: 0.18, z: 0.07 },
         yaw: -0.42,
-        skin: '#d29a87'
+        skin: '#d29a87',
+        eyeOff: [0.415, -0.125, -0.212, -0.074]
       });
     }
 
@@ -2836,7 +2841,8 @@
         aspect: 864 / 811,
         position: { x: 0, y: 0.16, z: 0.07 },
         yaw: 0.55,
-        skin: '#d99e83'
+        skin: '#d99e83',
+        eyeOff: [0.397, -0.222, -0.201, -0.224]
       });
     }
 
